@@ -19,16 +19,11 @@
  */
 package org.bbop.paint.model;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Iterator;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.touchup.Brush;
-
 import owltools.gaf.Bioentity;
+
+import java.util.*;
 
 /**
  * Class declaration
@@ -58,8 +53,9 @@ public class MSA {
 	 * Constructor declaration
 	 *
 	 *
-	 * @param msaInfo
-	 * @param gridInfo
+	 * @param sequences
+	 * @param seq_length
+	 * @param wts
 	 *
 	 * @see
 	 */
@@ -151,7 +147,7 @@ public class MSA {
 	/**
 	 * Method declaration
 	 *
-	 * @param msaInfo
+	 * @param nodes
 	 *
 	 * @return
 	 *

@@ -1,15 +1,14 @@
 package org.bbop.paint.panther;
 
+import org.apache.log4j.Logger;
+import org.bbop.paint.touchup.Constant;
+import org.bbop.paint.touchup.Preferences;
+import owltools.gaf.Bioentity;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
-
-import org.apache.log4j.Logger;
-import org.bbop.paint.touchup.Constant;
-import org.bbop.paint.touchup.Main;
-
-import owltools.gaf.Bioentity;
 
 public class ParsingHack {
 
@@ -39,10 +38,15 @@ public class ParsingHack {
 		return revision;
 	}
 
-	private static String dbIdHack(String db, String id) {
+	private static String dbIdHack(String db, String id, String acc) {
 		String revision = id;
-		if (db.equals("UniProtKB") && id.endsWith("gn")) {
-			revision = id.substring(0, id.length() - "gn".length());
+		if (db.equals("UniProtKB")) {
+			if (id.endsWith("gn")) {
+				revision = id.substring(0, id.length() - "gn".length());
+			} else if (acc != null) {
+				// Use the UniProt ID
+				revision = acc;
+			}
 		} 
 		else if (db.equals("TAIR")) {
 			revision = id.toUpperCase();
@@ -94,10 +98,10 @@ public class ParsingHack {
 		if (gene == null) {
 			String [] db_source = getDBparts(row);
 			String db = dbNameHack(db_source[0]);
-			String id = dbIdHack(db, db_source[1]);
+			String [] seq_source = getSeqParts(row);
+			String id =dbIdHack(db, db_source[1], seq_source[1]);
 			gene = mapper.getGeneByDbId(db + ':' + id);
 			if (gene == null) {
-				String [] seq_source = 	getSeqParts(row);
 				if (seq_source != null && seq_source.length >= 2) {
 					List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
 					if (genes != null) {
@@ -106,12 +110,12 @@ public class ParsingHack {
 								gene = check;
 							}
 						}
-					}		
+					}
 				}
 			}
 		}
 		if (gene == null)
-			log.info("Unable to locate node for " + row);
+			log.debug("Unable to locate node for " + row);
 		return gene;
 	}
 
@@ -121,8 +125,13 @@ public class ParsingHack {
 			node.setPaintId(paint_id);
 		else {
 			String [] parts = getParts(name);
-			if (parts != null && parts.length > 0)
+			if (parts != null && parts.length > 0) {
 				node.addSpeciesLabel(parts[0]);
+				if (node.getNcbiTaxonId() == null) {
+					String taxon = Preferences.inst().getTaxonID(parts[0]);
+					node.setNcbiTaxonId(taxon);
+				}
+			}
 			String [] db_source = getDBparts(name);
 			String [] seq_source = getSeqParts(name);
 			/*
@@ -132,7 +141,13 @@ public class ParsingHack {
 			 */
 			if (db_source != null && db_source.length >= 2) {
 				node.setDb(dbNameHack(db_source[0]));
-				node.setId(node.getDb() + ':' + dbIdHack(node.getDb(), db_source[1]));
+				node.setId(node.getDb() + ':' + dbIdHack(node.getDb(), db_source[1], seq_source[1]));
+				if (!db_source[1].equals(node.getLocalId())) {
+					if (node.getSymbol() == null)
+						node.setSymbol(db_source[1]);
+					else
+						node.addSynonym(db_source[1]);
+				}
 				IDmap.inst().indexByDBID(node);
 			}
 			else 

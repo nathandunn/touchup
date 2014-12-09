@@ -19,14 +19,12 @@
  */
 package org.bbop.paint.panther;
 
+import org.apache.log4j.Logger;
+import owltools.gaf.Bioentity;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import org.apache.log4j.Logger;
-import org.bbop.paint.touchup.Constant;
-
-import owltools.gaf.Bioentity;
 
 public class IDmap {
 	/**

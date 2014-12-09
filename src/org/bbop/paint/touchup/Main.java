@@ -20,11 +20,11 @@
 
 package org.bbop.paint.touchup;
 
-import javax.swing.SwingUtilities;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.LogAction;
 import org.bbop.paint.LogAlert;
+
+import javax.swing.*;
 
 public class Main {
 	/**

@@ -19,11 +19,10 @@
  */
 package org.bbop.paint.model;
 
-import java.io.Serializable;
-import java.util.logging.Logger;
-
 import org.bbop.paint.gaf.GafRecorder;
 import org.bbop.paint.panther.Panther;
+
+import java.io.Serializable;
 
 public class Family implements Serializable {
 

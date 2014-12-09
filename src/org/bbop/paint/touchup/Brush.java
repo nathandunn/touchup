@@ -80,6 +80,7 @@ public class Brush {
 	public boolean savePaint() {	
 		boolean ok = family != null;
 		if (ok) {
+			// Need to add the supporting experimental annotations to the withs
 			ok = family.save();
 		}
 		return ok;

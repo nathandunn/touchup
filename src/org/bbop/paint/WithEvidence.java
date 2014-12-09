@@ -19,22 +19,16 @@
  */
 package org.bbop.paint;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.model.Tree;
 import org.bbop.paint.touchup.Brush;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.OWLutil;
 import org.semanticweb.HermiT.model.Term;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
+
+import java.util.*;
 
 
 public class WithEvidence {

@@ -1,21 +1,19 @@
 package org.bbop.paint.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Iterator;
-
 import org.apache.log4j.Logger;
 import org.bbop.golr.java.RetrieveGolrAnnotations;
 import org.bbop.golr.java.RetrieveGolrAnnotations.GolrAnnotationDocument;
 import org.bbop.paint.model.Family;
 import org.bbop.paint.model.Tree;
 import org.bbop.paint.touchup.Constant;
-import org.bbop.paint.touchup.Main;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class AnnotationUtil {
 
@@ -93,15 +91,30 @@ public class AnnotationUtil {
 				String eco = annotation.getShortEvidence();
 				if (Constant.EXP_strings.contains(eco)) {
 					exp_annotations.add(annotation);
-				}			
+				}
 			}
 		}
 		return exp_annotations;
-	}	
+	}
+
+	public static List<GeneAnnotation> getAspectExpAssociations(Bioentity leaf, String aspect) {
+		List<GeneAnnotation> filtered_associations = getExpAssociations(leaf);
+		for (int i = filtered_associations.size(); i > 0; i--) {
+			GeneAnnotation annotation = filtered_associations.get(i - 1);
+			if (!annotation.getAspect().equals(aspect)) {
+				filtered_associations.remove(i - 1);
+			}
+		}
+		return filtered_associations;
+	}
 
 	public static boolean isPAINTAnnotation(GeneAnnotation assoc) {
 		String source = assoc.getAssignedBy();
 		return (source.equals(Constant.PAINT_AS_SOURCE) || source.equals(Constant.OLD_SOURCE));
+	}
+
+	public static boolean isExperimental(GeneAnnotation annotation) {
+		return Constant.EXP_strings.contains(annotation.getShortEvidence());
 	}
 
 }

@@ -1,19 +1,22 @@
 package org.bbop.paint.gaf;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.log4j.Logger;
+import org.bbop.paint.WithEvidence;
 import org.bbop.paint.model.Family;
 import org.bbop.paint.model.Tree;
+import org.bbop.paint.panther.IDmap;
 import org.bbop.paint.touchup.Constant;
 import org.bbop.paint.touchup.Preferences;
 import org.bbop.paint.util.FileUtil;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.io.GafWriter;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 public class GafRecorder {
 
@@ -60,6 +63,9 @@ public class GafRecorder {
 				boolean include = assigned_by.equals(Constant.PAINT_AS_SOURCE) || assigned_by.equals(Constant.OLD_SOURCE);
 				include &= annotation.isMRC() || node.isLeaf() || annotation.isDirectNot();
 				if (include) {
+					if (node.isLeaf()) {
+						addExpWith(node, annotation);
+					}
 					gaf_doc.addGeneAnnotation(annotation);
 				}
 			} 
@@ -81,4 +87,31 @@ public class GafRecorder {
 		//	}
 	}
 
+	private static void addExpWith(Bioentity node, GeneAnnotation annotation) {
+		Collection<String> withs = annotation.getWithInfos();
+		if (withs.size() == 1) {
+			String ancestor_id = withs.iterator().next();
+			/*
+			 * Seems to just be the one ancestral node, so proceed
+			 * First indicate the ancestral node
+			 */
+
+			/*
+			 * Then add the ancestor's withs to feed back to PANTREE
+			 */
+			Bioentity ancestor = IDmap.inst().getGeneByDbId(ancestor_id);
+			if (ancestor != null) {
+				WithEvidence evidence = new WithEvidence(annotation.getCls(), ancestor);
+				Set<Bioentity> exp_withs = evidence.getExpWiths();
+				for (Bioentity exp_node : exp_withs) {
+					withs.add(exp_node.getId());
+				}
+				annotation.setWithInfos(withs);
+			} else {
+				log.debug("Where is the ancestral node for " + node + " to inherit " + annotation.getCls() + '?');
+			}
+		} else {
+			log.debug("Why not a single piece of evidence for " + node + " to " + annotation.getCls() + '?');
+		}
+	}
 }

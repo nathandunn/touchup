@@ -20,25 +20,21 @@
 package org.bbop.paint;
 
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.LogEntry.LOG_ENTRY_TYPE;
+import org.bbop.paint.model.Tree;
 import org.bbop.paint.touchup.Brush;
 import org.bbop.paint.touchup.Constant;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.OWLutil;
 import org.bbop.paint.util.TaxonChecker;
 import org.semanticweb.HermiT.model.Term;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 public class PaintAction {
@@ -110,12 +106,12 @@ public class PaintAction {
 		return assoc;
 	}
 
-	private GeneAnnotation _propagateAssociation(Bioentity node, 
-			String go_id, 
-			Set<Bioentity> top_with, 
-			Set<Bioentity> exp_withs, 
-			boolean negate,
-			String date) { 
+	private GeneAnnotation _propagateAssociation(Bioentity node,
+												 String go_id,
+												 Set<Bioentity> top_with,
+												 Set<Bioentity> exp_withs,
+												 boolean negate,
+												 String date) {
 		//			Set<Term> quals) {
 
 		GeneAnnotation top_assoc = null;
@@ -131,7 +127,7 @@ public class PaintAction {
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, date, false, negate, top_with);				
+				assoc = createAnnotation(node, go_id, date, false, negate, top_with);
 			}
 
 			/*
@@ -160,7 +156,7 @@ public class PaintAction {
 	}
 
 	private GeneAnnotation createAnnotation(Bioentity node, String go_id,
-			String date, boolean is_MRC, boolean is_directNot, Set<Bioentity> exp_withs) {
+											String date, boolean is_MRC, boolean is_directNot, Set<Bioentity> exp_withs) {
 		GeneAnnotation assoc = new GeneAnnotation();
 		assoc.setBioentity(node.getId());
 		assoc.setBioentityObject(node);
@@ -171,10 +167,10 @@ public class PaintAction {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		Date annot_date = null;
 		if (date != null) {
-			try {			
+			try {
 				annot_date = sdf.parse(date);
 			} catch (ParseException e) {
-			}		
+			}
 		}
 		if (annot_date == null) {
 			long timestamp = System.currentTimeMillis();
@@ -191,7 +187,7 @@ public class PaintAction {
 			with_strings.add(with.getId());
 		}
 		assoc.setWithInfos(with_strings);
-		assoc.setGeneProductForm(node.getDb() + ':' + node.getSeqId());
+		// assoc.setGeneProductForm(node.getDb() + ':' + node.getSeqId());
 		return assoc;
 	}
 
@@ -212,7 +208,7 @@ public class PaintAction {
 		 * That is: a descendant protein was annotated earlier to a more general term
 		 * and now the curator is adding a more specific term to a more ancestral branch of the family
 		 */
-		List<GeneAnnotation> current_set = node.getAnnotations();		
+		List<GeneAnnotation> current_set = node.getAnnotations();
 		List<GeneAnnotation> removal = new ArrayList<GeneAnnotation> ();
 		if (current_set != null) {
 			for (GeneAnnotation assoc : current_set) {
@@ -226,11 +222,11 @@ public class PaintAction {
 				}
 			}
 			for (GeneAnnotation remove : removal) {
-				_removeAssociation(node, remove.getCls());				
+				_removeAssociation(node, remove.getCls());
 			}
 		}
 	}
-	
+
 	//	public void pruneBranch(Bioentity node, boolean log_it) {
 	//		List<LogAssociation> purged = new ArrayList<LogAssociation>();
 	//		if (node.getGeneProduct() != null) {
@@ -432,7 +428,7 @@ public class PaintAction {
 		}
 		return removed;
 	}
-	
+
 	//
 	//	public synchronized void undoAssociation(Bioentity node, Term term) {
 	//		_removeAssociation(node, term);
@@ -467,39 +463,42 @@ public class PaintAction {
 	//		return annotated;
 	//	}
 	//
-	//	public void setNot(GeneAnnotation assoc, boolean log) {
-	//		if (!assoc.isNegated()) {
-	//			assoc.setIsNegated(true);
-	//			assoc.setDirectNot(true);
-	//			if (evi_code.equals(GOConstants.DIVERGENT_EC) || evi_code.equals(GOConstants.KEY_RESIDUES_EC)) {
-	//				evidence.addWith(node.getParent().getGeneProduct().getDbxref());
-	//			}
-	//			else if (evi_code.equals(GOConstants.DESCENDANT_SEQUENCES_EC)) {
-	//				org.paint.gui.familytree.TreePanel tree = PaintManager.inst().getTree();
-	//				Vector<Bioentity> leafList = new Vector<Bioentity>();
-	//				tree.getLeafDescendants(node, leafList);
-	//				for (Bioentity leaf : leafList) {
-	//					Set<GeneAnnotation> leafAssocs = GO_Util.inst().getAssociations(leaf, AspectSelector.inst().getAspect().toString(), true);
-	//					if (leafAssocs != null) {
-	//						for (GeneAnnotation leafAssoc : leafAssocs) {
-	//							if (leafAssoc.getTerm().equals(assoc.getTerm()) && leafAssoc.isNot()) {
-	//								evidence.addWith(leaf.getGeneProduct().getDbxref());
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//
-	//			/* 
-	//			 * Need to propagate this change to all descendants
-	//			 */
-	//			LinkDatabase all_terms = PaintManager.inst().getGoRoot().getLinkDatabase();
-	//			propagateNegationDown(node, assoc.getGene_product().getDbxref(), assoc, evi_code, true, all_terms);
-	//			if (log)
-	//				ActionLog.inst().logNot(node, evidence, evi_code);
-	//		}
-	//	}
-	//
+	public void setNot(GeneAnnotation assoc, boolean log) {
+		if (!assoc.isNegated()) {
+			assoc.setIsNegated(true);
+			assoc.setDirectNot(true);
+			Bioentity node = assoc.getBioentityObject();
+
+			String evi_code = assoc.getShortEvidence();
+			Collection<String> with_str = assoc.getWithInfos();
+
+			if (evi_code.equals(Constant.DIVERGENT_EC) || evi_code.equals(Constant.KEY_RESIDUES_EC)) {
+				with_str.add(assoc.getBioentityObject().getId());
+			}
+			else if (evi_code.equals(Constant.DESCENDANT_EVIDENCE_CODE)) {
+				Tree tree = Brush.inst().getTree();
+				List<Bioentity> leafList = tree.getLeafDescendants(node);
+				for (Bioentity leaf : leafList) {
+					List<GeneAnnotation> leafAssocs = AnnotationUtil.getAspectExpAssociations(leaf, assoc.getAspect());
+					for (GeneAnnotation leafAssoc : leafAssocs) {
+						if (leafAssoc.getCls().equals(assoc.getCls()) && leafAssoc.isNegated()) {
+							with_str.add(leaf.getId());
+						}
+					}
+
+				}
+			}
+			assoc.setWithInfos(with_str);
+
+			/*
+			 * Need to propagate this change to all descendants
+			 */
+			propagateNegationDown(node, assoc, true);
+			//if (log)
+			//	LogAction.inst().logNot();
+		}
+	}
+
 	//	public void unNot (Evidence evidence, Bioentity node, boolean log) {
 	//		GeneAnnotation assoc = evidence.getAssociation();
 	//		assoc.setNot(false);
@@ -553,45 +552,32 @@ public class PaintAction {
 	//		}
 	//	}
 	//
-	//	private void propagateNegationDown(Bioentity node, DBXref with, GeneAnnotation assoc, String code, boolean is_not, LinkDatabase all_terms) {
-	//		List<Bioentity> children = node.getChildren();
-	//		if (children == null)
-	//			return;
-	//		for (Iterator<Bioentity> node_it = children.iterator(); node_it.hasNext();) {
-	//			Bioentity child = node_it.next();
-	//			Set<GeneAnnotation> assoc_list = child.getGeneProduct().getGeneAnnotations();
-	//			for (Iterator<GeneAnnotation> assoc_it = assoc_list.iterator(); assoc_it.hasNext();) {
-	//				GeneAnnotation child_assoc = assoc_it.next();
-	//				// Should not modify any experimental evidence
-	//				if (GO_Util.inst().isExperimental(child_assoc)) {
-	//					continue;
-	//				}
-	//				/*
-	//				 * Better to see if the child term is_a (or is part_of) the parent term, rather than an exact match
-	//				 */
-	//				LinkedObject ancestor_obo = (LinkedObject) GO_Util.inst().getObject(all_terms, assoc.getTerm().getAcc());
-	//				LinkedObject child_obo = (LinkedObject) GO_Util.inst().getObject(all_terms, child_assoc.getTerm().getAcc());
-	//				if (TermUtil.isAncestor(child_obo, ancestor_obo, all_terms, null)) {
-	//					Set<Evidence> child_evidence = child_assoc.getEvidence();
-	//					child_assoc.setNot(is_not);
-	//					child_assoc.setDirectNot(false);
-	//					for (Evidence child_evi : child_evidence) {
-	//						// all inherited annotations should have evidence code of "IBA", including
-	//						// NOT annotations
-	//						//						child_evi.setCode(code);
-	//						child_evi.setCode(GOConstants.ANCESTRAL_EVIDENCE_CODE);
-	//						child_evi.getWiths().clear();
-	//						child_evi.addWith(with);
-	//					}
-	//					/*
-	//					 * Hope this is safe enough to do. Essentially saying that all descendant proteins must have 
-	//					 * exactly the same set of qualifiers as the ancestral protein for the GeneAnnotation to this
-	//					 * particular term
-	//					 */
-	//					propagateNegationDown(child, with, assoc, code, is_not, all_terms);
-	//				}
-	//			}
-	//		}
-	//	}
-
+	private void propagateNegationDown(Bioentity node, GeneAnnotation assoc, boolean is_not) {
+		List<Bioentity> children = node.getChildren();
+		if (children == null)
+			return;
+		for (Bioentity child : children) {
+					/*
+					 * Better to see if the child term is_a (or is part_of) the parent term, rather than an exact match
+					 */
+			GeneAnnotation child_assoc = OWLutil.inst().isAnnotatedToTerm(child.getAnnotations(), assoc.getCls());
+			if (child_assoc != null) {
+				child_assoc.setIsNegated(is_not);
+				child_assoc.setDirectNot(false);
+				Collection<String> withs = new ArrayList<String>();
+				withs.add(assoc.getBioentity());
+				child_assoc.setWithInfos(withs);
+				child_assoc.setEvidence(Constant.ANCESTRAL_EVIDENCE_CODE, null);
+				// all inherited annotations should have evidence code of "IBA", including
+				// NOT annotations
+			}
+						/*
+						 * Hope this is safe enough to do. Essentially saying that all descendant proteins must have
+						 * exactly the same set of qualifiers as the ancestral protein for the GeneAnnotation to this
+						 * particular term
+						 */
+			propagateNegationDown(child, assoc, is_not);
+		}
+	}
 }
+

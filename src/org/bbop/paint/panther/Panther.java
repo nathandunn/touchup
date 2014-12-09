@@ -19,24 +19,18 @@
  */
 package org.bbop.paint.panther;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.model.Family;
 import org.bbop.paint.model.MSA;
 import org.bbop.paint.model.Tree;
 import org.bbop.paint.touchup.Constant;
-import org.bbop.paint.touchup.Main;
 import org.bbop.paint.touchup.Preferences;
 import org.bbop.paint.util.FileUtil;
-
 import owltools.gaf.Bioentity;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class Panther {
 	/**
@@ -52,13 +46,9 @@ public class Panther {
 	private List<String>    attr_content;
 	private List<String> msa_content;
 	private List<String> wts_content;
-	private List<String> txt_content;
 
 	/**
 	 * Constructor declaration
-	 *
-	 *
-	 * @param fileName
 	 *
 	 * @see
 	 */
@@ -100,6 +90,11 @@ public class Panther {
 				List<List<String>> rows = ParsingHack.parsePantherAttr(attr_content);
 				decorateNodes(rows, tree);
 			}
+
+			if (tree.getRoot().getNcbiTaxonId() == null) {
+				String taxon = Preferences.inst().getTaxonID("LUCA");
+				tree.getRoot().setNcbiTaxonId(taxon);
+			}
 		}
 		return tree;
 	}
@@ -139,22 +134,22 @@ public class Panther {
 			treeContents = ParsingHack.tokenize(treeContents.get(0), Constant.SEMI_COLON);
 		}
 
-		String tree_line = treeContents.remove(0);
-		Bioentity root = parseTreeString(tree_line);
-		
+		Bioentity root = null;
+
 		for (String row : treeContents) {
-			int index = row.indexOf(Constant.COLON);
-			String anId = row.substring(0, index);
-			Bioentity node = IDmap.inst().getGeneByANId(anId);
-			if (null == node) {
-				log.info("Found data for non-existant annotation node " + anId);
-				continue;
+			if (root == null) {
+				root = parseTreeString(row);
+			} else {
+				int index = row.indexOf(Constant.COLON);
+				String anId = row.substring(0, index);
+				Bioentity node = IDmap.inst().getGeneByANId(anId);
+				if (null == node) {
+					log.info("Found data for non-existent annotation node " + anId);
+					continue;
+				}
+				// minus 1 to trim the semi-colon off?
+				ParsingHack.parseIDstr(node, row.substring(index + 1));
 			}
-			// minus 1 to trim the semi-colon off?
-			ParsingHack.parseIDstr(node, row.substring(index+1));
-			/*
-			 * Both database info and sequence info should now be set in this leaf node
-			 */
 		}
 		recordOrigChildOrder(root);
 
@@ -367,10 +362,11 @@ public class Panther {
 				}
 			} else if (tag.equals(ORG_TAG)) {
 				node.addSpeciesLabel(value);
-				String taxon = Preferences.inst().getTaxonID(value);
-				if (taxon != null && taxon.length() > 0)
-					node.setNcbiTaxonId(taxon);
-
+				if (node.getNcbiTaxonId() == null) {
+					String taxon = Preferences.inst().getTaxonID(value);
+					if (taxon != null && taxon.length() > 0)
+						node.setNcbiTaxonId(taxon);
+				}
 			} else if (tag.equals(SYMB_TAG)) {
 				node.setSymbol(value);
 			}

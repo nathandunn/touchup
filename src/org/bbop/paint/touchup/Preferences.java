@@ -20,24 +20,16 @@
 
 package org.bbop.paint.touchup;
 
-import java.awt.Color;
-import java.awt.Font;
+import org.apache.log4j.Logger;
+
+import java.awt.*;
 import java.beans.DefaultPersistenceDelegate;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
 
 /**
  * Used for reading previous or default user settings from property file and storing current user settings
@@ -187,7 +179,7 @@ public class Preferences {
 		}
 		String taxon_id = null;
 		if (species_name != null && species_name.length() > 0) {
-			if (!species_name.equals("root")) 
+			if (!species_name.equals("root"))
 				species_name = species_name.substring(0, 1).toUpperCase() + species_name.substring(1);
 			taxon_id = taxa2IDs.get(species_name);
 			if (taxon_id == null) {
@@ -203,9 +195,16 @@ public class Preferences {
 	private void loadTaxaMapping() {
 		taxa2IDs = new HashMap<String, String>();
 		IDs2taxa = new HashMap<String, String>();
+		taxa2IDs.put("LUCA", Constant.TAXON_PREFIX+"1");
+		IDs2taxa.put(Constant.TAXON_PREFIX+"1", "LUCA");
+		loadUniProtTaxa();
+		loadNCBITaxa();
+	}
+
+	private void loadNCBITaxa() {
 		try {
 			URL url = getExtensionLoader().getResource(
-					"org/bbop/resources/ncbi_taxa_ids.txt");
+					"ncbi_taxa_ids.txt");
 			BufferedReader reader = new BufferedReader(
 					new InputStreamReader(url.openStream()));
 			String id_pair = reader.readLine();
@@ -225,6 +224,36 @@ public class Preferences {
 					taxa2IDs.put(name, taxon_id);
 				}
 				id_pair = reader.readLine();
+			}
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void loadUniProtTaxa() {
+		try {
+			URL url = getExtensionLoader().getResource(
+					"speclist.txt");
+			BufferedReader reader = new BufferedReader(
+					new InputStreamReader(url.openStream()));
+			String line = reader.readLine();
+			while (line != null) {
+				if (line.contains("N=") && !line.contains("Official")) {
+					int index = line.indexOf(' ');
+					String code = line.substring(0, index);
+					index += 3;
+					String taxon_id = Constant.TAXON_PREFIX+line.substring(index, line.indexOf(':')).trim();
+					index = line.indexOf("N=") + 2;
+					String name = line.substring(index).trim();
+					if (!IDs2taxa.containsKey(taxon_id))
+						IDs2taxa.put(taxon_id, name);
+					if (!taxa2IDs.containsKey(name))
+						taxa2IDs.put(name, taxon_id);
+					if (!taxa2IDs.containsKey(code))
+						taxa2IDs.put(code, taxon_id);
+				}
+				line = reader.readLine();
 			}
 			reader.close();
 		} catch (Exception e) {
@@ -326,11 +355,11 @@ public class Preferences {
 		} else if (lcName.equals("psea7")) {
 			name = "Pseudomonas aeruginosa";
 		} else if (lcName.equals("aquae") || lcName.equals("aquifex aeolicus vf5")) {
-			name = "Aquifex aeolicus";		
+			name = "Aquifex aeolicus";
 		} else if (lcName.equals("metac") || lcName.equals("methanosarcina acetivorans c2a")) {
-			name = "Methanosarcina acetivorans";		
+			name = "Methanosarcina acetivorans";
 		} else if (lcName.equals("sulso") || lcName.equals("sulfolobus solfataricus p2")) {
-			name = "Sulfolobus solfataricus";		
+			name = "Sulfolobus solfataricus";
 		} else if (lcName.equals("saccharomycetaceae-candida")) {
 			name = "mitosporic Nakaseomyces";
 		} else if (lcName.equals("sordariomycetes-leotiomycetes")) {
@@ -359,7 +388,7 @@ public class Preferences {
 			name = "Chromadorea";
 		} else if (lcName.equals("artiodactyla")) {
 			name = "unclassified Artiodactyla";
-		} 
+		}
 		return name;
 	}
 

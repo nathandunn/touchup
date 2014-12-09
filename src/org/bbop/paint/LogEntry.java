@@ -20,18 +20,14 @@
 
 package org.bbop.paint;
 
+import org.apache.log4j.Logger;
+import owltools.gaf.Bioentity;
+import owltools.gaf.GeneAnnotation;
+
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-
-import org.apache.log4j.Logger;
-import org.bbop.paint.util.OWLutil;
-import org.bbop.paint.util.TaxonChecker;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
 
 public class LogEntry {
 	/**

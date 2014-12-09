@@ -20,17 +20,12 @@
 
 package org.bbop.paint.model;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.BioentityDocument;
+
+import java.io.Serializable;
+import java.util.*;
 
 public class Tree extends BioentityDocument implements Serializable {
 	/**
@@ -55,7 +50,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 * Constructor declaration
 	 *
 	 *
-	 * @param root node
+	 * @param id, node
 	 *
 	 * @see
 	 */
@@ -91,7 +86,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * Order the list of all nodes
 	 * @param node
-	 * @param orderedNodes
+	 * @param node_list
 	 *
 	 * @see
 	 */
@@ -215,7 +210,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	/**
 	 * Gets the node which is currently displayed at the top of
 	 * the list (i.e. the first row) for a given clade/ancestral node 
-	 * @param Bioentity, where to start from
+	 * @param node, where to start from
 	 * @returns Bioentity
 	 */
 	protected Bioentity getTopLeafNode(Bioentity node) {
@@ -256,7 +251,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 * Method declaration
 	 *
 	 * 
-	 * @param dsn
+	 * @param
 	 *
 	 * @see
 	 */
@@ -270,9 +265,9 @@ public class Tree extends BioentityDocument implements Serializable {
 
 	/**
 	 * getMRCA
-	 * 
-	 * @param Node - one leaf in the tree
-	 * @param Node - a second leaf in the tree
+	 *
+	 * @param gene1 - one leaf in the tree
+	 * @param gene2 - a second leaf in the tree
 	 * 
 	 * @return Node - the node that is an ancestor to both of these two leaves
 	 */

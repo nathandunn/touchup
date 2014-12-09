@@ -20,15 +20,6 @@ package org.bbop.paint.gaf;
  */
 
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.LogAlert;
 import org.bbop.paint.LogEntry;
@@ -38,11 +29,15 @@ import org.bbop.paint.touchup.Constant;
 import org.bbop.paint.touchup.Preferences;
 import org.bbop.paint.util.FileUtil;
 import org.bbop.paint.util.OWLutil;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.GafObjectsBuilder;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.*;
 
 public class GafPropagator {
 
@@ -51,8 +46,8 @@ public class GafPropagator {
 	/**
 	 * Method declaration
 	 *
-	 * @param File gaf_file
-	 * @throws IOException 
+	 * @param gafdoc gaf_file
+	 * @throws IOException
 	 *
 	 * @see
 	 */
@@ -109,10 +104,10 @@ public class GafPropagator {
 		}
 	}
 
-	private static void parseAnnotations (Bioentity node, 
-			GeneAnnotation annotation, 
-			HashSet<Bioentity> pruned_list, 
-			HashMap<Bioentity, List<GeneAnnotation>> negate_list) {
+	private static void parseAnnotations (Bioentity node,
+										  GeneAnnotation annotation,
+										  HashSet<Bioentity> pruned_list,
+										  HashMap<Bioentity, List<GeneAnnotation>> negate_list) {
 
 		if (annotation.isCut()) {
 			pruned_list.add(node);
@@ -131,7 +126,7 @@ public class GafPropagator {
 					negate_list.put(node, not_annots);
 				}
 				not_annots.add(annotation);
-			} 
+			}
 			else {
 				String go_id = annotation.getCls();
 				if (OWLutil.inst().isObsolete(go_id)) {
@@ -169,49 +164,34 @@ public class GafPropagator {
 		}
 		return ok;
 	}
-	
+
 	private static void applyNots(Map<Bioentity, List<GeneAnnotation>> negate_list) {
 		Map<Bioentity, List<GeneAnnotation>> toBeSkipped = new HashMap<Bioentity, List<GeneAnnotation>>();
-		//		for (Bioentity node : negate_list.keySet()) {
-		//			List<GeneAnnotation> row_list = negate_list.get(node);
-		//			List<GeneAnnotation> skipList = new ArrayList<GeneAnnotation>();
-		//			toBeSkipped.put(node, skipList);
-		//			for (GeneAnnotation not_annot : row_list) {
-		//				Collection<String> withs = not_annot.getWithInfos();
-		//				for (Iterator<String> with_it = withs.iterator(); with_it.hasNext();) {
-		//					String with = with_it.next();
-		//					if (with != null && !with.equals("")) {
-		//						Bioentity with_node = IDmap.inst().getGeneByPTNId(with);
-		//						if (with_node == null) {
-		//							with_node = IDmap.inst().getGeneByDbId(with);
-		//						}
-		//						if (with_node == null) {
-		//							List<Bioentity> seqs = IDmap.inst().getGenesBySeqId(with);
-		//								if (seqs != null && seqs.size() > 0) {
-		//									with_node = seqs.get(0);
-		//									if (seqs.size() > 1) {
-		//										log.error("Should handle double seqs better for " + with);
-		//									}
-		//								}
-		//							}
-		//						if (with_node != null && negate_list.containsKey(with_node)) {
-		//							for (List<GeneAnnotation> : negate_list.get(with_node)) {
-		//									if (withRows[4].equals(columns[4])) {
-		//										skipList.add(columns);
-		//									}
-		//								}
-		//							}
-		//						} 
-		//						else {
-		//							errors.append("Could not parse dbxref from with column \"" + with_string[i] + "\"\n");
-		//						}
-		//					}
-		//				}
-		//			}
-		//		}
-		//		for (GeneNode descendent_node : inherited_list) {
-		//			negate_list.remove(descendent_node);
-		//		}
+		for (Bioentity node : negate_list.keySet()) {
+			List<GeneAnnotation> row_list = negate_list.get(node);
+			List<GeneAnnotation> skipList = new ArrayList<GeneAnnotation>();
+			toBeSkipped.put(node, skipList);
+			for (GeneAnnotation not_annot : row_list) {
+				Collection<String> withs = not_annot.getWithInfos();
+				for (Iterator<String> with_it = withs.iterator(); with_it.hasNext();) {
+					String with = with_it.next();
+					Bioentity with_node = findWithNode(with);
+					if (with_node != null && negate_list.containsKey(with_node)) {
+						List<GeneAnnotation> check_list = negate_list.get(with_node);
+						for (GeneAnnotation check_annot : check_list) {
+							if (not_annot.getCls().equals(check_annot.getCls())) {
+								skipList.add(check_annot);
+							}
+						}
+
+					}
+					else {
+						log.debug("Could not parse dbxref from with column \"" + withs + "\"\n");
+					}
+				}
+			}
+		}
+
 		for (Bioentity node : negate_list.keySet()) {
 			List<GeneAnnotation> row_list = negate_list.get(node);
 			List<GeneAnnotation> skipList = toBeSkipped.get(node);
@@ -230,7 +210,7 @@ public class GafPropagator {
 						 * Should just be one piece of evidence
 						 */
 						if (all_evidence.size() == 1) {
-//							PaintAction.inst().setNot(assoc, true);
+							PaintAction.inst().setNot(assoc, true);
 						}
 					}
 				}
@@ -238,4 +218,23 @@ public class GafPropagator {
 		}
 	}
 
+	private static Bioentity findWithNode(String with) {
+		Bioentity with_node = null;
+		if (with != null && !with.equals("")) {
+			with_node = IDmap.inst().getGeneByPTNId(with);
+			if (with_node == null) {
+				with_node = IDmap.inst().getGeneByDbId(with);
+			}
+			if (with_node == null) {
+				List<Bioentity> seqs = IDmap.inst().getGenesBySeqId(with);
+				if (seqs != null && seqs.size() > 0) {
+					with_node = seqs.get(0);
+					if (seqs.size() > 1) {
+						log.error("Should handle double seqs better for " + with);
+					}
+				}
+			}
+		}
+		return with_node;
+	}
 }

@@ -20,18 +20,17 @@
 
 package org.bbop.paint;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.log4j.Logger;
 import org.bbop.paint.LogEntry.LOG_ENTRY_TYPE;
 import org.bbop.paint.touchup.Preferences;
 import org.bbop.paint.util.FileUtil;
-
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class LogAction {
