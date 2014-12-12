@@ -74,7 +74,6 @@ public class AnnotationUtil {
 			Bioentity go_node = all_annotations.get(0).getBioentityObject();
 			node.setFullName(go_node.getFullName());
 			node.setNcbiTaxonId(go_node.getNcbiTaxonId());
-			node.setTypeCls(go_node.getTypeCls());
 			if (go_node.getSynonyms() != null) {
 				for (String synonym : node.getSynonyms()) {
 					node.addSynonym(synonym);

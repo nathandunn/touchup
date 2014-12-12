@@ -16,7 +16,6 @@ import owltools.gaf.io.GafWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 public class GafRecorder {
 
@@ -47,13 +46,12 @@ public class GafRecorder {
 	}
 
 	private static void addAnnotations(Bioentity node, GafDocument gaf_doc) {
-		List<GeneAnnotation> annotations = node.getAnnotations();
-
 		//	if (node.isPruned()) {
 		//		/* Write out one row to record the pruned branch */
 		//			exportStump(node, bufWriter);
 		//	}
 		//	else {
+		List<GeneAnnotation> annotations = node.getAnnotations();
 		if (annotations != null) {
 			for (GeneAnnotation annotation : annotations) {
 				String assigned_by = annotation.getAssignedBy();
@@ -64,6 +62,7 @@ public class GafRecorder {
 				include &= annotation.isMRC() || node.isLeaf() || annotation.isDirectNot();
 				if (include) {
 					if (node.isLeaf()) {
+						// This is logically not needed, but is a convenience for PanTree
 						addExpWith(node, annotation);
 					}
 					gaf_doc.addGeneAnnotation(annotation);
@@ -102,11 +101,8 @@ public class GafRecorder {
 			Bioentity ancestor = IDmap.inst().getGeneByDbId(ancestor_id);
 			if (ancestor != null) {
 				WithEvidence evidence = new WithEvidence(annotation.getCls(), ancestor);
-				Set<Bioentity> exp_withs = evidence.getExpWiths();
-				for (Bioentity exp_node : exp_withs) {
-					withs.add(exp_node.getId());
-				}
-				annotation.setWithInfos(withs);
+				List<String> exp_withs = evidence.getExpWiths();
+				annotation.setWithInfos(exp_withs);
 			} else {
 				log.debug("Where is the ancestral node for " + node + " to inherit " + annotation.getCls() + '?');
 			}

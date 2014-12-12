@@ -52,28 +52,32 @@ public class GafPropagator {
 	 * @see
 	 */
 	private static void propagate(GafDocument gafdoc) throws IOException {
-		List<GeneAnnotation> annotations = gafdoc.getGeneAnnotations();
+		List<GeneAnnotation> gaf_annotations = gafdoc.getGeneAnnotations();
 
-		HashSet<Bioentity> pruned_list = new HashSet<Bioentity>();
-		HashMap<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<Bioentity, List<GeneAnnotation>>();
+		HashSet<Bioentity> pruned_list = new HashSet<>();
+		HashMap<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
 
 		IDmap mapper = IDmap.inst();
 
-		for (GeneAnnotation annotation : annotations) {
-			Bioentity gaf_node = annotation.getBioentityObject();
+		for (GeneAnnotation gaf_annotation : gaf_annotations) {
+			/*
+			The GAF file has it's own instantiation of the protein nodes
+			Need to be careful not to mix these up
+			 */
+			Bioentity gaf_node = gaf_annotation.getBioentityObject();
 			/*
 			 * Backwards compatibility
 			 */
-			if (annotation.getAssignedBy().equals(Constant.OLD_SOURCE))
-				annotation.setAssignedBy(Constant.PAINT_AS_SOURCE);
+			if (gaf_annotation.getAssignedBy().equals(Constant.OLD_SOURCE))
+				gaf_annotation.setAssignedBy(Constant.PAINT_AS_SOURCE);
 			/*
 			 * Next step is to find the corresponding gene node
 			 */
-			List<Bioentity> seqs = null;
+			List<Bioentity> seqs;
 			Bioentity node = mapper.getGeneByDbId(gaf_node.getId());
 			if (node == null) {
 				seqs = mapper.getGenesBySeqId(gaf_node.getSeqDb() + ':' + gaf_node.getSeqId());
-				if (seqs == null || (seqs != null && seqs.size() == 0)) {
+				if (seqs == null || seqs.size() == 0) {
 					/*
 					 * If a node can't be found it is likely not a big deal
 					 * The only really important nodes are the ancestors from which everything else is propagated.
@@ -82,16 +86,16 @@ public class GafPropagator {
 				}
 			}
 			else {
-				seqs = new ArrayList<Bioentity>();
+				seqs = new ArrayList<>();
 				seqs.add(node);
 			}
-			if (seqs == null || (seqs != null && seqs.size() == 0)) {
+			if (seqs == null || seqs.size() == 0) {
 				if (gaf_node.getDb().equals(Constant.PANTHER_DB)) {
-					LogAlert.logMissing(node, annotation);
+					LogAlert.logMissing(node, gaf_annotation);
 				}
 			} else {
 				for (Bioentity seq_node : seqs) {
-					parseAnnotations(seq_node, annotation, pruned_list, negate_list);
+					parseAnnotations(seq_node, gaf_annotation, pruned_list, negate_list);
 				}
 			} // end for loop going through gaf file contents
 		}
@@ -105,11 +109,11 @@ public class GafPropagator {
 	}
 
 	private static void parseAnnotations (Bioentity node,
-										  GeneAnnotation annotation,
+										  GeneAnnotation gaf_annotation,
 										  HashSet<Bioentity> pruned_list,
 										  HashMap<Bioentity, List<GeneAnnotation>> negate_list) {
 
-		if (annotation.isCut()) {
+		if (gaf_annotation.isCut()) {
 			pruned_list.add(node);
 		}
 		/*
@@ -117,27 +121,30 @@ public class GafPropagator {
 		 * in the tree. These will be propagated from the ancestral nodes
 		 * that were directly annotated
 		 */
-		else if (!annotation.getShortEvidence().equals(Constant.ANCESTRAL_EVIDENCE_CODE)) {
-			boolean negation = annotation.isNegated();
-			if (negation) {
-				List<GeneAnnotation> not_annots = negate_list.get(node);
-				if (not_annots == null) {
-					not_annots = new ArrayList<GeneAnnotation>();
-					negate_list.put(node, not_annots);
+		else {
+			String evi_code = gaf_annotation.getShortEvidence();
+			if (!evi_code.equals(Constant.ANCESTRAL_EVIDENCE_CODE)) {
+				boolean negation = gaf_annotation.isNegated();
+				if (negation) {
+					List<GeneAnnotation> not_annots = negate_list.get(node);
+					if (not_annots == null) {
+						not_annots = new ArrayList<>();
+						negate_list.put(node, not_annots);
+					}
+					not_annots.add(gaf_annotation);
 				}
-				not_annots.add(annotation);
-			}
-			else {
-				String go_id = annotation.getCls();
-				if (OWLutil.inst().isObsolete(go_id)) {
-					LogAlert.logObsolete(node, annotation);
-				} else {
-					if (OWLutil.inst().isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
-						LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node);
-						if (invalid == null) {
-							PaintAction.inst().propagateAssociation(node, go_id, annotation.getLastUpdateDate());
-						} else {
-							LogAlert.logInvalid(node, annotation, invalid);
+				else {
+					String go_id = gaf_annotation.getCls();
+					if (OWLutil.inst().isObsolete(go_id)) {
+						LogAlert.logObsolete(node, gaf_annotation);
+					} else {
+						if (OWLutil.inst().isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node);
+							if (invalid == null) {
+								PaintAction.inst().propagateAssociation(node, go_id, gaf_annotation.getLastUpdateDate());
+							} else {
+								LogAlert.logInvalid(node, gaf_annotation, invalid);
+							}
 						}
 					}
 				}
@@ -166,6 +173,7 @@ public class GafPropagator {
 	}
 
 	private static void applyNots(Map<Bioentity, List<GeneAnnotation>> negate_list) {
+/*
 		Map<Bioentity, List<GeneAnnotation>> toBeSkipped = new HashMap<Bioentity, List<GeneAnnotation>>();
 		for (Bioentity node : negate_list.keySet()) {
 			List<GeneAnnotation> row_list = negate_list.get(node);
@@ -185,56 +193,34 @@ public class GafPropagator {
 						}
 
 					}
-					else {
-						log.debug("Could not parse dbxref from with column \"" + withs + "\"\n");
-					}
 				}
 			}
 		}
+*/
 
 		for (Bioentity node : negate_list.keySet()) {
 			List<GeneAnnotation> row_list = negate_list.get(node);
-			List<GeneAnnotation> skipList = toBeSkipped.get(node);
-			for (GeneAnnotation notted_annot : row_list) {
-				if (skipList != null && skipList.contains(notted_annot)) {
+//			List<GeneAnnotation> skipList = toBeSkipped.get(node);
+			for (GeneAnnotation notted_gaf_annot : row_list) {
+/*				if (skipList != null && skipList.contains(notted_annot)) {
 					continue;
 				}
-				/* 
+	*/			/*
 				 * Need to propagate this change to all descendants
 				 */
 				List<GeneAnnotation> associations = node.getAnnotations();
 				for (GeneAnnotation assoc : associations) {
-					if (assoc.getCls().equals(assoc.getCls())) {
+					if (assoc.getCls().equals(notted_gaf_annot.getCls())) {
 						List<String> all_evidence = assoc.getReferenceIds();
 						/*
 						 * Should just be one piece of evidence
 						 */
 						if (all_evidence.size() == 1) {
-							PaintAction.inst().setNot(assoc, true);
+							PaintAction.inst().setNot(assoc, notted_gaf_annot.getShortEvidence(), true);
 						}
 					}
 				}
 			}
 		}
-	}
-
-	private static Bioentity findWithNode(String with) {
-		Bioentity with_node = null;
-		if (with != null && !with.equals("")) {
-			with_node = IDmap.inst().getGeneByPTNId(with);
-			if (with_node == null) {
-				with_node = IDmap.inst().getGeneByDbId(with);
-			}
-			if (with_node == null) {
-				List<Bioentity> seqs = IDmap.inst().getGenesBySeqId(with);
-				if (seqs != null && seqs.size() > 0) {
-					with_node = seqs.get(0);
-					if (seqs.size() > 1) {
-						log.error("Should handle double seqs better for " + with);
-					}
-				}
-			}
-		}
-		return with_node;
 	}
 }

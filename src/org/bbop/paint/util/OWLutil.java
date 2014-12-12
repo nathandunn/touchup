@@ -23,10 +23,7 @@ package org.bbop.paint.util;
 import org.apache.log4j.Logger;
 import org.obolibrary.oboformat.parser.OBOFormatParserException;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
-import org.semanticweb.owlapi.model.OWLClass;
-import org.semanticweb.owlapi.model.OWLObject;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import owltools.gaf.Bioentity;
@@ -38,10 +35,7 @@ import owltools.graph.OWLGraphWrapper;
 import owltools.io.ParserWrapper;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class OWLutil {
 
@@ -92,7 +86,7 @@ public class OWLutil {
 				if (term_id.equals(go_id)) {
 					annotated_with_term = check;
 				}
-				else if (moreSpecific(term_id, go_id)) {
+				else if (moreSpecific(go_id, term_id)) {
 					annotated_with_term = check;
 				}
 			}
@@ -113,7 +107,7 @@ public class OWLutil {
 	public boolean moreSpecific(String check_term, String against_term) {
 		OWLClass check = go_graph.getOWLClassByIdentifier(check_term);
 		OWLClass against = go_graph.getOWLClassByIdentifier(against_term);
-		Set<OWLObject> broader_terms = go_graph.getAncestors(check);
+		Set<OWLObject> broader_terms = go_graph.getAncestors(check, Collections.<OWLPropertyExpression>emptySet());
 		return broader_terms.contains(against);
 	}
 

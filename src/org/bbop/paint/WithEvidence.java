@@ -24,36 +24,35 @@ import org.bbop.paint.model.Tree;
 import org.bbop.paint.touchup.Brush;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.OWLutil;
-import org.semanticweb.HermiT.model.Term;
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 public class WithEvidence {
 
 	private static Logger log = Logger.getLogger(WithEvidence.class);
 
-	private Set<Bioentity> exp_withs;
-	private Set<Bioentity> notted_withs;
-	private Map<Term, Set<Bioentity>> qual2nodes;
-	private Set<Term> quals;
+	private List<String> exp_withs;
+	private List<String> notted_withs;
+	private int qualifiers;
 
 	public WithEvidence(String go_id, Bioentity node) {
 		initWiths(go_id, node);
 	}
 
-	protected Set<Term> getWithQualifiers() {
-		quals = new HashSet<Term> ();
-		if (qual2nodes != null && !qual2nodes.isEmpty()) {
+	protected int getWithQualifiers() {
+		if (qualifiers > 0) {
 			//			QualifierDialog qual_dialog = new QualifierDialog(GUIManager.getManager().getFrame(), qual2nodes);
 			//			quals = qual_dialog.getQualifiers();
 		}
-		return quals;
+		return qualifiers;
 	}
 
-	public Set<Bioentity> getExpWiths() {
+	public List<String> getExpWiths() {
 		if (exp_withs.size() > 0)
 			return exp_withs;
 		else
@@ -72,8 +71,9 @@ public class WithEvidence {
 	//		return exp_withs.size() > 0 && notted_withs.size() > 0;
 	//	}
 	//
-	public Map<Term, Set<Bioentity>> getTermQualifiers() {
-		return qual2nodes;
+
+	public List <String> getNottedWiths () {
+		return notted_withs;
 	}
 
 	private void initWiths(String go_id, Bioentity node) {
@@ -82,48 +82,42 @@ public class WithEvidence {
 		 */
 		Tree tree = Brush.inst().getTree();
 		List<Bioentity> leaf_list = tree.getLeafDescendants(node);
-		exp_withs = new HashSet<Bioentity> ();
-		notted_withs = new HashSet<Bioentity> ();
-		qual2nodes = new HashMap<Term, Set<Bioentity>>();
+		exp_withs = new ArrayList<>();
+		notted_withs = new ArrayList<> ();
+
+		qualifiers = 0;
 		for (Bioentity leaf : leaf_list) {
 			// Second argument is true because only the experimental codes can be used for inferencing
 			List<GeneAnnotation> exp_annotations = AnnotationUtil.getExpAssociations(leaf);
 			if (exp_annotations != null && !exp_annotations.isEmpty()) {
-				for (Iterator<GeneAnnotation> it_assoc = exp_annotations.iterator(); it_assoc.hasNext() && !exp_withs.contains(leaf);) {
+				for (Iterator<GeneAnnotation> it_assoc = exp_annotations.iterator(); it_assoc.hasNext() && !exp_withs.contains(leaf.getId());) {
 					GeneAnnotation exp_assoc = it_assoc.next();
 					String exp_term = exp_assoc.getCls();
-					boolean add = false;
-					if (exp_term.equals(go_id)) {
-						add = true;
-					} 
-					else {
 						/*
-						 * Is the term in question (go_id) a parental/broader term than 
+						 * Is the term in question (go_id) a parental/broader term than
 						 * the term associated to the leaf node (exp_term)
 						 */
-						add = OWLutil.inst().moreSpecific(exp_term, go_id);
-					}
+					boolean add = (exp_term.equals(go_id)) ? true : OWLutil.inst().moreSpecific(exp_term, go_id);
+
 					if (add) {
-						exp_withs.add(leaf);
+						exp_withs.add(leaf.getId());
 						/*
 						 * The code below is carrying out an unrelated function
 						 * Namely to see if any of the experimental nodes that provide the supporting evidence are qualified
 						 * Doing this here, rather than as a separate function to avoid recursing down the tree twice
 						 */
-						//							if (!name.equals(GOConstants.NOT) && !name.equals(GOConstants.CUT) && qual2nodes != null) {
-						//								Set<GeneNode> qualified_nodes = qual2nodes.get(qual);
-						//								if (qualified_nodes == null) {
-						//									qualified_nodes = new HashSet<GeneNode>();
-						//									qual2nodes.put(qual, qualified_nodes);
-						//								}
-						//								if (!qualified_nodes.contains(leaf)) {
-						//									qualified_nodes.add(leaf);
-						//								}
-						//							} else 
+						if (exp_assoc.hasQualifiers()) {
+							if (exp_assoc.isColocatesWith())
+								qualifiers |= GeneAnnotation.COLOCATES_WITH_MASK;
+							if (exp_assoc.isContributesTo())
+								qualifiers |= GeneAnnotation.CONTRIBUTES_TO_MASK;
+							if (exp_assoc.isIntegralTo())
+								qualifiers |= GeneAnnotation.INTEGRAL_TO_MASK;
+						}
 						if (exp_assoc.isNegated()) {
-							notted_withs.add(leaf);
+							notted_withs.add(leaf.getId());
 							if (exp_term.equals(go_id)) {
-								exp_withs.remove(leaf);
+								exp_withs.remove(leaf.getId());
 							}
 						}
 					}

@@ -143,7 +143,8 @@ public class ParsingHack {
 				node.setDb(dbNameHack(db_source[0]));
 				node.setId(node.getDb() + ':' + dbIdHack(node.getDb(), db_source[1], seq_source[1]));
 				if (!db_source[1].equals(node.getLocalId())) {
-					if (node.getSymbol() == null)
+					if (db_source[1].contains("YMR"))
+					log.info("check it out");					if (node.getSymbol() == null)
 						node.setSymbol(db_source[1]);
 					else
 						node.addSynonym(db_source[1]);

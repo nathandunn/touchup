@@ -28,7 +28,6 @@ import org.bbop.paint.touchup.Constant;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.OWLutil;
 import org.bbop.paint.util.TaxonChecker;
-import org.semanticweb.HermiT.model.Term;
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
 
@@ -90,15 +89,15 @@ public class PaintAction {
 	 */
 	public GeneAnnotation propagateAssociation(Bioentity node, String go_id, String date) {
 		WithEvidence withs = new WithEvidence(go_id, node);
-		Set<Bioentity> exp_withs = withs.getExpWiths();
+		List<String> exp_withs = withs.getExpWiths();
 		boolean negate = withs.isExperimentalNot();
-		Set<Term> quals = withs.getWithQualifiers();
+		int qualifiers = withs.getWithQualifiers();
 
-		Set<Bioentity> top_with = new HashSet<Bioentity> ();
-		top_with.add(node);
-		GeneAnnotation assoc = _propagateAssociation(node, go_id, top_with, exp_withs, negate, date);
+		List<String> top_with = new ArrayList<> ();
+		top_with.add(node.getId());
+		GeneAnnotation assoc = _propagateAssociation(node, go_id, top_with, exp_withs, negate, date, qualifiers);
 
-		List<GeneAnnotation> removed = new ArrayList<GeneAnnotation>();
+		List<GeneAnnotation> removed = new ArrayList<>();
 		removeMoreGeneralTerms(node, go_id, removed);
 
 		LogAction.inst().logAssociation(node, assoc, removed);
@@ -108,26 +107,27 @@ public class PaintAction {
 
 	private GeneAnnotation _propagateAssociation(Bioentity node,
 												 String go_id,
-												 Set<Bioentity> top_with,
-												 Set<Bioentity> exp_withs,
+												 List<String> top_with,
+												 List<String> exp_withs,
 												 boolean negate,
-												 String date) {
-		//			Set<Term> quals) {
-
+												 String date,
+												 int qualifiers) {
+		if (node.getId().contains("16266"))
+			log.info("Check it out");
 		GeneAnnotation top_assoc = null;
 		/**
 		 * Only proceed if this is not one of the original sources of information for this association
 		 * and this node is not yet annotated to either this term
 		 */
-		if (!exp_withs.contains(node) && OWLutil.inst().isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+		if (!exp_withs.contains(node.getId()) && OWLutil.inst().isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
-			if (top_with.contains(node)) {
-				assoc = createAnnotation(node, go_id, date, true, negate, exp_withs);
+			if (top_with.contains(node.getId())) {
+				assoc = createAnnotation(node, go_id, date, true, negate, exp_withs, qualifiers);
 				// not dirty if this is restoring annotations from a saved file
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, date, false, negate, top_with);
+				assoc = createAnnotation(node, go_id, date, false, negate, top_with, qualifiers);
 			}
 
 			/*
@@ -147,7 +147,7 @@ public class PaintAction {
 			if (children != null) {
 				for (Bioentity child : children) {
 					if (!child.isPruned()) {
-						_propagateAssociation(child, go_id, top_with, exp_withs, negate, date);
+						_propagateAssociation(child, go_id, top_with, exp_withs, negate, date, qualifiers);
 					}
 				}
 			}
@@ -155,12 +155,18 @@ public class PaintAction {
 		return top_assoc;
 	}
 
-	private GeneAnnotation createAnnotation(Bioentity node, String go_id,
-											String date, boolean is_MRC, boolean is_directNot, Set<Bioentity> exp_withs) {
+	private GeneAnnotation createAnnotation(Bioentity node,
+											String go_id,
+											String date,
+											boolean is_MRC,
+											boolean is_directNot,
+											List<String> withs,
+											int qualifiers) {
 		GeneAnnotation assoc = new GeneAnnotation();
 		assoc.setBioentity(node.getId());
 		assoc.setBioentityObject(node);
 		assoc.setCls(go_id);
+		assoc.setQualifiers(qualifiers);
 		assoc.addReferenceId(Constant.PAINT_REF + ':' + Brush.inst().getFamily().getFamilyID());
 		assoc.setAspect(OWLutil.inst().getAspect(go_id));
 		assoc.setAssignedBy(Constant.PAINT_AS_SOURCE);
@@ -182,12 +188,7 @@ public class PaintAction {
 		assoc.setDirectNot(is_directNot);
 		String code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
 		assoc.setEvidence(code, null);
-		Set<String> with_strings = new HashSet<String>();
-		for (Bioentity with : exp_withs) {
-			with_strings.add(with.getId());
-		}
-		assoc.setWithInfos(with_strings);
-		// assoc.setGeneProductForm(node.getDb() + ':' + node.getSeqId());
+		assoc.setWithInfos(withs);
 		return assoc;
 	}
 
@@ -209,7 +210,7 @@ public class PaintAction {
 		 * and now the curator is adding a more specific term to a more ancestral branch of the family
 		 */
 		List<GeneAnnotation> current_set = node.getAnnotations();
-		List<GeneAnnotation> removal = new ArrayList<GeneAnnotation> ();
+		List<GeneAnnotation> removal = new ArrayList<> ();
 		if (current_set != null) {
 			for (GeneAnnotation assoc : current_set) {
 				if (AnnotationUtil.isPAINTAnnotation(assoc)) {
@@ -275,55 +276,55 @@ public class PaintAction {
 	//		EventManager.inst().fireAnnotationChangeEvent(new AnnotationChangeEvent(node));
 	//	}
 	//
-	//	private boolean restoreInheritedAssociations(Bioentity node) {
-	//		/*
-	//		 * First collect all of the ancestral annotations that should be applied to this node.
-	//		 */
-	//		Set<GeneAnnotation> ancestral_assocs = new HashSet<GeneAnnotation>();
-	//		LinkDatabase go_root = PaintManager.inst().getGoRoot().getLinkDatabase();
-	//		if (node.getParent() != null) {
-	//			collectAncestorTerms(node.getParent(), ancestral_assocs, go_root);
-	//		}
-	//		GeneProduct gene_product = node.getGeneProduct();
-	//		boolean restoration = false;
-	//		for (GeneAnnotation ancestral_assoc : ancestral_assocs) {
-	//			Term ancestral_term = ancestral_assoc.getTerm();
-	//			LinkedObject obo_ancestral_term = (LinkedObject) GO_Util.inst().getObject(go_root, ancestral_term.getAcc());
-	//			boolean covered = false;
-	//			Set<GeneAnnotation> check_set = gene_product != null ? gene_product.getAssociations() : null;		
-	//			if (check_set != null) {
-	//				for (Iterator<GeneAnnotation> it = check_set.iterator(); it.hasNext() && !covered;) {
-	//					GeneAnnotation assoc = it.next();
-	//					// is first term/argument (from ancestral protein) 
-	//					// is a broader term for the second term/argument (from descendant protein)
-	//					// then there is no need to re-associate the broader term.
-	//					LinkedObject obo_check_term = (LinkedObject) GO_Util.inst().getObject(go_root, assoc.getTerm().getAcc());
-	//					covered |= (obo_check_term == obo_ancestral_term) || TermUtil.isDescendant(obo_ancestral_term, obo_check_term);
-	//				}
-	//				if (!covered) {
-	//					Bioentity top = GO_Util.inst().getBioentity(ancestral_assoc.getGene_product());
-	//					Term term = ancestral_assoc.getTerm();
-	//					WithEvidence withs = new WithEvidence(term, top);
-	//					Set<Bioentity> exp_withs = withs.getExpWiths();
-	//					boolean negate = withs.isExperimentalNot();
-	//					Set<Bioentity> top_with = new HashSet<Bioentity> ();
-	//					top_with.add(top);
-	//					Set<Term> old_quals = ancestral_assoc.getQualifiers();
-	//					Set<Term> quals = new HashSet<Term>();
-	//					for (Term qual : old_quals) {
-	//						String name = qual.getName().toUpperCase();
-	//						if (!name.equals(GOConstants.NOT) && !name.equals(GOConstants.CUT)) {
-	//							quals.add(qual);
-	//						}
-	//					}
-	//					_propagateAssociation(node, term, top_with, exp_withs, negate, ancestral_assoc.getDate(), quals);
-	//					restoration = true;
-	//				}
-	//			}
-	//		}
-	//		return restoration;
-	//	}
-	//
+	private boolean restoreInheritedAssociations(Bioentity node) {
+			/*
+			 * First collect all of the ancestral annotations that should be applied to this node.
+			 */
+		List<GeneAnnotation> ancestral_assocs = new ArrayList<>();
+		if (node.getParent() != null) {
+			collectAncestorTerms(node.getParent(), ancestral_assocs);
+		}
+		boolean restoration = false;
+		for (GeneAnnotation ancestral_assoc : ancestral_assocs) {
+			String ancestral_term = ancestral_assoc.getCls();
+			boolean covered = false;
+			List<GeneAnnotation> check_list = node.getAnnotations();
+			if (check_list != null) {
+				for (int i = 0; i < check_list.size() && !covered; i++) {
+					GeneAnnotation annot = check_list.get(i);
+					// is first term/argument (from ancestral protein)
+					// is a broader term for the second term/argument (from descendant protein)
+					// then there is no need to re-associate the broader term.
+					covered |= annot.getCls().equals(ancestral_term);
+					covered |= OWLutil.inst().moreSpecific(ancestral_term, annot.getCls());
+				}
+				if (!covered) {
+					Bioentity top = ancestral_assoc.getBioentityObject();
+					String term = ancestral_assoc.getCls();
+					WithEvidence withs = new WithEvidence(term, top);
+					List<String> exp_withs = withs.getExpWiths();
+					boolean negate = withs.isExperimentalNot();
+					List<String> top_with = new ArrayList<> ();
+					top_with.add(top.getId());
+
+					int qualifiers = 0;
+					if (ancestral_assoc.isColocatesWith()) {
+						qualifiers |= GeneAnnotation.COLOCATES_WITH_MASK;
+					}
+					if (ancestral_assoc.isContributesTo()) {
+						qualifiers |= GeneAnnotation.CONTRIBUTES_TO_MASK;
+					}
+					if (ancestral_assoc.isIntegralTo()) {
+						qualifiers |= GeneAnnotation.INTEGRAL_TO_MASK;
+					}
+					_propagateAssociation(node, term, top_with, exp_withs, negate, ancestral_assoc.getLastUpdateDate(), qualifiers);
+					restoration = true;
+				}
+			}
+		}
+		return restoration;
+	}
+
 	//	public void redoAssociations(List<LogAssociation> archive, List<LogAssociation> removed) {
 	//		removed.clear();
 	//		for (LogAssociation note : archive) {
@@ -360,44 +361,43 @@ public class PaintAction {
 	//		return assoc;
 	//	}
 	//
-	//	private void collectAncestorTerms(Bioentity ancestral_node, Set<GeneAnnotation> ancestral_collection, LinkDatabase go_root) {
-	//		GeneProduct gene_product = ancestral_node.getGeneProduct();
-	//		Set<GeneAnnotation> ancestral_assocs = gene_product != null ? gene_product.getAssociations() : null;		
-	//		if (ancestral_assocs != null) {
-	//			/*
-	//			 * For each term
-	//			 * If it is a direct annotation
-	//			 * and
-	//			 * If there are no current annotations to that term or any of its child terms
-	//			 * 
-	//			 * Then an association to this term needs to be restored
-	//			 */
-	//			for (GeneAnnotation ancestral_assoc : ancestral_assocs) {
-	//				// Did a curator annotate this ancestor?
-	//				if (ancestral_assoc.isMRC()) {
-	//					// Is a child term of this already in the list?
-	//					// if yes then don't need to add it.
-	//					LinkedObject ancestral_term = (LinkedObject) GO_Util.inst().getObject(go_root, ancestral_assoc.getTerm().getAcc());
-	//					boolean covered = false;
-	//					for (GeneAnnotation check_assoc : ancestral_collection) {
-	//						Term check_term = check_assoc.getTerm();
-	//						// is first term/argument (from ancestral protein) 
-	//						// is a broader term for the second term/argument (from descendant protein)
-	//						// then there is no need to re-associate the broader term.
-	//						LinkedObject dup_check = (LinkedObject) GO_Util.inst().getObject(go_root, check_term.getAcc());
-	//						covered |= TermUtil.isDescendant(ancestral_term, dup_check);
-	//					}
-	//					if (!covered) {
-	//						ancestral_collection.add(ancestral_assoc);
-	//					}
-	//				}
-	//			}
-	//		}	
-	//		if (ancestral_node.getParent() != null) {
-	//			collectAncestorTerms(ancestral_node.getParent(), ancestral_collection, go_root);
-	//		}
-	//	}
-	//
+	private void collectAncestorTerms(Bioentity ancestral_node, List<GeneAnnotation> ancestral_collection) {
+
+		List<GeneAnnotation> ancestral_assocs = ancestral_node.getAnnotations();
+		if (ancestral_assocs != null) {
+				/*
+				 * For each term
+				 * If it is a direct annotation
+				 * and
+				 * If there are no current annotations to that term or any of its child terms
+				 *
+				 * Then an association to this term needs to be restored
+				 */
+			for (GeneAnnotation ancestral_assoc : ancestral_assocs) {
+				// Did a curator annotate this ancestor?
+				if (ancestral_assoc.isMRC()) {
+					// Is a child term of this already in the list?
+					// if yes then don't need to add it.
+					String ancestral_term = ancestral_assoc.getCls();
+					boolean covered = false;
+					for (GeneAnnotation check_assoc : ancestral_collection) {
+						String check_term = check_assoc.getCls();
+						// is first term/argument (from ancestral protein)
+						// is a broader term for the second term/argument (from descendant protein)
+						// then there is no need to re-associate the broader term.
+						covered |= OWLutil.inst().moreSpecific(ancestral_term, check_term);
+					}
+					if (!covered) {
+						ancestral_collection.add(ancestral_assoc);
+					}
+				}
+			}
+		}
+		if (ancestral_node.getParent() != null) {
+			collectAncestorTerms(ancestral_node.getParent(), ancestral_collection);
+		}
+	}
+
 	//	/**
 	//	 * This is called when the remove term button is clicked
 	//	 */
@@ -411,7 +411,7 @@ public class PaintAction {
 	private synchronized GeneAnnotation _removeAssociation(Bioentity node, String go_id) {
 		GeneAnnotation removed = null;
 		List<GeneAnnotation> current = node.getAnnotations();
-		List<GeneAnnotation> revised = new ArrayList<GeneAnnotation>();
+		List<GeneAnnotation> revised = new ArrayList<>();
 		for (GeneAnnotation a : current) {
 			if (!(a.getCls().equals(go_id) && AnnotationUtil.isPAINTAnnotation(a))) {
 				revised.add(a);
@@ -448,7 +448,7 @@ public class PaintAction {
 	//			Set<GeneAnnotation> associations = gene_product.getAssociations();
 	//			for (Iterator<GeneAnnotation> assoc_it = associations.iterator(); assoc_it.hasNext()  && !annotated; ) {
 	//				GeneAnnotation assoc = assoc_it.next();
-	//				annotated = GO_Util.inst().isPAINTAnnotation(assoc);	
+	//				annotated = GO_Util.inst().isPAINTAnnotation(assoc);
 	//			}
 	//		}
 	//		if (recurse && !annotated) {
@@ -463,18 +463,24 @@ public class PaintAction {
 	//		return annotated;
 	//	}
 	//
-	public void setNot(GeneAnnotation assoc, boolean log) {
+	public void setNot(GeneAnnotation assoc, String evi_code, boolean log) {
 		if (!assoc.isNegated()) {
 			assoc.setIsNegated(true);
 			assoc.setDirectNot(true);
+			assoc.setEvidence(evi_code, null);
 			Bioentity node = assoc.getBioentityObject();
 
-			String evi_code = assoc.getShortEvidence();
 			Collection<String> with_str = assoc.getWithInfos();
-
+			with_str.removeAll(with_str);
+			/*
+			If this NOT has been actively added by the user indicate the direct parent
+			*/
 			if (evi_code.equals(Constant.DIVERGENT_EC) || evi_code.equals(Constant.KEY_RESIDUES_EC)) {
-				with_str.add(assoc.getBioentityObject().getId());
+				with_str.add(node.getParent().getId());
 			}
+			/*
+			Keep both the existing evidence, but now also add the negative evidence
+			 */
 			else if (evi_code.equals(Constant.DESCENDANT_EVIDENCE_CODE)) {
 				Tree tree = Brush.inst().getTree();
 				List<Bioentity> leafList = tree.getLeafDescendants(node);
@@ -494,8 +500,11 @@ public class PaintAction {
 			 * Need to propagate this change to all descendants
 			 */
 			propagateNegationDown(node, assoc, true);
-			//if (log)
-			//	LogAction.inst().logNot();
+
+			restoreInheritedAssociations(node);
+
+			if (log)
+				LogAction.inst().logNot(assoc);
 		}
 	}
 
@@ -564,7 +573,7 @@ public class PaintAction {
 			if (child_assoc != null) {
 				child_assoc.setIsNegated(is_not);
 				child_assoc.setDirectNot(false);
-				Collection<String> withs = new ArrayList<String>();
+				Collection<String> withs = new ArrayList<>();
 				withs.add(assoc.getBioentity());
 				child_assoc.setWithInfos(withs);
 				child_assoc.setEvidence(Constant.ANCESTRAL_EVIDENCE_CODE, null);

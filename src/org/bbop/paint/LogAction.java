@@ -88,11 +88,11 @@ public class LogAction {
 	//		}
 	//	}
 	//
-	//	public void logNot(Bioentity node, String go_id, String ev_code) {
-	//		LogEntry entry = new LogEntry(node, go_id, LogEntry.Action.NOT);
-	//		done_log.add(entry);
-	//	}
-	//
+		public void logNot(GeneAnnotation annotation) {
+			LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation);
+			done_log.add(entry);
+		}
+
 	public void logUnNot(Bioentity node, String go_id) {
 		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
 		if (remove != null) {

@@ -350,7 +350,7 @@ public class Panther {
 			IDmap.inst().indexNodeByPTN(node);
 		}
 
-		for (int j = 0; j < row.size(); j++) {
+	for (int j = 0; j < row.size(); j++) {
 			String tag = header.get(j);
 			String value = row.get(j);
 			value = value != null ? value.trim() : Constant.STR_EMPTY;
@@ -368,6 +368,8 @@ public class Panther {
 						node.setNcbiTaxonId(taxon);
 				}
 			} else if (tag.equals(SYMB_TAG)) {
+				if (value.contains("YMR"))
+					log.info("check it out");
 				node.setSymbol(value);
 			}
 		}
