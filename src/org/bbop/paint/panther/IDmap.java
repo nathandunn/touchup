@@ -110,7 +110,7 @@ public class IDmap {
 		String key = node.getId();
 		if (key.indexOf(':') < 0)
 			log.error("Bad key: " + key);
-		if (key != null && key.length() > 0) {
+		if (key.length() > 0) {
 			if (DbIdtoGene.get(key) == null)
 				DbIdtoGene.put(key, node);
 		}

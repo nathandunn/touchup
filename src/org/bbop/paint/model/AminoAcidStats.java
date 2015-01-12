@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Set;
 
 
-public class AminoAcidStats {
-	protected HashMap<String, Double> aaFrequency;
+class AminoAcidStats {
+	private HashMap<String, Double> aaFrequency;
 	
 	protected static Logger log = Logger.getLogger(AminoAcidStats.class);
 

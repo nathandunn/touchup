@@ -37,35 +37,36 @@ import java.util.Map;
 
 public class Preferences {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = -5472475387423113108L;
 
 	private String basedir = "/Users/suzi/projects/go/";
 	private String gafdir = "gene-associations/submission/paint/";
-	//	private String treedir = "data/trees/panther/";
-	private String treedir = "gene-associations/submission/paint/";
+	private String treedir = gafdir; // "data/trees/panther/";
 
-	//	public static final String[] panther_files = { 
-	//		"tree.tree", 
-	//		"attr.tab",
-	//		"tree.mia",
-	//		"tree.wts"
-	//	};
-	//
-	public static final String[] panther_files = { 
+/*
+	public static final String[] panther_files = {
+			"tree.tree",
+			"attr.tab",
+			"tree.mia",
+			"tree.wts"
+	};
+*/
+
+	public static final String[] panther_files = {
 		".tree", 
 		".attr",
 		".msa",
 		".wts"
 	};
 
-	public static final String[] temp_suffix = { 
-		"-new.tree", 
-		"-new.attr",
-		"-new.msa",
-		"-new.wts",
-		"-new.gaf"
+	public static final String[] temp_suffix = {
+			".tree",
+			".attr",
+			".msa",
+			".wts",
+			".gaf"
 	};
 
 	/*
@@ -80,7 +81,7 @@ public class Preferences {
 
 	/**
 	 * Constructor declaration
-	 * @throws Exception 
+	 * @throws Exception
 	 *
 	 *
 	 * @see
@@ -94,8 +95,7 @@ public class Preferences {
 			try {
 				d = new XMLDecoder(new BufferedInputStream(new FileInputStream(
 						Preferences.getPrefsXMLFile())));
-				Preferences p = (Preferences) d.readObject();
-				preferences = (Preferences) p;
+				preferences = (Preferences) d.readObject();
 				d.close();
 			} catch (Exception e) {
 				log.info("Could not read preferences file from "
@@ -107,7 +107,7 @@ public class Preferences {
 		return preferences;
 	}
 
-	protected void writePreferences(Preferences preferences){
+	void writePreferences(Preferences preferences){
 		try {
 			XMLEncoder encoder = new XMLEncoder(new BufferedOutputStream(
 					new FileOutputStream(getPrefsXMLFile())));
@@ -116,12 +116,12 @@ public class Preferences {
 					new DefaultPersistenceDelegate(
 							new String[]{ "name",
 									"style",
-							"size" }) );
+									"size" }) );
 			encoder.setPersistenceDelegate(Color.class,
 					new DefaultPersistenceDelegate(
 							new String[]{ "red",
 									"green",
-							"blue" }) );
+									"blue" }) );
 			encoder.writeObject(preferences);
 			encoder.close();
 		} catch (IOException ex) {
@@ -130,16 +130,15 @@ public class Preferences {
 		}
 	}
 
-	public static File getPrefsXMLFile() {
+	private static File getPrefsXMLFile() {
 		return new File(getPaintPrefsDir(), "preferences.xml");
 	}
 
-	public static File getPaintPrefsDir() {
-		File prefsDir = new File("config");
-		return prefsDir;
+	private static File getPaintPrefsDir() {
+		return new File("config");
 	}
 
-	protected static ClassLoader getExtensionLoader() {
+	private static ClassLoader getExtensionLoader() {
 		return Preferences.class.getClassLoader();
 	}
 
@@ -190,6 +189,10 @@ public class Preferences {
 			}
 		}
 		return taxon_id;
+	}
+
+	public String getSpecies(String taxon_id) {
+		return IDs2taxa.get(taxon_id);
 	}
 
 	private void loadTaxaMapping() {

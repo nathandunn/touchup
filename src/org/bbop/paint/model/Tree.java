@@ -69,7 +69,7 @@ public class Tree extends BioentityDocument implements Serializable {
 		addChildNodesInOrder(root, bioentities);
 		currentNodes = new ArrayList<Bioentity>();
 		terminusNodes = new ArrayList<Bioentity>();
-		initCurrentNodes(false);
+		initCurrentNodes();
 
 	}
 
@@ -149,7 +149,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	protected List<Bioentity> getTopChildren(Bioentity dsn){
+	List<Bioentity> getTopChildren(Bioentity dsn){
 		return getChildren(true, dsn);
 	}
 
@@ -165,7 +165,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	protected List<Bioentity> getBottomChildren(Bioentity dsn){
+	List<Bioentity> getBottomChildren(Bioentity dsn){
 		return getChildren(false, dsn);
 	}
 
@@ -213,7 +213,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 * @param node, where to start from
 	 * @returns Bioentity
 	 */
-	protected Bioentity getTopLeafNode(Bioentity node) {
+	Bioentity getTopLeafNode(Bioentity node) {
 		Bioentity top_leaf = null;
 		if (node != null) {
 			if (!terminusNodes.contains(node) && node.getChildren() != null) {
@@ -225,7 +225,7 @@ public class Tree extends BioentityDocument implements Serializable {
 		return top_leaf;
 	}
 
-	protected Bioentity getBottomLeafNode(Bioentity node) {
+	Bioentity getBottomLeafNode(Bioentity node) {
 		Bioentity bottom_leaf = null;
 		if (node != null) {
 			if (!terminusNodes.contains(node) && node.getChildren() != null) {
@@ -240,7 +240,7 @@ public class Tree extends BioentityDocument implements Serializable {
 
 
 	// Method to set number of leaves in tree
-	private void initCurrentNodes(boolean notify) {
+	private void initCurrentNodes() {
 		currentNodes.clear();
 		terminusNodes.clear();
 		addChildNodesInOrder(root, currentNodes);
@@ -336,7 +336,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	protected void getDescendentList(Bioentity node, List<Bioentity> v){
+	void getDescendentList(Bioentity node, List<Bioentity> v){
 		if (!node.isTerminus()) {
 			List<Bioentity>  children = node.getChildren();
 			for (int i = 0; i < children.size(); i++){

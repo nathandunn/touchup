@@ -20,14 +20,17 @@
 package org.bbop.paint.model;
 
 import org.bbop.paint.gaf.GafRecorder;
-import org.bbop.paint.panther.Panther;
+import org.bbop.paint.panther.PantherAdapter;
+import org.bbop.paint.panther.PantherFileAdapter;
+import org.bbop.paint.panther.PantherServer.PantherServerAdapter;
+import org.bbop.paint.touchup.Constant;
 
 import java.io.Serializable;
 
 public class Family implements Serializable {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
@@ -35,45 +38,41 @@ public class Family implements Serializable {
 	 * Pretty much the straight content of the files or the database transfer
 	 * This is the raw data which is parsed
 	 */
-	private String	familyID;
+	private String family_name;
+	private PantherAdapter adapter;
 	private Tree tree;
-	private MSA msa;
-	private Panther adapter;
 
 	public Family() {
 	}
 
-	public boolean fetch(String family_name) {
+	public boolean fetch(String family_name, boolean from_server) {
 		/*
 		 * Assumption is that all of the PANTHER families are present in files locally
 		 * The update of the families is handled asynchronously and should hopefully ensure
 		 * that the more up-to-date versions are available
 		 */
-		setFamilyID(family_name);
+		setFamily_name(family_name);
 		tree = null;
-		adapter = new Panther();
+	    if (from_server) {
+			adapter = new PantherServerAdapter();
+		} else {
+			adapter = new PantherFileAdapter();
+		}
 		tree = adapter.fetchTree(family_name);
-		msa = adapter.fetchMSA(family_name);
 
 		if (tree == null) {
-			setFamilyID(null);
-			return false;
+			setFamily_name(null);
 		}
 		// Force garbage collection after a new book is opened
 		System.gc();
-		return true;
+		return (tree != null);
 	}
 
 	public boolean save() {
 		boolean saved = adapter.saveFamily(this);
+
 		GafRecorder.record(this);
 
-		/* 
-		 * record experimental annotations too
-		 * this will make it possible to work offline
-		 */
-		//    	saved &= GafAdapter.exportAnnotations(paintfile);
-		//    	saved &= EvidenceAdapter.exportEvidence(paintfile, "");
 		return saved;
 	}
 
@@ -81,16 +80,16 @@ public class Family implements Serializable {
 		return tree;
 	}
 
-	public void setTree(Tree tree) {
-		this.tree = tree;
+	public String getFamily_name() {
+		return family_name;
 	}
 
-	public String getFamilyID() {
-		return familyID;
+	private void setFamily_name(String family_name) {
+		this.family_name = family_name;
 	}
 
-	public void setFamilyID(String familyID) {
-		this.familyID = familyID;
+	public String getReference() {
+		return Constant.PAINT_REF + ':' + family_name.substring("PTHR".length());
 	}
-
 }
+

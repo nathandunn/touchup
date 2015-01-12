@@ -21,19 +21,28 @@
 package org.bbop.paint.touchup;
 
 import org.apache.log4j.Logger;
-import org.bbop.paint.LogAction;
-import org.bbop.paint.LogAlert;
+import org.bbop.paint.gaf.GafPropagator;
+import org.bbop.paint.model.Family;
+import org.bbop.paint.model.History;
+import org.bbop.paint.panther.IDmap;
+import org.bbop.paint.util.AnnotationUtil;
+import org.bbop.paint.util.FileUtil;
 
 import javax.swing.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
 	protected Thread runner;
 
 	private static String[] args;
+
+	private Family family;
+	private final boolean from_server = true;
 
 	private static final Logger log = Logger.getLogger(Main.class);
 
@@ -45,7 +54,7 @@ public class Main {
 	 *
 	 * @see
 	 */
-	public static void main(String[] args) {
+	public static void main(final String[] args) {
 		Main.args = args;
 		Main theRunner = new Main();
 
@@ -58,28 +67,21 @@ public class Main {
 		});
 	}
 
-	Runnable mainRun =
+	private final Runnable mainRun =
 			new Runnable() {
 		// this thread runs in the AWT event queue
 		public void run() {
-			Brush paintbrush = Brush.inst();
 			if (args.length == 0) {
 				System.err.println("Please provide a family ID.");
 				System.exit(1);
 			}
-			String family_name = args[0];
+
 			if (args.length > 1)
 				Preferences.inst().setBasedir(args[1]);
 			try {
-				if (paintbrush.loadPaint(family_name)) {
-					paintbrush.savePaint();
-					LogAction.report(family_name);
-					LogAlert.report(family_name);
-				} 
-				else {
-					log.error("Unable to load " + family_name);
-				}
-				System.exit(0);
+				int family_count = touchup(args[0]);
+				log.info("Touched up " + family_count + " PAINT families");
+			System.exit(0);
 			}
 			catch (Exception e) { // should catch RuntimeException
 				e.printStackTrace();
@@ -87,4 +89,73 @@ public class Main {
 			}
 		}
 	};
+
+	private int touchup(String arg) {
+		int family_count = 0;
+		File f = new File(arg);
+		List<String> families;
+
+		if (f.isDirectory()) {
+			String [] files = f.list();
+			families = new ArrayList();
+			for (String file : files) {
+				if (file.startsWith("PTHR")) {
+					families.add(file);
+				}
+			}
+		} else if (f.canRead()) {
+			families = FileUtil.readFile(arg);
+			for (int i = families.size() - 1; i <= 0; i--) {
+				// allow for commenting out lines in the input file
+				if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {
+					families.remove(i);
+				}
+			}
+		} else {
+			families = new ArrayList<>();
+			families.add(arg);
+		}
+		log.info(families.size() + " families to touch up");
+		for (String family_name : families) {
+
+			log.info("Touching up " + family_name + " (" + (families.indexOf(family_name)+1) + " of " + families.size() + ")");
+			if (family_name.length() > 0 && loadPaint(family_name)) {
+				savePaint();
+				History.write("TouchUp 1.0", family_name);
+				family_count++;
+			} else {
+				log.error("Unable to load " + family_name);
+			}
+		}
+		return family_count;
+	}
+
+	private boolean loadPaint(String family_name) {
+		IDmap.inst().clearGeneIDs();
+		family = new Family();
+		boolean loaded = family.fetch(family_name, from_server);
+		if (loaded) {
+			AnnotationUtil.collectExpAnnotations(family);
+
+			/*
+			 * The file may be null, in which case the following two methods
+			 * simply return
+			 */
+			History.importPrior(family_name);
+
+			GafPropagator.importAnnotations(family);
+
+		} else {
+			family = null;
+		}
+		return family != null;
+	}
+
+	private void savePaint() {
+		if (family != null) {
+			// Need to add the supporting experimental annotations to the withs
+			family.save();
+		}
+	}
+
 }

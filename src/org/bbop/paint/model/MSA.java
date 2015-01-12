@@ -20,10 +20,12 @@
 package org.bbop.paint.model;
 
 import org.apache.log4j.Logger;
-import org.bbop.paint.touchup.Brush;
 import owltools.gaf.Bioentity;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class declaration
@@ -35,19 +37,15 @@ import java.util.*;
 public class MSA {
 	private static Logger log = Logger.getLogger(MSA.class);
 
-	private AminoAcidStats[] aminoAcidStats;
-	private int seq_length;
-	private int hmm_length;
+	private final int seq_length;
 
-	private Map <Bioentity, String> full_sequences;
-	private Map <Bioentity, String> condensed_sequences;
-	private Map <Bioentity, Double> weights;
+	private final Map <Bioentity, String> full_sequences;
+	private final Map <Bioentity, String> condensed_sequences;
+	private final Map <Bioentity, Double> weights;
 
 	private final int    SEGMENTS = 25;
-	private final int    SUB_SEGMENTS = 5;
 
-	private char [] full_ruler;
-	private char [] condense_ruler;		
+	private char [] condense_ruler;
 
 	/**
 	 * Constructor declaration
@@ -63,7 +61,7 @@ public class MSA {
 		this.full_sequences = sequences;
 		this.seq_length = seq_length;
 		this.weights = wts;
-		full_ruler = setRuler(seq_length);
+		char[] full_ruler = setRuler(seq_length);
 		Set<Bioentity> nodes = full_sequences.keySet();
 		condensed_sequences = new HashMap<Bioentity, String>();
 		condense_ruler = setCondensedSequences(nodes);
@@ -75,9 +73,9 @@ public class MSA {
 	/**
 	 * Saves information about the counts at each position of the sequence
 	 */
-	private double initColumnWeights(boolean weighted, String sequence) {
-		/* this keeps the overall totals for each count of an AA in a column */
-		aminoAcidStats = new AminoAcidStats[sequence.length()];
+/*	private double initColumnWeights(boolean weighted, String sequence) {
+		*//* this keeps the overall totals for each count of an AA in a column *//*
+		AminoAcidStats[] aminoAcidStats = new AminoAcidStats[sequence.length()];
 
 		// Calculate total weight of sequences for all nodes
 		double totalWt = 0;
@@ -92,13 +90,10 @@ public class MSA {
 			for (Bioentity node : contents) {
 				if (column == 0)
 					totalWt += weights.get(node).doubleValue();
-				/*
+				*//*
 				 * this is the aligned sequence, with dashes inserted, so all of them are the same length
 				 * and so we don't have to worry about which column we are counting
-				 */
-				if (sequence == null) {
-					continue;
-				}
+				 *//*
 				char aa = sequence.charAt(column);
 				double align_frequency = alignStats.getAAFrequency(aa);
 				if (weighted) {
@@ -116,6 +111,7 @@ public class MSA {
 		return !weights.isEmpty();
 	}
 
+	*/
 	private char [] setRuler(int seqMaxLen) {
 		char [] ruler;
 		if (seqMaxLen < SEGMENTS){
@@ -132,6 +128,7 @@ public class MSA {
 					ruler[i] = '|';
 				}
 				else {
+					int SUB_SEGMENTS = 5;
 					if (0 == (i + 1) % SUB_SEGMENTS) {
 						ruler[i] = '\'';
 					}
@@ -157,7 +154,7 @@ public class MSA {
 		int gap_size = 0;
 		boolean column_needed;
 		StringBuffer ruler = new StringBuffer();
-		hmm_length = 0;
+		int hmm_length = 0;
 		
 		/* 
 		 * Working through the primary sequence one column (amino acid) at a time

@@ -41,11 +41,11 @@ public class TaxonChecker {
 	//	private static final String TAXON_SERVER_URL = "http://localhost:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
 	//	private static final String TAXON_SERVER_URL = "http://toaster.lbl.gov:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
 	//	id=GO:0007400&id=GO:0048658&id=GO:0090127&taxid=NCBITaxon:3702&taxid=NCBITaxon:9606&
-	private static final String TAXON_SERVER_URL = "http://toaster.lbl.gov:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
+	private static final String TAXON_SERVER_URL = "http://owlservices.berkeleybop.org/isClassApplicableForTaxon?format=txt&idstyle=obo";
 
 	private static boolean not_running = false;
 
-	private static Logger log = Logger.getLogger(TaxonChecker.class);
+	private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
 	public static boolean checkTaxons(Bioentity node, String go_id) {
 		if (taxon_check == null) {
@@ -75,7 +75,7 @@ public class TaxonChecker {
 				in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 				String inputLine;
 				while ((inputLine = in.readLine()) != null) {
-					taxon_reply.append(inputLine + ' ');
+					taxon_reply.append(inputLine).append(' ');
 				}
 				in.close();
 				okay = !(taxon_reply.toString().contains("false"));
@@ -102,7 +102,7 @@ public class TaxonChecker {
 				taxon_id = taxon_id.substring(separator + 1);
 			}
 			taxon_id = "NCBITaxon:" + taxon_id;
-			taxon_query.append("&taxid=" + taxon_id);
+			taxon_query.append("&taxid=").append(taxon_id);
 			return true;
 		}
 		else

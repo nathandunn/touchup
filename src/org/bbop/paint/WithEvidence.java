@@ -21,7 +21,6 @@ package org.bbop.paint;
 
 import org.apache.log4j.Logger;
 import org.bbop.paint.model.Tree;
-import org.bbop.paint.touchup.Brush;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.OWLutil;
 import owltools.gaf.Bioentity;
@@ -40,8 +39,8 @@ public class WithEvidence {
 	private List<String> notted_withs;
 	private int qualifiers;
 
-	public WithEvidence(String go_id, Bioentity node) {
-		initWiths(go_id, node);
+	public WithEvidence(Tree tree, Bioentity node, String go_id) {
+		initWiths(tree, node, go_id);
 	}
 
 	protected int getWithQualifiers() {
@@ -76,11 +75,10 @@ public class WithEvidence {
 		return notted_withs;
 	}
 
-	private void initWiths(String go_id, Bioentity node) {
+	private void initWiths(Tree tree, Bioentity node, String go_id) {
 		/*
 		 * First gather all of the gene nodes leaves that may have provided this term
 		 */
-		Tree tree = Brush.inst().getTree();
 		List<Bioentity> leaf_list = tree.getLeafDescendants(node);
 		exp_withs = new ArrayList<>();
 		notted_withs = new ArrayList<> ();
@@ -97,7 +95,7 @@ public class WithEvidence {
 						 * Is the term in question (go_id) a parental/broader term than
 						 * the term associated to the leaf node (exp_term)
 						 */
-					boolean add = (exp_term.equals(go_id)) ? true : OWLutil.inst().moreSpecific(exp_term, go_id);
+					boolean add = (exp_term.equals(go_id)) || OWLutil.moreSpecific(exp_term, go_id);
 
 					if (add) {
 						exp_withs.add(leaf.getId());

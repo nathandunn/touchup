@@ -12,12 +12,11 @@ import owltools.gaf.GeneAnnotation;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 public class AnnotationUtil {
 
-	private static Logger log = Logger.getLogger("AnnotationUtil.class");
+	private static final Logger log = Logger.getLogger("AnnotationUtil.class");
 
 	public static void collectExpAnnotations(Family family) {
 		Tree tree = family.getTree();
@@ -53,15 +52,14 @@ public class AnnotationUtil {
 
 	private static void experimentalAnnotationsFilter(Bioentity node, List<GeneAnnotation> all_annotations) {
 		if (all_annotations != null) {
-			List<GeneAnnotation> exp_annotations = new ArrayList<GeneAnnotation>();
+			List<GeneAnnotation> exp_annotations = new ArrayList<>();
 			for (GeneAnnotation annotation : all_annotations) {
 				String eco = annotation.getShortEvidence();
 				if (Constant.EXP_strings.contains(eco)) {
 					exp_annotations.add(annotation);
 					Collection<String> withs = annotation.getWithInfos();
 					if (withs != null) {
-						for (Iterator<String> wit = withs.iterator(); wit.hasNext();) {
-							String with = wit.next();
+						for (String with : withs) {
 							if (with.startsWith(Constant.PANTHER_DB))
 								withs.remove(with);
 						}
@@ -84,7 +82,7 @@ public class AnnotationUtil {
 
 	public static List<GeneAnnotation> getExpAssociations(Bioentity leaf) {
 		List<GeneAnnotation> annotations = leaf.getAnnotations();
-		List<GeneAnnotation> exp_annotations = new ArrayList<GeneAnnotation>();
+		List<GeneAnnotation> exp_annotations = new ArrayList<>();
 		if (annotations != null) {
 			for (GeneAnnotation annotation : annotations) {
 				String eco = annotation.getShortEvidence();
@@ -112,8 +110,10 @@ public class AnnotationUtil {
 		return (source.equals(Constant.PAINT_AS_SOURCE) || source.equals(Constant.OLD_SOURCE));
 	}
 
+/*
 	public static boolean isExperimental(GeneAnnotation annotation) {
 		return Constant.EXP_strings.contains(annotation.getShortEvidence());
 	}
+*/
 
 }

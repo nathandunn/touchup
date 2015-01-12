@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileUtil {
-	protected static Logger log = Logger.getLogger(FileUtil.class.getName());
+	private static final Logger log = Logger.getLogger(FileUtil.class.getName());
 
 	public static List<String> readFile(String fileName) {
-		List<String> contents = new ArrayList<String>();
+		List<String> contents = new ArrayList<>();
 		BufferedReader bufReader = null;
 		String line;
 		boolean error = false;
@@ -42,7 +42,7 @@ public class FileUtil {
 
 			}
 		}
-		if (true == error) {
+		if (error) {
 			return null;
 		}
 		return contents;
@@ -53,19 +53,17 @@ public class FileUtil {
 	 * @throws IOException 
 	 */
 	public static void writeFile(String fileName, List<String> contents) throws IOException {
-		BufferedWriter bufWriter = null;
+		BufferedWriter bufWriter;
 
 		bufWriter = new BufferedWriter(new FileWriter(fileName));
 		for (String line : contents) {
-			if (line.charAt(line.length() - 1) == '\n')
+			if (line.length() > 0 && line.charAt(line.length() - 1) == '\n')
 				bufWriter.write(line);
 			else
 				 bufWriter.write(line + '\n');
 		}
 
-		if (null != bufWriter) {
-			bufWriter.close();
-		}
+		bufWriter.close();
 
 	}
 

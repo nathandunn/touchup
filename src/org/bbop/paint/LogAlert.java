@@ -21,18 +21,13 @@
 package org.bbop.paint;
 
 import org.apache.log4j.Logger;
-import org.bbop.paint.touchup.Preferences;
-import org.bbop.paint.util.FileUtil;
+import org.bbop.paint.model.History;
+import org.bbop.paint.util.OWLutil;
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 public class LogAlert {
 	/**
@@ -44,7 +39,7 @@ public class LogAlert {
 	private static List<LogEntry> missing;
 	private static List<LogEntry> obsoletes;
 
-	private static Logger logger = Logger.getLogger(LogAlert.class);
+	private static final Logger logger = Logger.getLogger(LogAlert.class);
 
 	public static void logMissing(Bioentity node, GeneAnnotation assoc) {
 		if (missing == null) {
@@ -70,48 +65,49 @@ public class LogAlert {
 		obsoletes.add(entry);
 	}
 
-	public static void report(String family_name) {
-		String family_dir = Preferences.inst().getTreedir() + family_name + '/';
-
-		boolean ok = FileUtil.validPath(family_dir);
-		String logFileName = family_dir + File.separator + family_name + ".rpt";
-		List<String> contents = new ArrayList<String>();
-		if (invalids != null && missing != null && obsoletes != null) {
-			contents.add("Annotation updates for " + dateNow());
+	public static void report(List<String> contents) {
+		if (invalids != null || missing != null || obsoletes != null) {
+			contents.add(History.WARNING_SECTION);
 			if (invalids != null) {
+				contents.add("## The underlying experimental annotations used as evidence no longer exist.");
 				for (LogEntry entry : invalids) {
-					contents.add("INVALID & REMOVED\n");
-					contents.add(entry.getNode().getDBID() + " to " + entry.getLoggedAssociation().getCls() + ":\t" + entry.getNotes());
+					GeneAnnotation annotation = entry.getLoggedAssociation();
+					contents.add(annotation.getLastUpdateDate() + ": " +
+							History.makeLabel(entry.getNode()) + " to " +
+							OWLutil.getTermLabel(annotation.getCls()) +
+							" (" + annotation.getCls() + ") " + " - " + entry.getNotes());
 				}
 			}
 			if (missing != null) {
+				contents.add("## The ancestral node is no longer a member of this family");
 				for (LogEntry entry : missing) {
-					contents.add("NODES NO LONGER IN " + family_name + " TREE\n");
-					contents.add(entry.getNode().getDBID() + " to " + entry.getLoggedAssociation().getCls());
+					GeneAnnotation annotation = entry.getLoggedAssociation();
+					if (annotation.isCut())
+						contents.add(annotation.getLastUpdateDate() + ": " +
+								entry.getNode().getDBID() +
+								" was cut, but is now officially pruned from tree");
+					else
+						contents.add(annotation.getLastUpdateDate() + ": " +
+								entry.getNode().getDBID() +
+								" can not support previous annotation to " +
+								OWLutil.getTermLabel(annotation.getCls()) +
+								" (" + annotation.getCls() + ") ");
 				}
 			}
 			if (obsoletes != null) {
+				contents.add("## The terms that were annotated to have been made obsolete");
 				for (LogEntry entry : obsoletes) {
-					contents.add("OBSOLETE TERM ANNOTATIONS REMOVED\n");
-					contents.add(entry.getNode().getDBID() + " to " + entry.getLoggedAssociation().getCls());
+					GeneAnnotation annotation = entry.getLoggedAssociation();
+					contents.add(annotation.getLastUpdateDate() + ": " +
+							entry.getNode().getDBID() +
+							" removed annotation to obsolete term - " +
+							OWLutil.getTermLabel(annotation.getCls()) +
+							" (" + annotation.getCls() + ") ");
 				}
 			}
-			try {
-				FileUtil.writeFile(logFileName, contents);
-			} catch (IOException e) {
-				logger.error("Unable to log updates for " + family_name);
-				logger.error(e.getMessage());
-			}
+			contents.add("");
 		}
 	}
 
-	private static String dateNow() {
-		long timestamp = System.currentTimeMillis();
-		/* Date appears to be fixed?? */
-		Date when = new Date(timestamp);
-		SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy");
-		sdf.setTimeZone(TimeZone.getDefault()); // local time
-		return sdf.format(when);
-	}
 
 }

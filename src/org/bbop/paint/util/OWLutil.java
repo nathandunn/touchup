@@ -23,11 +23,13 @@ package org.bbop.paint.util;
 import org.apache.log4j.Logger;
 import org.obolibrary.oboformat.parser.OBOFormatParserException;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
-import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.OWLPropertyExpression;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import owltools.gaf.Bioentity;
-import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.DefaultAspectProvider;
 import owltools.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
@@ -43,22 +45,12 @@ public class OWLutil {
 
 	private static OWLGraphWrapper go_graph;
 	private static AspectProvider aspect_provider;
-	
-	private static OWLutil INSTANCE = null;
 
-	private static final long serialVersionUID = 1L;
-
-	private OWLutil() {
-		// Exists only to defeat instantiation.
-	}
-
-	public static synchronized OWLutil inst() {
-		if (INSTANCE == null) {
-			INSTANCE = new OWLutil();
-			// load default template
-			ParserWrapper pw = new ParserWrapper();			
-			String iriString = "http://purl.obolibrary.org/obo/go.owl";
+	private static synchronized void initialize() {
+		if (go_graph == null) {
 			try {
+				ParserWrapper pw = new ParserWrapper();
+				String iriString = "http://purl.obolibrary.org/obo/go.owl";
 				go_graph = new OWLGraphWrapper(pw.parse(iriString));
 			} catch (OWLOntologyCreationException e) {
 				e.printStackTrace();
@@ -66,9 +58,8 @@ public class OWLutil {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}			
+			}
 		}
-		return INSTANCE;
 	}
 
 	/*
@@ -77,7 +68,8 @@ public class OWLutil {
 	 * or the existing association is to a more specific term
 	 * then return that association
 	 */
-	public GeneAnnotation isAnnotatedToTerm(List<GeneAnnotation> all_annotations, String term_id) {
+	public static GeneAnnotation isAnnotatedToTerm(List<GeneAnnotation> all_annotations, String term_id) {
+		initialize();
 		GeneAnnotation annotated_with_term = null;
 		if (all_annotations != null && term_id != null) {
 			for (int i = 0; i < all_annotations.size() && annotated_with_term == null; i++) {
@@ -94,28 +86,33 @@ public class OWLutil {
 		return annotated_with_term;
 	}
 
-	public boolean isObsolete(String go_id) {
-		OWLClass term = go_graph.getOWLClassByIdentifier(go_id);						
+	public static boolean isObsolete(String go_id) {
+		initialize();
+		OWLClass term = go_graph.getOWLClassByIdentifier(go_id);
 		return go_graph.isObsolete(term);
 	}
 
-	public String getTermLabel(String go_id) {
-		OWLClass term = go_graph.getOWLClassByIdentifier(go_id);						
+	public static String getTermLabel(String go_id) {
+		initialize();
+		OWLClass term = go_graph.getOWLClassByIdentifier(go_id);
 		return go_graph.getLabelOrDisplayId(term);
 	}
 
-	public boolean moreSpecific(String check_term, String against_term) {
+	public static boolean moreSpecific(String check_term, String against_term) {
+		initialize();
 		OWLClass check = go_graph.getOWLClassByIdentifier(check_term);
 		OWLClass against = go_graph.getOWLClassByIdentifier(against_term);
 		Set<OWLObject> broader_terms = go_graph.getAncestors(check, Collections.<OWLPropertyExpression>emptySet());
 		return broader_terms.contains(against);
 	}
 
-	public boolean isBroader(String check_term, String against_term) {
+	public static boolean isBroader(String check_term, String against_term) {
+		initialize();
 		return moreSpecific(against_term, check_term);
 	}
 
-	public boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
+	public static boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
+		initialize();
 		List<GeneAnnotation> associations = AnnotationUtil.getExpAssociations(node);
 		OWLClass annot_term = go_graph.getOWLClassByIdentifier(go_id);
 		Set<OWLObject> broader_terms = go_graph.getAncestors(annot_term);
@@ -144,7 +141,8 @@ public class OWLutil {
 		return all_broader;
 	}
 
-	public String getAspect(String term_id) {
+	public static String getAspect(String term_id) {
+		initialize();
 		if (aspect_provider == null) {
 			Map<String, String> mappings = new HashMap<String, String>();
 			mappings.put("GO:0008150", "P");
@@ -158,11 +156,11 @@ public class OWLutil {
 
 			aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings , reasoner);
 		}
-		String aspect = aspect_provider.getAspect(term_id);
-		return aspect;
+		return aspect_provider.getAspect(term_id);
 	}
-	
-	private void importGAF(GafDocument gafdoc) throws IOException {
+
+	private static void importGAF() throws IOException {
+		initialize();
 		ParserWrapper pw = new ParserWrapper();
 
 		String iriString = "http://purl.obolibrary.org/obo/go.owl";
@@ -183,7 +181,7 @@ public class OWLutil {
 			// go_graph.getIncomingEdgesClosure
 
 			// get all (declared) relationship types
-			Set<OWLObjectProperty> properties = go_graph.getSourceOntology().getObjectPropertiesInSignature(true);
+			go_graph.getSourceOntology().getObjectPropertiesInSignature(true);
 
 			// How to create a reasoner?
 			// Step 1: create a factory, that how you choose the implementation
@@ -191,7 +189,7 @@ public class OWLutil {
 			// Step 2: Create the reasoner from the ontology
 			OWLReasoner reasoner = reasonerFactory.createReasoner(go_graph.getSourceOntology());
 			// Step 3: use it
-			Set<OWLClass> descendants = reasoner.getSubClasses(term, false).getFlattened();
+			reasoner.getSubClasses(term, false).getFlattened();
 
 
 			// Step 4 (after you are done): clean up
@@ -204,5 +202,5 @@ public class OWLutil {
 			e.printStackTrace();
 		}
 	}
-	
+
 }

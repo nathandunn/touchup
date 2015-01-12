@@ -35,13 +35,14 @@ public class LogEntry {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private static Logger log = Logger.getLogger(LogEntry.class);
+	private static final Logger log = Logger.getLogger(LogEntry.class);
 
-	private LOG_ENTRY_TYPE type;
+	private final LOG_ENTRY_TYPE type;
 
-	private Bioentity node;
-	private GeneAnnotation assoc;
+	private final Bioentity node;
+	private final GeneAnnotation assoc;
 	private List<GeneAnnotation> removed;
+	private String date;
 
 	public enum LOG_ENTRY_TYPE {
 		ASSOC,
@@ -67,6 +68,7 @@ public class LogEntry {
 		this.node = node;
 		this.assoc = assoc;
 		this.removed = removed;
+		this.date = assoc.getLastUpdateDate();
 		this.type = LOG_ENTRY_TYPE.ASSOC;
 	}
 
@@ -76,6 +78,7 @@ public class LogEntry {
 	public LogEntry(Bioentity node, GeneAnnotation assoc) {
 		this.node = node;
 		this.assoc = assoc;
+		this.date = assoc.getLastUpdateDate();
 		this.removed = null;
 		this.type = LOG_ENTRY_TYPE.NOT;
 	}
@@ -84,10 +87,11 @@ public class LogEntry {
 	 * pruned list is long those with direction annotations to the pruned node
 	 * or directly 'not'ted.
 	 */
-	public LogEntry(Bioentity node, List<GeneAnnotation> pruned) {
+	public LogEntry(Bioentity node, String date, List<GeneAnnotation> pruned) {
 		this.node = node;
 		this.assoc = null;
 		this.removed = pruned;
+		this.date = date;
 		this.type = LOG_ENTRY_TYPE.PRUNE;
 	}
 
@@ -95,6 +99,7 @@ public class LogEntry {
 		this.node = node;
 		this.assoc = assoc;
 		this.type = action;
+		this.date = assoc.getLastUpdateDate();
 	}
 
 	public String getTerm() {
@@ -107,6 +112,10 @@ public class LogEntry {
 
 	public Bioentity getNode() {
 		return node;
+	}
+
+	public String getDate() {
+		return this.date;
 	}
 
 	public GeneAnnotation getLoggedAssociation() {
@@ -136,7 +145,7 @@ public class LogEntry {
 			return null;
 	}
 
-	protected String getNotes() {
+	String getNotes() {
 		String note = "";
 		switch (getAction()) {
 		case ALREADY_ASSOCIATED: {

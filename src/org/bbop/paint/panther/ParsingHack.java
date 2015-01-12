@@ -12,9 +12,9 @@ import java.util.Vector;
 
 public class ParsingHack {
 
-	private static Logger log = Logger.getLogger(ParsingHack.class);
+	private static final Logger log = Logger.getLogger(ParsingHack.class);
 
-	protected static String dbNameHack(String name) {
+	private static String dbNameHack(String name) {
 		/* The GO database is not using the suffix */
 		String revision = name;
 		if (name.equals("UniProtKB/Swiss-Prot") ||
@@ -58,7 +58,7 @@ public class ParsingHack {
 	private static final String DELIM_QUOTE = "'";
 	private static final String DELIM_NEW_LINE = "\n";
 
-	protected static List<List<String>> parsePantherAttr(List<String> tableContents) {
+	public static List<List<String>> parsePantherAttr(List<String> tableContents) {
 		if (null == tableContents) {
 			return null;
 		}
@@ -88,7 +88,7 @@ public class ParsingHack {
 		return rows;
 	}
 
-	protected static Bioentity findThatNode(String row) {
+	static Bioentity findThatNode(String row) {
 		IDmap mapper = IDmap.inst();
 		Bioentity gene = null;
 		String paint_id = parseANid(row);
@@ -102,7 +102,7 @@ public class ParsingHack {
 			String id =dbIdHack(db, db_source[1], seq_source[1]);
 			gene = mapper.getGeneByDbId(db + ':' + id);
 			if (gene == null) {
-				if (seq_source != null && seq_source.length >= 2) {
+				if (seq_source.length >= 2) {
 					List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
 					if (genes != null) {
 						for (Bioentity check : genes) {
@@ -119,7 +119,7 @@ public class ParsingHack {
 		return gene;
 	}
 
-	protected static void parseIDstr(Bioentity node, String name) {
+	static void parseIDstr(Bioentity node, String name) {
 		String paint_id = parseANid(name);
 		if (paint_id != null) 
 			node.setPaintId(paint_id);
@@ -143,8 +143,7 @@ public class ParsingHack {
 				node.setDb(dbNameHack(db_source[0]));
 				node.setId(node.getDb() + ':' + dbIdHack(node.getDb(), db_source[1], seq_source[1]));
 				if (!db_source[1].equals(node.getLocalId())) {
-					if (db_source[1].contains("YMR"))
-					log.info("check it out");					if (node.getSymbol() == null)
+					if (node.getSymbol() == null)
 						node.setSymbol(db_source[1]);
 					else
 						node.addSynonym(db_source[1]);
@@ -158,7 +157,7 @@ public class ParsingHack {
 		}
 	}
 
-	protected static List<String> tokenize(String input, String delim) {
+	static List<String> tokenize(String input, String delim) {
 		List<String> v = new ArrayList<String>();
 		StringTokenizer tk = new StringTokenizer(input, delim);
 		while (tk.hasMoreTokens()) {
@@ -198,8 +197,7 @@ public class ParsingHack {
 		if (row.charAt(row.length() - 1) == ';') {
 			row = row.substring(0, row.length() - 1);
 		}
-		String [] parts = row.split(Constant.PIPE);
-		return parts;
+		return row.split(Constant.PIPE);
 	}
 
 	private static String [] getDBparts(String row) {

@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 import org.bbop.paint.LogAlert;
 import org.bbop.paint.LogEntry;
 import org.bbop.paint.PaintAction;
+import org.bbop.paint.model.Family;
 import org.bbop.paint.panther.IDmap;
 import org.bbop.paint.touchup.Constant;
 import org.bbop.paint.touchup.Preferences;
@@ -34,7 +35,6 @@ import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.GafObjectsBuilder;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -48,14 +48,13 @@ public class GafPropagator {
 	 *
 	 * @param gafdoc gaf_file
 	 * @throws IOException
-	 *
 	 * @see
 	 */
-	private static void propagate(GafDocument gafdoc) throws IOException {
+	private static void propagate(GafDocument gafdoc, Family family) throws IOException {
 		List<GeneAnnotation> gaf_annotations = gafdoc.getGeneAnnotations();
 
-		HashSet<Bioentity> pruned_list = new HashSet<>();
-		HashMap<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
+		Map<Bioentity, String> pruned_list = new HashMap<>();
+		Map<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
 
 		IDmap mapper = IDmap.inst();
 
@@ -71,6 +70,17 @@ public class GafPropagator {
 			if (gaf_annotation.getAssignedBy().equals(Constant.OLD_SOURCE))
 				gaf_annotation.setAssignedBy(Constant.PAINT_AS_SOURCE);
 			/*
+			* Similarly update the evidence codes
+			*/
+			String evi_code = gaf_annotation.getShortEvidence();
+			if (evi_code.equals(Constant.OLD_ANCESTRAL_EVIDENCE_CODE)) {
+				evi_code = Constant.ANCESTRAL_EVIDENCE_CODE;
+				gaf_annotation.setEvidence(evi_code, null);
+			} else if (evi_code.equals(Constant.OLD_DESCENDANT_EVIDENCE_CODE)) {
+				evi_code = Constant.DESCENDANT_EVIDENCE_CODE;
+				gaf_annotation.setEvidence(evi_code, null);
+			}
+			/*
 			 * Next step is to find the corresponding gene node
 			 */
 			List<Bioentity> seqs;
@@ -84,37 +94,38 @@ public class GafPropagator {
 					 */
 					seqs = mapper.getGenesBySeqId("UniProtKB", gaf_node.getLocalId());
 				}
-			}
-			else {
+			} else {
 				seqs = new ArrayList<>();
 				seqs.add(node);
 			}
 			if (seqs == null || seqs.size() == 0) {
 				if (gaf_node.getDb().equals(Constant.PANTHER_DB)) {
-					LogAlert.logMissing(node, gaf_annotation);
+					LogAlert.logMissing(gaf_node, gaf_annotation);
 				}
 			} else {
 				for (Bioentity seq_node : seqs) {
-					parseAnnotations(seq_node, gaf_annotation, pruned_list, negate_list);
+					parseAnnotations(family, seq_node, gaf_annotation, pruned_list, negate_list);
 				}
 			} // end for loop going through gaf file contents
 		}
-		for (Bioentity node : pruned_list) {
+		Set<Bioentity> pruned = pruned_list.keySet();
+		for (Bioentity node : pruned) {
 			node.setPrune(true);
-//			PaintAction.inst().pruneBranch(node, true);
+			PaintAction.inst().pruneBranch(node, pruned_list.get(node), true);
 		}
 		if (!negate_list.isEmpty()) {
-			applyNots(negate_list);
+			applyNots(family, negate_list);
 		}
 	}
 
-	private static void parseAnnotations (Bioentity node,
-										  GeneAnnotation gaf_annotation,
-										  HashSet<Bioentity> pruned_list,
-										  HashMap<Bioentity, List<GeneAnnotation>> negate_list) {
+	private static void parseAnnotations(Family family,
+										 Bioentity node,
+										 GeneAnnotation gaf_annotation,
+										 Map<Bioentity, String> pruned_list,
+										 Map<Bioentity, List<GeneAnnotation>> negate_list) {
 
 		if (gaf_annotation.isCut()) {
-			pruned_list.add(node);
+			pruned_list.put(node, gaf_annotation.getLastUpdateDate());
 		}
 		/*
 		 * Ignore the rows (from older GAFs) that are for descendant nodes 
@@ -123,6 +134,7 @@ public class GafPropagator {
 		 */
 		else {
 			String evi_code = gaf_annotation.getShortEvidence();
+
 			if (!evi_code.equals(Constant.ANCESTRAL_EVIDENCE_CODE)) {
 				boolean negation = gaf_annotation.isNegated();
 				if (negation) {
@@ -132,16 +144,15 @@ public class GafPropagator {
 						negate_list.put(node, not_annots);
 					}
 					not_annots.add(gaf_annotation);
-				}
-				else {
+				} else {
 					String go_id = gaf_annotation.getCls();
-					if (OWLutil.inst().isObsolete(go_id)) {
+					if (OWLutil.isObsolete(go_id)) {
 						LogAlert.logObsolete(node, gaf_annotation);
 					} else {
-						if (OWLutil.inst().isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
-							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node);
+						if (OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node, family.getTree());
 							if (invalid == null) {
-								PaintAction.inst().propagateAssociation(node, go_id, gaf_annotation.getLastUpdateDate());
+								PaintAction.inst().propagateAssociation(family, node, go_id, gaf_annotation.getLastUpdateDate(), gaf_annotation.getQualifiers());
 							} else {
 								LogAlert.logInvalid(node, gaf_annotation, invalid);
 							}
@@ -152,17 +163,17 @@ public class GafPropagator {
 		}
 	}
 
-	public static boolean importAnnotations(String family_name) {
-		String family_dir = Preferences.inst().getGafdir() + family_name + '/';
+	public static boolean importAnnotations(Family family) {
+		String family_dir = Preferences.inst().getGafdir() + family.getFamily_name() + '/';
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-			String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
-			String gaf_file = family_dir + File.separator + prefix + ".gaf";
+			String prefix = Preferences.panther_files[0].startsWith(".") ? family.getFamily_name() : "";
+			String gaf_file = family_dir + prefix + ".gaf";
 			GafObjectsBuilder builder = new GafObjectsBuilder();
 			GafDocument gafdoc;
 			try {
 				gafdoc = builder.buildDocument(gaf_file);
-				propagate(gafdoc);
+				propagate(gafdoc, family);
 			} catch (IOException | URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -172,7 +183,7 @@ public class GafPropagator {
 		return ok;
 	}
 
-	private static void applyNots(Map<Bioentity, List<GeneAnnotation>> negate_list) {
+	private static void applyNots(Family family, Map<Bioentity, List<GeneAnnotation>> negate_list) {
 /*
 		Map<Bioentity, List<GeneAnnotation>> toBeSkipped = new HashMap<Bioentity, List<GeneAnnotation>>();
 		for (Bioentity node : negate_list.keySet()) {
@@ -209,18 +220,23 @@ public class GafPropagator {
 				 * Need to propagate this change to all descendants
 				 */
 				List<GeneAnnotation> associations = node.getAnnotations();
-				for (GeneAnnotation assoc : associations) {
-					if (assoc.getCls().equals(notted_gaf_annot.getCls())) {
-						List<String> all_evidence = assoc.getReferenceIds();
+				if (associations != null) {
+					for (GeneAnnotation assoc : associations) {
+						if (assoc.getCls().equals(notted_gaf_annot.getCls())) {
+							List<String> all_evidence = assoc.getReferenceIds();
 						/*
 						 * Should just be one piece of evidence
 						 */
-						if (all_evidence.size() == 1) {
-							PaintAction.inst().setNot(assoc, notted_gaf_annot.getShortEvidence(), true);
+							if (all_evidence.size() == 1) {
+								PaintAction.inst().setNot(family, assoc, notted_gaf_annot.getShortEvidence(), true);
+							}
 						}
 					}
+				} else {
+					log.debug("No annotations to negate for " + node.getDBID());
 				}
 			}
 		}
 	}
 }
+
