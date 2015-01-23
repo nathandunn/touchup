@@ -135,7 +135,7 @@ private String treedir = "gene-associations/submission/paint/";
 
 	}
 
-	public String getBasedir() {
+	private String getBasedir() {
 		return basedir;
 	}
 
@@ -144,19 +144,11 @@ private String treedir = "gene-associations/submission/paint/";
 	}
 
 	public String getGafdir() {
-		return basedir + gafdir;
-	}
-
-	public void setGafdir(String gafdir) {
-		this.gafdir = gafdir;
+		return getBasedir() + gafdir;
 	}
 
 	public String getTreedir() {
-		return basedir + treedir;
-	}
-
-	public void setTreedir(String treedir) {
-		this.treedir = treedir;
+		return getBasedir() + treedir;
 	}
 
 	public String getTaxonID(String species_name) {
