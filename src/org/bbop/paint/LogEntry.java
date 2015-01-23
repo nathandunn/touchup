@@ -54,7 +54,8 @@ public class LogEntry {
 		ALREADY_ASSOCIATED,
 		UNSUPPORTED,
 		WRONG_TAXA,
-		TOO_SPECIFIC;
+		TOO_SPECIFIC,
+		EXCLUDED;
 
 		public String toString() {
 			return super.toString().toLowerCase();
@@ -162,6 +163,10 @@ public class LogEntry {
 		}
 		case WRONG_TAXA: {
 			note = "doesn't pass taxon checks";
+			break;
+		}
+		case EXCLUDED: {
+			note = "is an excluded term and not to be used for annotation";
 			break;
 		}
 		default: {

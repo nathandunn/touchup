@@ -15,6 +15,7 @@ import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.io.GafWriter;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -28,10 +29,10 @@ public class GafRecorder {
 
 	public static void record(Family family) {
 		String family_name = family.getFamily_name();
-		String family_dir = Preferences.inst().getGafdir() + family_name + '/';
+		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-			String gaf_file = family_dir + family_name + Preferences.temp_suffix[4];
+			String gaf_file = family_dir + family_name + Preferences.GAF_SUFFIX;
 			Tree tree = family.getTree();
 			GafDocument gaf_doc = new GafDocument(gaf_file, family_dir);
 			addAnnotations(family, tree, tree.getRoot(), gaf_doc);

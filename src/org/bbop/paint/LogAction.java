@@ -170,8 +170,8 @@ public class LogAction {
 			}
 			contents.add("");
 
+			int pruned = 0;
 			for (LogEntry entry : done_log) {
-				int pruned = 0;
 				if (entry.getAction() == LOG_ENTRY_TYPE.PRUNE) {
 					if (pruned == 0) {
 						contents.add(History.PRUNED_SECTION);
@@ -181,9 +181,9 @@ public class LogAction {
 							History.makeLabel(entry.getNode()) +
 							" was cut from the tree");
 				}
-				if (pruned > 0)
-					contents.add("");
 			}
+			if (pruned > 0)
+				contents.add("");
 		}
 	}
 

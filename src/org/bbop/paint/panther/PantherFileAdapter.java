@@ -33,12 +33,12 @@ import java.util.Map;
 
 public class PantherFileAdapter extends PantherAdapter {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
 	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
-/**
+	/**
 	 * Constructor declaration
 	 *
 	 * @see
@@ -62,12 +62,11 @@ public class PantherFileAdapter extends PantherAdapter {
 		String family_dir = Preferences.inst().getTreedir() + family_name + File.separator;
 
 		ok = FileUtil.validPath(family_dir);
-		String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
-		String treeFileName = family_dir + prefix + Preferences.panther_files[0];
-		String attrFileName = family_dir + prefix + Preferences.panther_files[1];
+		String treeFileName = family_dir + "tree" + Preferences.TREE_SUFFIX;
+		String attrFileName = family_dir + "attr" + Preferences.ATTR_SUFFIX;
 
-		ok &= FileUtil.validPath(treeFileName);
-		ok &= FileUtil.validPath(attrFileName);
+		ok &= FileUtil.validFile(treeFileName);
+		ok &= FileUtil.validFile(attrFileName);
 
 		if (ok) {
 			tree_content = FileUtil.readFile(treeFileName);
@@ -80,6 +79,8 @@ public class PantherFileAdapter extends PantherAdapter {
 				// Load the attr file to obtain the PTN #s
 				List<List<String>> rows = ParsingHack.parsePantherAttr(attr_content);
 				decorateNodes(rows, tree);
+
+				fetchMSA(family_name);
 			}
 
 			if (tree.getRoot().getNcbiTaxonId() == null) {
@@ -90,22 +91,22 @@ public class PantherFileAdapter extends PantherAdapter {
 		return tree;
 	}
 
-	public MSA fetchMSA(String family_name) {
-		String family_dir = Preferences.inst().getTreedir() + family_name + '/';
+
+	private MSA fetchMSA(String family_name) {
+		String family_dir = Preferences.inst().getTreedir() + family_name + File.separator;
 		FileUtil.validPath(family_dir);
-		String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
-		String msaFileName = family_dir + File.separator + prefix + Preferences.panther_files[2];
+		String msaFileName = family_dir + "tree" + Preferences.MSA_SUFFIX;
 		Map<Bioentity, String> sequences = new HashMap<Bioentity, String>();
 		int seq_length = 0;
-		if (FileUtil.validPath(msaFileName)) {
+		if (FileUtil.validFile(msaFileName)) {
 			msa_content = FileUtil.readFile(msaFileName);
 			seq_length = parseSeqs(msa_content, sequences);
 		}
 
 		// Check for wts file
-		String wtsFileName = family_dir + File.separator + prefix + Preferences.panther_files[3];
+		String wtsFileName = family_dir + "cluster" + Preferences.WTS_SUFFIX;
 		Map <Bioentity, Double> weights = new HashMap<Bioentity, Double>();
-		if (FileUtil.validPath(wtsFileName)) {
+		if (FileUtil.validFile(wtsFileName)) {
 			wts_content = FileUtil.readFile(wtsFileName);
 			parseWts(wts_content, weights);
 		}

@@ -43,31 +43,18 @@ public class Preferences {
 
 	private String basedir = "/Users/suzi/projects/go/";
 	private String gafdir = "gene-associations/submission/paint/";
-	private String treedir = gafdir; // "data/trees/panther/";
-
+	private String treedir = "data/trees/panther/";
 /*
-	public static final String[] panther_files = {
-			"tree.tree",
-			"attr.tab",
-			"tree.mia",
-			"tree.wts"
-	};
-*/
+private String treedir = "gene-associations/submission/paint/";
+ */
 
-	public static final String[] panther_files = {
-		".tree", 
-		".attr",
-		".msa",
-		".wts"
-	};
-
-	public static final String[] temp_suffix = {
-			".tree",
-			".attr",
-			".msa",
-			".wts",
-			".gaf"
-	};
+	public static final String TREE_SUFFIX = ".tree";
+	public static final String ATTR_SUFFIX = ".tab";
+	public static final String MSA_SUFFIX = ".mia";
+	public static final String WTS_SUFFIX = ".wts";
+	public static final String GAF_SUFFIX = ".gaf";
+	public static final String LOG_SUFFIX = ".log";
+	public static final String OLDLOG_SUFFIX = ".txt";
 
 	/*
 	 * Get the NCBI taxon ID from their FTP-ed file dump

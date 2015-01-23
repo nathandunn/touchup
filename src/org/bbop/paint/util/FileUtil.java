@@ -72,6 +72,15 @@ public class FileUtil {
 			return false;
 		}
 		File f = new File(path);
-		return f.canRead();
+		return f.isDirectory() && f.canRead();
+	}
+
+	public static boolean validFile(String filename) {
+		boolean ok = false;
+		if (filename != null) {
+			File f = new File(filename);
+			ok = f.canRead();
+		}
+		return ok;
 	}
 }

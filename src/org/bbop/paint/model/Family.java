@@ -22,7 +22,6 @@ package org.bbop.paint.model;
 import org.bbop.paint.gaf.GafRecorder;
 import org.bbop.paint.panther.PantherAdapter;
 import org.bbop.paint.panther.PantherFileAdapter;
-import org.bbop.paint.panther.PantherServer.PantherServerAdapter;
 import org.bbop.paint.touchup.Constant;
 
 import java.io.Serializable;
@@ -45,21 +44,15 @@ public class Family implements Serializable {
 	public Family() {
 	}
 
-	public boolean fetch(String family_name, boolean from_server) {
+	public boolean fetch(String family_name) {
 		/*
 		 * Assumption is that all of the PANTHER families are present in files locally
 		 * The update of the families is handled asynchronously and should hopefully ensure
 		 * that the more up-to-date versions are available
 		 */
 		setFamily_name(family_name);
-		tree = null;
-	    if (from_server) {
-			adapter = new PantherServerAdapter();
-		} else {
-			adapter = new PantherFileAdapter();
-		}
+		adapter = new PantherFileAdapter();
 		tree = adapter.fetchTree(family_name);
-
 		if (tree == null) {
 			setFamily_name(null);
 		}

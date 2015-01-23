@@ -27,6 +27,7 @@ import org.bbop.paint.model.History;
 import org.bbop.paint.panther.IDmap;
 import org.bbop.paint.util.AnnotationUtil;
 import org.bbop.paint.util.FileUtil;
+import org.bbop.paint.util.OWLutil;
 
 import javax.swing.*;
 import java.io.File;
@@ -42,7 +43,6 @@ public class Main {
 	private static String[] args;
 
 	private Family family;
-	private final boolean from_server = true;
 
 	private static final Logger log = Logger.getLogger(Main.class);
 
@@ -50,7 +50,7 @@ public class Main {
 	 * Method declaration
 	 *
 	 *
-	 * @param args
+	 * @param args either a family name, a file containing a list of family names, or a directory where the families are
 	 *
 	 * @see
 	 */
@@ -105,7 +105,7 @@ public class Main {
 			}
 		} else if (f.canRead()) {
 			families = FileUtil.readFile(arg);
-			for (int i = families.size() - 1; i <= 0; i--) {
+			for (int i = families.size() - 1; i >= 0; i--) {
 				// allow for commenting out lines in the input file
 				if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {
 					families.remove(i);
@@ -132,9 +132,10 @@ public class Main {
 
 	private boolean loadPaint(String family_name) {
 		IDmap.inst().clearGeneIDs();
+		OWLutil.reset();
 		family = new Family();
-		boolean loaded = family.fetch(family_name, from_server);
-		if (loaded) {
+		boolean available = gafFileExists(family_name) && family.fetch(family_name);
+		if (available) {
 			AnnotationUtil.collectExpAnnotations(family);
 
 			/*
@@ -147,7 +148,9 @@ public class Main {
 
 		} else {
 			family = null;
+			log.info("Unable to touchup " + family_name);
 		}
+		System.gc();
 		return family != null;
 	}
 
@@ -158,4 +161,21 @@ public class Main {
 		}
 	}
 
+	private boolean gafFileExists(String family_name) {
+		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
+		boolean ok = FileUtil.validPath(family_dir);
+		if (ok) {
+//			String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
+			String gaf_file = family_dir + family_name + Preferences.GAF_SUFFIX;
+			File f = new File(gaf_file);
+			ok = f.exists() && f.isFile() && f.canRead();
+			if (!ok) {
+				log.info("Can't read: " + gaf_file);
+			}
+
+		} else {
+			log.info("Invalid path: " + family_dir);
+		}
+		return ok;
+	}
 }

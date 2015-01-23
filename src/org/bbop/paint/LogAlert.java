@@ -31,7 +31,7 @@ import java.util.List;
 
 public class LogAlert {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 
@@ -69,7 +69,7 @@ public class LogAlert {
 		if (invalids != null || missing != null || obsoletes != null) {
 			contents.add(History.WARNING_SECTION);
 			if (invalids != null) {
-				contents.add("## The underlying experimental annotations used as evidence no longer exist.");
+				contents.add("## Annotations that have been removed.");
 				for (LogEntry entry : invalids) {
 					GeneAnnotation annotation = entry.getLoggedAssociation();
 					contents.add(annotation.getLastUpdateDate() + ": " +

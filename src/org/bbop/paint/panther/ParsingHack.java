@@ -97,6 +97,10 @@ public class ParsingHack {
 			gene = mapper.getGeneByANId(paint_id);
 		if (gene == null) {
 			String [] db_source = getDBparts(row);
+			if (db_source == null || db_source.length == 0) {
+				log.error("Unable to parse " + row);
+				return null;
+			}
 			String db = dbNameHack(db_source[0]);
 			String [] seq_source = getSeqParts(row);
 			String id =dbIdHack(db, db_source[1], seq_source[1]);
@@ -115,7 +119,7 @@ public class ParsingHack {
 			}
 		}
 		if (gene == null)
-			log.debug("Unable to locate node for " + row);
+			log.warn("Unable to locate node for " + row);
 		return gene;
 	}
 

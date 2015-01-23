@@ -8,6 +8,7 @@ import org.bbop.paint.touchup.Preferences;
 import org.bbop.paint.util.FileUtil;
 import owltools.gaf.Bioentity;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,10 +32,10 @@ public class History {
 	private static final String REF_SECTION = "# Reference";
 
 	public static void write(String program_name, String family_name) {
-		String family_dir = Preferences.inst().getTreedir() + family_name + '/';
+		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
 
 		if (FileUtil.validPath(family_dir)) {
-			String logFileName = family_dir + family_name + ".log";
+			String logFileName = family_dir + family_name + Preferences.LOG_SUFFIX;
 			List<String> contents = new ArrayList<>();
 			contents.add("# " + program_name + " Log Report for " + dateNow());
 			LogAction.report(contents);
@@ -51,14 +52,14 @@ public class History {
 	}
 
 	public static void importPrior(String family_name) {
-		String family_dir = Preferences.inst().getTreedir() + family_name + '/';
+		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
 
 		if (FileUtil.validPath(family_dir)) {
-			String log_file = family_dir + family_name + ".txt";
-			if (!FileUtil.validPath(log_file)) {
-				log_file = family_dir + family_name + ".log";
+				String log_file = family_dir + family_name + Preferences.OLDLOG_SUFFIX;
+			if (!FileUtil.validFile(log_file)) {
+				log_file = family_dir + family_name + Preferences.LOG_SUFFIX;
 			}
-			if (FileUtil.validPath(log_file)) {
+			if (FileUtil.validFile(log_file)) {
 				List<String> log_content = FileUtil.readFile(log_file);
 				if (log_content != null) {
 					clearBoilerPlate(log_content);

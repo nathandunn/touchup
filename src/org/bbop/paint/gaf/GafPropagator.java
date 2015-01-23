@@ -64,6 +64,9 @@ public class GafPropagator {
 			Need to be careful not to mix these up
 			 */
 			Bioentity gaf_node = gaf_annotation.getBioentityObject();
+			if (gaf_node.getId().contains("Q7K2L7")) {
+				log.debug("Check it out");
+			}
 			/*
 			 * Backwards compatibility
 			 */
@@ -104,6 +107,8 @@ public class GafPropagator {
 				}
 			} else {
 				for (Bioentity seq_node : seqs) {
+					gaf_annotation.setBioentityObject(seq_node);
+					gaf_annotation.setBioentity(seq_node.getId());
 					parseAnnotations(family, seq_node, gaf_annotation, pruned_list, negate_list);
 				}
 			} // end for loop going through gaf file contents
@@ -145,10 +150,16 @@ public class GafPropagator {
 					}
 					not_annots.add(gaf_annotation);
 				} else {
-					String go_id = gaf_annotation.getCls();
-					if (OWLutil.isObsolete(go_id)) {
-						LogAlert.logObsolete(node, gaf_annotation);
+					List<String> go_ids = new ArrayList();
+					if (OWLutil.isObsolete(gaf_annotation.getCls())) {
+						go_ids = OWLutil.replacedBy(gaf_annotation.getCls());
+						if (go_ids.size() == 0) {
+							LogAlert.logObsolete(node, gaf_annotation);
+						}
 					} else {
+						go_ids.add(gaf_annotation.getCls());
+					}
+					for (String go_id : go_ids) {
 						if (OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node, family.getTree());
 							if (invalid == null) {
@@ -167,16 +178,13 @@ public class GafPropagator {
 		String family_dir = Preferences.inst().getGafdir() + family.getFamily_name() + '/';
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-			String prefix = Preferences.panther_files[0].startsWith(".") ? family.getFamily_name() : "";
-			String gaf_file = family_dir + prefix + ".gaf";
+			String gaf_file = family_dir + family.getFamily_name() + Preferences.GAF_SUFFIX;
 			GafObjectsBuilder builder = new GafObjectsBuilder();
 			GafDocument gafdoc;
 			try {
 				gafdoc = builder.buildDocument(gaf_file);
 				propagate(gafdoc, family);
 			} catch (IOException | URISyntaxException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				ok = false;
 			}
 		}
@@ -228,7 +236,7 @@ public class GafPropagator {
 						 * Should just be one piece of evidence
 						 */
 							if (all_evidence.size() == 1) {
-								PaintAction.inst().setNot(family, assoc, notted_gaf_annot.getShortEvidence(), true);
+								PaintAction.inst().setNot(family, node, assoc, notted_gaf_annot.getShortEvidence(), true);
 							}
 						}
 					}

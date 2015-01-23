@@ -52,21 +52,21 @@ public abstract class PantherAdapter {
 
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
-        String family_dir = Preferences.inst().getTreedir() + id + File.separator;
+        String family_dir = Preferences.inst().getGafdir() + id + File.separator;
 
         boolean ok = FileUtil.validPath(family_dir);
-        String treeFileName = family_dir + id+Preferences.temp_suffix[0];
-        String attrFileName = family_dir + id+Preferences.temp_suffix[1];
+        String treeFileName = family_dir + id + Preferences.TREE_SUFFIX;
+        String attrFileName = family_dir + id + Preferences.ATTR_SUFFIX;
 
         ok &= writeData(treeFileName, tree_content);
         ok &= writeData(attrFileName, attr_content);
 
         if (msa_content != null && ok) {
-            String msaFileName = family_dir + id+Preferences.temp_suffix[2];
+            String msaFileName = family_dir + id + Preferences.MSA_SUFFIX;
             ok &= writeData(msaFileName, msa_content);
         }
         if (wts_content != null && ok) {
-            String wtsFileName = family_dir + id+Preferences.temp_suffix[3];
+            String wtsFileName = family_dir + id + Preferences.WTS_SUFFIX;
             ok &= writeData(wtsFileName, wts_content);
         }
         return ok;
@@ -296,10 +296,10 @@ public abstract class PantherAdapter {
         }
     }
 
-private static final String ACC_TAG = "gi";
-private static final String PROT_TAG = "Protein Id";
-private static final String ORG_TAG = "organism";
-private static final String SYMB_TAG = "gene symbol";
+    private static final String ACC_TAG = "gi";
+    private static final String PROT_TAG = "Protein Id";
+    private static final String ORG_TAG = "organism";
+    private static final String SYMB_TAG = "gene symbol";
 
     private void parseAttributeRow(List<String> row, List<String> header) {
         String id = row.get(0);
@@ -309,7 +309,11 @@ private static final String SYMB_TAG = "gene symbol";
 			/*
 			 * This should never happen!
 			 */
-            log.info("Yikes, " + node.getPersistantNodeID() + " does not equal " + ptn);
+            if (node == null) {
+                log.error("This node is not in the family tree: " + id + " - " + ptn);
+            } else {
+                log.error("Yikes, " + node.getPersistantNodeID() + " does not equal " + ptn);
+            }
             return;
         }
         else {
@@ -339,7 +343,7 @@ private static final String SYMB_TAG = "gene symbol";
         }
     }
 
-private static final String PREFIX_SEQ_START = ">";
+    private static final String PREFIX_SEQ_START = ">";
 
     int parseSeqs(List<String> seqInfo, Map<Bioentity, String> sequences) {
 

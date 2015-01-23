@@ -62,6 +62,14 @@ public class PaintAction {
 		if (node.isPruned()) {
 			return LogEntry.LOG_ENTRY_TYPE.PRUNE;
 		}
+
+		if (OWLutil.isExcluded(go_id)) {
+			/*
+			Can't use terms that are merely for the logic of the ontology
+			and not relevant or informative for the biology
+			 */
+			return (LOG_ENTRY_TYPE.EXCLUDED);
+		}
 		// check to make sure that this term is more specific than any inherited terms
 		// and the node is not annotated to this term already
 		if (OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) != null) {
@@ -310,6 +318,9 @@ public class PaintAction {
 				}
 				if (!covered) {
 					Bioentity top = ancestral_assoc.getBioentityObject();
+					if (top.getPaintId() == null) {
+						log.debug("Got wrong bioentity " + top);
+					}
 					String term = ancestral_assoc.getCls();
 					WithEvidence withs = new WithEvidence(family.getTree(), top, term);
 					List<String> exp_withs = withs.getExpWiths();
@@ -481,12 +492,11 @@ public class PaintAction {
 	//	}
 	//
 
-	public void setNot(Family family, GeneAnnotation assoc, String evi_code, boolean log) {
+	public void setNot(Family family, Bioentity node, GeneAnnotation assoc, String evi_code, boolean log) {
 		if (!assoc.isNegated()) {
 			assoc.setIsNegated(true);
 			assoc.setDirectNot(true);
 			assoc.setEvidence(evi_code, null);
-			Bioentity node = assoc.getBioentityObject();
 
 			Collection<String> with_str = assoc.getWithInfos();
 			with_str.removeAll(with_str);
@@ -591,6 +601,9 @@ public class PaintAction {
 				child_assoc.setIsNegated(is_not);
 				child_assoc.setDirectNot(false);
 				Collection<String> withs = new ArrayList<>();
+				if (assoc.getBioentityObject().getPaintId() == null) {
+					log.debug("Getting the wrong entity " + assoc.getBioentityObject());
+				}
 				withs.add(assoc.getBioentity());
 				child_assoc.setWithInfos(withs);
 				child_assoc.setEvidence(Constant.ANCESTRAL_EVIDENCE_CODE, null);
