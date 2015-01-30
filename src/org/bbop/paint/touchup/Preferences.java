@@ -61,8 +61,8 @@ private String treedir = "gene-associations/submission/paint/";
 	private Map<String, String> taxa2IDs;
 	private Map<String, String> IDs2taxa;
 
-	private static final String NCBI_TAXA = "/ncbi_taxa_ids.txt";
-	private static final String UNIPROT_TAXA = "/speclist.txt";
+	private static final String NCBI_TAXA = "ncbi_taxa_ids.txt";
+	private static final String UNIPROT_TAXA = "speclist.txt";
 
 	private static final Logger log = Logger.getLogger(Preferences.class);
 
@@ -190,7 +190,10 @@ private String treedir = "gene-associations/submission/paint/";
 		}
 		if (s != null) {
 			reader = new BufferedReader(new InputStreamReader(s));
-		} else {
+		} else if (resource_name.charAt(0) != '/') {
+			reader = loadResource('/' + resource_name);
+		}
+		if (reader == null) {
 			log.error("Unable to load resource for " + resource_name);
 		}
 		return reader;
