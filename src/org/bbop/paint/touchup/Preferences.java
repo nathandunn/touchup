@@ -184,16 +184,14 @@ private String treedir = "gene-associations/submission/paint/";
 	private BufferedReader loadResource(String resource_name) {
 		BufferedReader reader = null;
 		Class c = this.getClass();
-		try {
-			InputStream s = c.getResourceAsStream(resource_name);
+		InputStream s = c.getResourceAsStream(resource_name);
+		if (s == null) {
+			s = ClassLoader.getSystemResourceAsStream(resource_name);
+		}
+		if (s != null) {
 			reader = new BufferedReader(new InputStreamReader(s));
-		} catch (Exception e1) {
-			try {
-				InputStream s = c.getResourceAsStream(resource_name.substring(1));
-				reader = new BufferedReader(new InputStreamReader(s));
-			} catch (Exception e2) {
-				log.error("Unable to load resource for " + resource_name + " error=" + e2.getMessage());
-			}
+		} else {
+			log.error("Unable to load resource for " + resource_name);
 		}
 		return reader;
 	}
