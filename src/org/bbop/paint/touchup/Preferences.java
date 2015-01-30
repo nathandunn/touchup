@@ -8,14 +8,14 @@
  * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * Neither the name of the Lawrence Berkeley National Lab nor the names of its contributors may be used to endorse 
  * or promote products derived from this software without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, 
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 package org.bbop.paint.touchup;
@@ -27,7 +27,6 @@ import java.beans.DefaultPersistenceDelegate;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
 import java.io.*;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +60,9 @@ private String treedir = "gene-associations/submission/paint/";
 	 */
 	private Map<String, String> taxa2IDs;
 	private Map<String, String> IDs2taxa;
+
+	private static final String NCBI_TAXA = "/ncbi_taxa_ids.txt";
+	private static final String UNIPROT_TAXA = "/speclist.txt";
 
 	private static final Logger log = Logger.getLogger(Preferences.class);
 
@@ -125,10 +127,6 @@ private String treedir = "gene-associations/submission/paint/";
 		return new File("config");
 	}
 
-	private static ClassLoader getExtensionLoader() {
-		return Preferences.class.getClassLoader();
-	}
-
 	public Object clone() throws CloneNotSupportedException {
 
 		throw new CloneNotSupportedException();
@@ -183,63 +181,79 @@ private String treedir = "gene-associations/submission/paint/";
 		loadNCBITaxa();
 	}
 
-	private void loadNCBITaxa() {
+	private BufferedReader loadResource(String resource_name) {
+		BufferedReader reader = null;
+		Class c = this.getClass();
 		try {
-			URL url = getExtensionLoader().getResource(
-					"ncbi_taxa_ids.txt");
-			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(url.openStream()));
-			String id_pair = reader.readLine();
-			while (id_pair != null) {
-				if (!id_pair.contains("authority")) {
-					id_pair = id_pair.replace('\t', ' ');
-					String ids []= id_pair.split("\\|");
-					String taxon_id = Constant.TAXON_PREFIX+(ids[0].trim());
-					String name = ids[1].trim();
-					if (!ids[2].contains(name))
-						name = (name + " " +  ids[2].trim()).trim();
-					else if (ids[2].trim().length() > name.length())
-						name = ids[2].trim();
-					if (id_pair.contains("scientific name")) {
-						IDs2taxa.put(taxon_id, name);
-					}
-					taxa2IDs.put(name, taxon_id);
-				}
-				id_pair = reader.readLine();
+			InputStream s = c.getResourceAsStream(resource_name);
+			reader = new BufferedReader(new InputStreamReader(s));
+		} catch (Exception e1) {
+			try {
+				InputStream s = c.getResourceAsStream(resource_name.substring(1));
+				reader = new BufferedReader(new InputStreamReader(s));
+			} catch (Exception e2) {
+				log.error("Unable to load resource for " + resource_name + " error=" + e2.getMessage());
 			}
-			reader.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+		}
+		return reader;
+	}
+
+	private void loadNCBITaxa() {
+		BufferedReader reader = loadResource(NCBI_TAXA);
+		if (reader != null) {
+			try {
+				String id_pair = reader.readLine();
+				while (id_pair != null) {
+					if (!id_pair.contains("authority")) {
+						id_pair = id_pair.replace('\t', ' ');
+						String ids[] = id_pair.split("\\|");
+						String taxon_id = Constant.TAXON_PREFIX + (ids[0].trim());
+						String name = ids[1].trim();
+						if (!ids[2].contains(name)) {
+							name = (name + " " + ids[2].trim()).trim();
+						} else if (ids[2].trim().length() > name.length()) {
+							name = ids[2].trim();
+						}
+						if (id_pair.contains("scientific name")) {
+							IDs2taxa.put(taxon_id, name);
+						}
+						taxa2IDs.put(name, taxon_id);
+					}
+					id_pair = reader.readLine();
+				}
+				reader.close();
+			} catch (Exception e) {
+				log.error("Unable to read " + NCBI_TAXA + " exception=" + e.getMessage());
+			}
 		}
 	}
 
 	private void loadUniProtTaxa() {
-		try {
-			URL url = getExtensionLoader().getResource(
-					"speclist.txt");
-			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(url.openStream()));
-			String line = reader.readLine();
-			while (line != null) {
-				if (line.contains("N=") && !line.contains("Official")) {
-					int index = line.indexOf(' ');
-					String code = line.substring(0, index);
-					index += 3;
-					String taxon_id = Constant.TAXON_PREFIX+line.substring(index, line.indexOf(':')).trim();
-					index = line.indexOf("N=") + 2;
-					String name = line.substring(index).trim();
-					if (!IDs2taxa.containsKey(taxon_id))
-						IDs2taxa.put(taxon_id, name);
-					if (!taxa2IDs.containsKey(name))
-						taxa2IDs.put(name, taxon_id);
-					if (!taxa2IDs.containsKey(code))
-						taxa2IDs.put(code, taxon_id);
+		BufferedReader reader = loadResource(UNIPROT_TAXA);
+		if (reader != null) {
+			try {
+				String line = reader.readLine();
+				while (line != null) {
+					if (line.contains("N=") && !line.contains("Official")) {
+						int index = line.indexOf(' ');
+						String code = line.substring(0, index);
+						index += 3;
+						String taxon_id = Constant.TAXON_PREFIX + line.substring(index, line.indexOf(':')).trim();
+						index = line.indexOf("N=") + 2;
+						String name = line.substring(index).trim();
+						if (!IDs2taxa.containsKey(taxon_id))
+							IDs2taxa.put(taxon_id, name);
+						if (!taxa2IDs.containsKey(name))
+							taxa2IDs.put(name, taxon_id);
+						if (!taxa2IDs.containsKey(code))
+							taxa2IDs.put(code, taxon_id);
+					}
+					line = reader.readLine();
 				}
-				line = reader.readLine();
+				reader.close();
+			} catch (Exception e) {
+				log.error("Unable to read " + UNIPROT_TAXA + " exception=" + e.getMessage());
 			}
-			reader.close();
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
