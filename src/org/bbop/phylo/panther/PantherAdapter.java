@@ -53,7 +53,7 @@ public abstract class PantherAdapter {
 
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
-        String family_dir = Preferences.inst().getGafdir() + id + File.separator;
+        String family_dir = Preferences.inst().getGafDir() + id + File.separator;
 
         boolean ok = FileUtil.validPath(family_dir);
         String treeFileName = family_dir + id + Constant.TREE_SUFFIX;

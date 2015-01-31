@@ -61,7 +61,7 @@ public class PantherFileAdapter extends PantherAdapter {
 		boolean ok;
 		Tree tree = null;
 		System.gc();
-		String family_dir = Preferences.inst().getTreedir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getTreeDir() + family_name + File.separator;
 
 		ok = FileUtil.validPath(family_dir);
 		String treeFileName = family_dir + "tree" + Constant.TREE_SUFFIX;
@@ -95,7 +95,7 @@ public class PantherFileAdapter extends PantherAdapter {
 
 
 	private MSA fetchMSA(String family_name) {
-		String family_dir = Preferences.inst().getTreedir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getTreeDir() + family_name + File.separator;
 		FileUtil.validPath(family_dir);
 		String msaFileName = family_dir + "tree" + Constant.MSA_SUFFIX;
 		Map<Bioentity, String> sequences = new HashMap<Bioentity, String>();

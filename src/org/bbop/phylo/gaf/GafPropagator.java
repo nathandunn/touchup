@@ -175,7 +175,7 @@ public class GafPropagator {
 	}
 
 	public static boolean importAnnotations(Family family) {
-		String family_dir = Preferences.inst().getGafdir() + family.getFamily_name() + '/';
+		String family_dir = Preferences.inst().getGafDir() + family.getFamily_name() + '/';
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 			String gaf_file = family_dir + family.getFamily_name() + Constant.GAF_SUFFIX;

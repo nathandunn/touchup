@@ -78,7 +78,7 @@ public class Main {
 			}
 
 			if (args.length > 1)
-				Preferences.inst().setBasedir(args[1]);
+				Preferences.inst().setTreeDir(args[1]);
 			try {
 				int family_count = touchup(args[0]);
 				log.info("Touched up " + family_count + " PAINT families");
@@ -96,6 +96,7 @@ public class Main {
 		List<String> families;
 
 		if (f.isDirectory()) {
+			Preferences.inst().setGafDir(arg);
 			String [] files = f.list();
 			families = new ArrayList();
 			for (String file : files) {
@@ -175,8 +176,7 @@ public class Main {
 
 	private void logSummary(Map<String, FamilySummary> summaries) {
 		String program_name = ResourceLoader.inst().loadVersion();
-		String log_dir = Preferences.inst().getGafdir();
-
+		String log_dir = Preferences.inst().getGafDir();
 		if (FileUtil.validPath(log_dir)) {
 			String logFileName = log_dir + program_name + Constant.LOG_SUFFIX;
 			List<String> contents = new ArrayList<>();
@@ -196,7 +196,7 @@ public class Main {
 	}
 
 	private boolean gafFileExists(String family_name) {
-		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 //			String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";

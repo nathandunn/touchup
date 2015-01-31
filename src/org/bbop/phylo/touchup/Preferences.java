@@ -38,9 +38,8 @@ public class Preferences {
 	 */
 	private static final long serialVersionUID = -5472475387423113108L;
 
-	private String basedir = "/Users/suzi/projects/go/";
-	private String gafdir = "gene-associations/submission/paint/";
-	private String treedir = "data/trees/panther/";
+	private String gafdir = "/Users/suzi/projects/go/gene-associations/submission/paint/";
+	private String treedir = "/Users/suzi/projects/go/data/trees/panther/";
 
 	private static final Logger log = Logger.getLogger(Preferences.class);
 
@@ -111,20 +110,20 @@ public class Preferences {
 
 	}
 
-	private String getBasedir() {
-		return basedir;
+	public void setGafDir(String gafdir) {
+		this.gafdir = gafdir;
 	}
 
-	public void setBasedir(String basedir) {
-		this.basedir = basedir;
+	public void setTreeDir(String treedir) {
+		this.treedir = treedir;
 	}
 
-	public String getGafdir() {
-		return getBasedir() + gafdir;
+	public String getGafDir() {
+		return gafdir;
 	}
 
-	public String getTreedir() {
-		return getBasedir() + treedir;
+	public String getTreeDir() {
+		return treedir;
 	}
 
 }

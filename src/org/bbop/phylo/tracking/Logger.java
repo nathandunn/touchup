@@ -28,7 +28,7 @@ public class Logger {
 	private static List<String> notes;
 
 	public static void write(String family_name) {
-		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
 
 		if (FileUtil.validPath(family_dir)) {
 			String logFileName = family_dir + family_name + Constant.LOG_SUFFIX;
@@ -49,7 +49,7 @@ public class Logger {
 	}
 
 	public static void importPrior(String family_name) {
-		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
 		if (notes == null) {
 			notes = new ArrayList<>();
 		} else {

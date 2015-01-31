@@ -29,7 +29,7 @@ public class GafRecorder {
 
 	public static void record(Family family) {
 		String family_name = family.getFamily_name();
-		String family_dir = Preferences.inst().getGafdir() + family_name + File.separator;
+		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 			String gaf_file = family_dir + family_name + Constant.GAF_SUFFIX;
