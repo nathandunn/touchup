@@ -24,12 +24,12 @@
           <attach>false</attach>
           <outputDirectory>${project.basedir}/bin</outputDirectory>
           <descriptors>
-            <descriptor>owltools-runner-all.xml</descriptor>
+            <descriptor>touchup-all.xml</descriptor>
           </descriptors>
           <archive>
             <manifest>
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <mainClass>org.bbop.paint.touchup.Main</mainClass>
+              <mainClass>org.bbop.phylo.touchup.Main</mainClass>
             </manifest>
             <manifestEntries>
               <owltools-build-timestamp>${maven.build.timestamp}</owltools-build-timestamp>

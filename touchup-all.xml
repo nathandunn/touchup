@@ -28,5 +28,11 @@
 		<file>
 			<source>${project.build.outputDirectory}/log4j.properties</source>
 		</file>
+		<file>
+			<source>${project.build.outputDirectory}/speclist.txt</source>
+		</file>
+		<file>
+			<source>${project.build.outputDirectory}/ncbi_taxa_ids.txt</source>
+		</file>
 	</files>
 </assembly>
