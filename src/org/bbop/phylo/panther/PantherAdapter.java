@@ -53,27 +53,27 @@ public abstract class PantherAdapter {
 
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
-        String family_dir = Preferences.inst().getGafDir() + id + File.separator;
+        File family_dir = new File(Preferences.inst().getGafDir(), id);
 
         boolean ok = FileUtil.validPath(family_dir);
-        String treeFileName = family_dir + id + Constant.TREE_SUFFIX;
-        String attrFileName = family_dir + id + Constant.ATTR_SUFFIX;
+        File treeFileName = new File(family_dir, id + Constant.TREE_SUFFIX);
+        File attrFileName = new File(family_dir, id + Constant.ATTR_SUFFIX);
 
         ok &= writeData(treeFileName, tree_content);
         ok &= writeData(attrFileName, attr_content);
 
         if (msa_content != null && ok) {
-            String msaFileName = family_dir + id + Constant.MSA_SUFFIX;
+            File msaFileName = new File(family_dir, id + Constant.MSA_SUFFIX);
             ok &= writeData(msaFileName, msa_content);
         }
         if (wts_content != null && ok) {
-            String wtsFileName = family_dir + id + Constant.WTS_SUFFIX;
+            File wtsFileName = new File(family_dir, id + Constant.WTS_SUFFIX);
             ok &= writeData(wtsFileName, wts_content);
         }
         return ok;
     }
 
-    private boolean writeData(String file_name, List<String> data) {
+    private boolean writeData(File file_name, List<String> data) {
         try {
             FileUtil.writeFile(file_name, data);
             return true;

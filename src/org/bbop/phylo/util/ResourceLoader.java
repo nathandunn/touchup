@@ -49,7 +49,7 @@ public class ResourceLoader {
 
 	public BufferedReader loadResource(String resource_name) {
 		BufferedReader reader = null;
-		Class c = this.getClass();
+		Class<?> c = this.getClass();
 		InputStream s = c.getResourceAsStream(resource_name);
 		if (s == null) {
 			s = ClassLoader.getSystemResourceAsStream(resource_name);
