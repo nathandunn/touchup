@@ -22,3 +22,6 @@ canned_comments.xml
 *.ipr
 *.iws
 /target
+/.classpath
+/.project
+/.settings
