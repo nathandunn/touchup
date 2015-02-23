@@ -61,11 +61,11 @@ public class PantherFileAdapter extends PantherAdapter {
 		boolean ok;
 		Tree tree = null;
 		System.gc();
-		String family_dir = Preferences.inst().getTreeDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getTreeDir(), family_name);
 
 		ok = FileUtil.validPath(family_dir);
-		String treeFileName = family_dir + "tree" + Constant.TREE_SUFFIX;
-		String attrFileName = family_dir + "attr" + Constant.ATTR_SUFFIX;
+		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
+		File attrFileName = new File(family_dir, "attr" + Constant.ATTR_SUFFIX);
 
 		ok &= FileUtil.validFile(treeFileName);
 		ok &= FileUtil.validFile(attrFileName);
@@ -95,9 +95,9 @@ public class PantherFileAdapter extends PantherAdapter {
 
 
 	private MSA fetchMSA(String family_name) {
-		String family_dir = Preferences.inst().getTreeDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getTreeDir(), family_name);
 		FileUtil.validPath(family_dir);
-		String msaFileName = family_dir + "tree" + Constant.MSA_SUFFIX;
+		File msaFileName = new File(family_dir, "tree" + Constant.MSA_SUFFIX);
 		Map<Bioentity, String> sequences = new HashMap<Bioentity, String>();
 		int seq_length = 0;
 		if (FileUtil.validFile(msaFileName)) {
@@ -106,7 +106,7 @@ public class PantherFileAdapter extends PantherAdapter {
 		}
 
 		// Check for wts file
-		String wtsFileName = family_dir + "cluster" + Constant.WTS_SUFFIX;
+		File wtsFileName = new File(family_dir, "cluster" + Constant.WTS_SUFFIX);
 		Map <Bioentity, Double> weights = new HashMap<Bioentity, Double>();
 		if (FileUtil.validFile(wtsFileName)) {
 			wts_content = FileUtil.readFile(wtsFileName);

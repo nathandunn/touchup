@@ -30,11 +30,13 @@ import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.touchup.Preferences;
 import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.GafObjectsBuilder;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -150,7 +152,7 @@ public class GafPropagator {
 					}
 					not_annots.add(gaf_annotation);
 				} else {
-					List<String> go_ids = new ArrayList();
+					List<String> go_ids = new ArrayList<>();
 					if (OWLutil.isObsolete(gaf_annotation.getCls())) {
 						go_ids = OWLutil.replacedBy(gaf_annotation.getCls());
 						if (go_ids.size() == 0) {
@@ -175,14 +177,14 @@ public class GafPropagator {
 	}
 
 	public static boolean importAnnotations(Family family) {
-		String family_dir = Preferences.inst().getGafDir() + family.getFamily_name() + '/';
+		File family_dir = new File(Preferences.inst().getGafDir(), family.getFamily_name());
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-			String gaf_file = family_dir + family.getFamily_name() + Constant.GAF_SUFFIX;
+			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.GAF_SUFFIX);
 			GafObjectsBuilder builder = new GafObjectsBuilder();
 			GafDocument gafdoc;
 			try {
-				gafdoc = builder.buildDocument(gaf_file);
+				gafdoc = builder.buildDocument(gaf_file.getAbsolutePath());
 				propagate(gafdoc, family);
 			} catch (IOException | URISyntaxException e) {
 				ok = false;

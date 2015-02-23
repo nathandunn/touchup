@@ -28,10 +28,10 @@ public class Logger {
 	private static List<String> notes;
 
 	public static void write(String family_name) {
-		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
 
 		if (FileUtil.validPath(family_dir)) {
-			String logFileName = family_dir + family_name + Constant.LOG_SUFFIX;
+			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
 			String program_name = ResourceLoader.inst().loadVersion();
 			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
@@ -49,16 +49,16 @@ public class Logger {
 	}
 
 	public static void importPrior(String family_name) {
-		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
 		if (notes == null) {
 			notes = new ArrayList<>();
 		} else {
 			notes.clear();
 		}
 		if (FileUtil.validPath(family_dir)) {
-			String log_file = family_dir + family_name + Constant.OLDLOG_SUFFIX;
+			File log_file = new File(family_dir, family_name + Constant.OLDLOG_SUFFIX);
 			if (!FileUtil.validFile(log_file)) {
-				log_file = family_dir + family_name + Constant.LOG_SUFFIX;
+				log_file = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			}
 			if (FileUtil.validFile(log_file)) {
 				List<String> log_content = FileUtil.readFile(log_file);

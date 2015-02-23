@@ -1,5 +1,6 @@
 package org.bbop.phylo.gaf;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogEntry;
@@ -10,13 +11,13 @@ import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.touchup.Preferences;
 import org.bbop.phylo.util.FileUtil;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.io.GafWriter;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -29,22 +30,17 @@ public class GafRecorder {
 
 	public static void record(Family family) {
 		String family_name = family.getFamily_name();
-		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-			String gaf_file = family_dir + family_name + Constant.GAF_SUFFIX;
+			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
 			Tree tree = family.getTree();
-			GafDocument gaf_doc = new GafDocument(gaf_file, family_dir);
+			GafDocument gaf_doc = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
 			addAnnotations(family, tree, tree.getRoot(), gaf_doc);
 			GafWriter gaf_writer = new GafWriter();
 			gaf_writer.setStream(gaf_file);
 			gaf_writer.write(gaf_doc);
-			try {
-				gaf_writer.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			IOUtils.closeQuietly(gaf_writer);
 		}
 	}
 

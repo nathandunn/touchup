@@ -1,58 +1,30 @@
 package org.bbop.phylo.util;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class FileUtil {
 	private static final Logger log = Logger.getLogger(FileUtil.class.getName());
 
-	public static List<String> readFile(String fileName) {
-		List<String> contents = new ArrayList<>();
-		BufferedReader bufReader = null;
-		String line;
-		boolean error = false;
-
+	public static List<String> readFile(File file) {
 		try {
-			bufReader = new BufferedReader(new FileReader(fileName));
-			line = bufReader.readLine();
-			while (line != null) {
-				contents.add(line);
-				line = bufReader.readLine();
-			}
+			List<String> lines = FileUtils.readLines(file);
+			return lines;
 		}
 		catch (IOException ioex) {
-			error = true;
-
-			log.error("Exception " + ioex.getMessage() + " returned while attempting to read file " + fileName);
-
-		}
-		finally {
-			try {
-				if (null != bufReader) {
-					bufReader.close();
-				}
-			}
-			catch (IOException ioex2) {
-				error = true;
-
-				log.error("Exception " + ioex2.getMessage() + " returned while attempting to close file " + fileName);
-
-			}
-		}
-		if (error) {
+			log.error("Exception " + ioex.getMessage() + " returned while attempting to read file " + file);
 			return null;
 		}
-		return contents;
 	}
 
 	/**
 	 * **************** METHOD HAS NOT BEEN TESTED
 	 * @throws IOException 
 	 */
-	public static void writeFile(String fileName, List<String> contents) throws IOException {
+	public static void writeFile(File fileName, List<String> contents) throws IOException {
 		BufferedWriter bufWriter;
 
 		bufWriter = new BufferedWriter(new FileWriter(fileName));
@@ -67,18 +39,16 @@ public class FileUtil {
 
 	}
 
-	public static boolean validPath(String path) {
+	public static boolean validPath(File path) {
 		if (null == path) {
 			return false;
 		}
-		File f = new File(path);
-		return f.isDirectory() && f.canRead();
+		return path.isDirectory() && path.canRead();
 	}
 
-	public static boolean validFile(String filename) {
+	public static boolean validFile(File f) {
 		boolean ok = false;
-		if (filename != null) {
-			File f = new File(filename);
+		if (f != null) {
 			ok = f.canRead();
 		}
 		return ok;

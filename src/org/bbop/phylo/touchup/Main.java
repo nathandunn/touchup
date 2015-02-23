@@ -31,6 +31,7 @@ import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.util.*;
 
 import javax.swing.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -98,14 +99,14 @@ public class Main {
 		if (f.isDirectory()) {
 			Preferences.inst().setGafDir(arg);
 			String [] files = f.list();
-			families = new ArrayList();
+			families = new ArrayList<>();
 			for (String file : files) {
 				if (file.startsWith("PTHR")) {
 					families.add(file);
 				}
 			}
 		} else if (f.canRead()) {
-			families = FileUtil.readFile(arg);
+			families = FileUtil.readFile(new File(arg));
 			for (int i = families.size() - 1; i >= 0; i--) {
 				// allow for commenting out lines in the input file
 				if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {
@@ -176,9 +177,9 @@ public class Main {
 
 	private void logSummary(Map<String, FamilySummary> summaries) {
 		String program_name = ResourceLoader.inst().loadVersion();
-		String log_dir = Preferences.inst().getGafDir();
+		File log_dir = new File(Preferences.inst().getGafDir());
 		if (FileUtil.validPath(log_dir)) {
-			String logFileName = log_dir + program_name + Constant.LOG_SUFFIX;
+			File logFileName = new File(log_dir, program_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
 			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
 			contents.add("Touched up " + summaries.size() + " PAINT families");
@@ -196,13 +197,12 @@ public class Main {
 	}
 
 	private boolean gafFileExists(String family_name) {
-		String family_dir = Preferences.inst().getGafDir() + family_name + File.separator;
+		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 //			String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
-			String gaf_file = family_dir + family_name + Constant.GAF_SUFFIX;
-			File f = new File(gaf_file);
-			ok = f.exists() && f.isFile() && f.canRead();
+			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
+			ok = FileUtil.validFile(gaf_file);
 			if (!ok) {
 				log.info("Can't read: " + gaf_file);
 			}
