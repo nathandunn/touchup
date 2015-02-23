@@ -101,7 +101,9 @@ public class Preferences {
 	}
 
 	private static File getPaintPrefsDir() {
-		return new File("config");
+		File f = new File("config");
+        f.mkdirs();
+        return f;
 	}
 
 	public Object clone() throws CloneNotSupportedException {

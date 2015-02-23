@@ -150,7 +150,11 @@ public class OWLutil {
 	public static String getTermLabel(String go_id) {
 		initialize();
 		OWLClass term = getTerm(go_id);
-		return go_graph.getLabelOrDisplayId(term);
+        if (term != null) {
+            return go_graph.getLabelOrDisplayId(term);
+        } else {
+            return go_id + " no label";
+        }
 	}
 
 	public static boolean moreSpecific(String check_term, String against_term) {
