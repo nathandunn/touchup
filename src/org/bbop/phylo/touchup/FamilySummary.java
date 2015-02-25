@@ -22,9 +22,11 @@ public class FamilySummary {
         obsolete_terms = LogAlert.getObsoleteCount();
     }
 
-    public void summarize(String family_name, List<String> content) {
+    public int summarize(String family_name, List<String> content) {
+        int review_cnt = 0;
         if (cut != 0 || lost_annotations != 0 || obsolete_terms != 0) {
             content.add(family_name + " needs review ---");
+            review_cnt++;
             if (cut != 0) {
                 if (cut > 1) {
                     content.add(cut + " annotations have been removed");
@@ -48,5 +50,6 @@ public class FamilySummary {
             }
             content.add("\n");
         }
+        return review_cnt;
     }
 }

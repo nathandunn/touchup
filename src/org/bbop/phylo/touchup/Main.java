@@ -182,13 +182,16 @@ public class Main {
 			File logFileName = new File(log_dir, program_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
 			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
-			contents.add("Touched up " + summaries.size() + " PAINT families");
+			contents.add("");
+            contents.add("\n");
 			Set<String> families = summaries.keySet();
+            int review_cnt = 0;
 			for (String family_name : families) {
 				FamilySummary report = summaries.get(family_name);
-				report.summarize(family_name, contents);
+				review_cnt += report.summarize(family_name, contents);
 			}
 			try {
+                contents.set(1, "Touched up " + summaries.size() + " PAINT families, " + review_cnt + " need reviewing.");
 				FileUtil.writeFile(logFileName, contents);
 			} catch (IOException e) {
 				log.error("Unable to log touchup summary: " + e.getMessage());
@@ -200,7 +203,6 @@ public class Main {
 		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
-//			String prefix = Preferences.panther_files[0].startsWith(".") ? family_name : "";
 			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
 			ok = FileUtil.validFile(gaf_file);
 			if (!ok) {
