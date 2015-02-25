@@ -99,7 +99,8 @@ public class GafRecorder {
 			if (ancestor != null) {
 				WithEvidence evidence = new WithEvidence(tree, ancestor, annotation.getCls());
 				List<String> exp_withs = evidence.getExpWiths();
-				annotation.setWithInfos(exp_withs);
+                withs.addAll(exp_withs);
+				annotation.setWithInfos(withs);
 			} else {
 				log.debug("Where is the ancestral node for " + node + " to inherit " + annotation.getCls() + '?');
 			}
