@@ -273,10 +273,10 @@ public abstract class PantherAdapter {
         if (annot_id != null) {
             if (!annot_id.startsWith("AN"))
                 log.info(annot_id + " isn't an AN number");
-            if (node.getANid() != null && node.getANid().length() > 0) {
-                log.info(annot_id + "AN number is already set to " + node.getANid());
+            if (node.getPaintId() != null && node.getPaintId().length() > 0) {
+                log.info(annot_id + "AN number is already set to " + node.getPaintId());
             }
-            node.setANid(annot_id);
+            node.setPaintId(annot_id);
             IDmap.inst().indexByANid(node);
         }
 

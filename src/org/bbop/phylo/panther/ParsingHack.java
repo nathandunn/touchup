@@ -126,7 +126,7 @@ public class ParsingHack {
     static void parseIDstr(Bioentity node, String name) {
         String paint_id = parseANid(name);
         if (paint_id != null)
-            node.setANid(paint_id);
+            node.setPaintId(paint_id);
         else {
             String[] parts = getParts(name);
             if (parts != null && parts.length > 0) {

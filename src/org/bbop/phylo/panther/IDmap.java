@@ -76,7 +76,7 @@ public class IDmap {
     }
 
     public void indexByANid(Bioentity node) {
-        String an_number = node.getANid();
+        String an_number = node.getPaintId();
         if (an_number == null || an_number.length() == 0) {
             log.error("PANTHER AN ID for node is missing!");
         } else if (ANidToGene.get(an_number) != null) {
