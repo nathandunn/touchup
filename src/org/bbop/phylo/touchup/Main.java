@@ -99,6 +99,7 @@ public class Main {
 		if (f.isDirectory()) {
 			Preferences.inst().setGafDir(arg);
 			String [] files = f.list();
+            Arrays.sort(files);
 			families = new ArrayList<>();
 			for (String file : files) {
 				if (file.startsWith("PTHR")) {
