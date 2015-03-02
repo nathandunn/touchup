@@ -319,7 +319,7 @@ public class PaintAction {
 				}
 				if (!covered) {
 					Bioentity top = ancestral_assoc.getBioentityObject();
-					if (top.getPaintId() == null) {
+					if (top.getANid() == null) {
 						log.debug("Got wrong bioentity " + top);
 					}
 					String term = ancestral_assoc.getCls();
@@ -607,7 +607,7 @@ public class PaintAction {
 				child_assoc.setIsNegated(is_not);
 				child_assoc.setDirectNot(false);
 				Collection<String> withs = new ArrayList<>();
-				if (assoc.getBioentityObject().getPaintId() == null) {
+				if (assoc.getBioentityObject().getANid() == null) {
 					log.debug("Getting the wrong entity " + assoc.getBioentityObject());
 				}
 				withs.add(assoc.getBioentity());
