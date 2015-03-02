@@ -276,7 +276,7 @@ public abstract class PantherAdapter {
             if (node.getPaintId() != null && node.getPaintId().length() > 0) {
                 log.info(annot_id + "AN number is already set to " + node.getPaintId());
             }
-            node.setPaintId(annot_id);
+            node.setANid(annot_id);
             IDmap.inst().indexByANid(node);
         }
 

@@ -27,135 +27,141 @@ import java.util.HashMap;
 import java.util.List;
 
 public class IDmap {
-	/**
-	 * 
-	 */
-	private static IDmap INSTANCE = null;
+    /**
+     *
+     */
+    private static IDmap INSTANCE = null;
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private HashMap<String, List<Bioentity>> seqIdtoGene;
-	private HashMap<String, Bioentity> paintIdtoGene;
-	private HashMap<String, Bioentity> DbIdtoGene;
-	private HashMap<String, Bioentity> ptnIdtoGene;
+    private HashMap<String, List<Bioentity>> seqIdtoGene;
+    private HashMap<String, Bioentity> paintIdtoGene;
+    private HashMap<String, Bioentity> DbIdtoGene;
+    private HashMap<String, Bioentity> ptnIdtoGene;
 
-	private static final Logger log = Logger.getLogger(IDmap.class);
+    private static final Logger log = Logger.getLogger(IDmap.class);
 
-	private IDmap() {
-		// Exists only to defeat instantiation.
-	}
+    private IDmap() {
+        // Exists only to defeat instantiation.
+    }
 
-	public static synchronized IDmap inst() {
-		if (INSTANCE == null) {
-			INSTANCE = new IDmap();
-		}
-		return INSTANCE;
-	}
+    public static synchronized IDmap inst() {
+        if (INSTANCE == null) {
+            INSTANCE = new IDmap();
+        }
+        return INSTANCE;
+    }
 
-	public void clearGeneIDs() {
-		if (paintIdtoGene == null) {
-			paintIdtoGene = new HashMap<String, Bioentity>();
-		} else {
-			paintIdtoGene.clear();
-		}
-		if (seqIdtoGene == null) {
-			seqIdtoGene = new HashMap<String, List<Bioentity>>();
-		} else {
-			seqIdtoGene.clear();
-		}
-		if (DbIdtoGene == null) {
-			DbIdtoGene = new HashMap<String, Bioentity>();
-		} else {
-			DbIdtoGene.clear();
-		}
-		if (ptnIdtoGene == null) {
-			ptnIdtoGene = new HashMap<String, Bioentity>();
-		} else {
-			ptnIdtoGene.clear();
-		}
-	}
+    public void clearGeneIDs() {
+        if (paintIdtoGene == null) {
+            paintIdtoGene = new HashMap<String, Bioentity>();
+        } else {
+            paintIdtoGene.clear();
+        }
+        if (seqIdtoGene == null) {
+            seqIdtoGene = new HashMap<String, List<Bioentity>>();
+        } else {
+            seqIdtoGene.clear();
+        }
+        if (DbIdtoGene == null) {
+            DbIdtoGene = new HashMap<String, Bioentity>();
+        } else {
+            DbIdtoGene.clear();
+        }
+        if (ptnIdtoGene == null) {
+            ptnIdtoGene = new HashMap<String, Bioentity>();
+        } else {
+            ptnIdtoGene.clear();
+        }
+    }
 
-	public void indexByANid(Bioentity node) {
-		String an_number = node.getPaintId();
-		if (an_number == null || an_number.length() == 0) {
-			log.error("Paint ID for node is missing!");
-		} else if (paintIdtoGene.get(an_number) != null) {
-			log.error("We've already indexed this node: " + an_number);
-		} else {
-			paintIdtoGene.put(an_number, node);	
-		}			
-	}
+    public void indexByANid(Bioentity node) {
+        String an_number = node.getPaintId();
+        if (an_number == null || an_number.length() == 0) {
+            log.error("Paint ID for node is missing!");
+        } else if (paintIdtoGene.get(an_number) != null) {
+            log.error("We've already indexed this node: " + an_number);
+        } else {
+            paintIdtoGene.put(an_number, node);
+        }
+    }
 
-	public void indexBySeqID(Bioentity node) {
-		indexBySeqID(node, node.getSeqDb(), node.getSeqId());
-	}
+    public void indexBySeqID(Bioentity node) {
+        indexBySeqID(node, node.getSeqDb(), node.getSeqId());
+    }
 
-	private void indexBySeqID(Bioentity node, String db, String db_id) {
-		if (db_id != null && db_id.length() > 0) {
-			String key = db + ':' + db_id.toUpperCase();
-			List<Bioentity> genes = seqIdtoGene.get(key);
-			if (genes == null) {
-				genes = new ArrayList<Bioentity>();
-				seqIdtoGene.put(key, genes);
-			}
-			if (!genes.contains(node))
-				genes.add(node);
-			else {
-				log.debug("Already indexed " + key);
-			}
-		}
-	}
+    private void indexBySeqID(Bioentity node, String db, String db_id) {
+        if (db_id != null && db_id.length() > 0) {
+            String key = db + ':' + db_id.toUpperCase();
+            List<Bioentity> genes = seqIdtoGene.get(key);
+            if (genes == null) {
+                genes = new ArrayList<Bioentity>();
+                seqIdtoGene.put(key, genes);
+            }
+            if (!genes.contains(node))
+                genes.add(node);
+            else {
+                log.debug("Already indexed " + key);
+            }
+        }
+    }
 
-	public void indexByDBID(Bioentity node) {
-		String key = node.getId();
-		if (key.indexOf(':') < 0)
-			log.error("Bad key: " + key);
-		if (key.length() > 0) {
-			if (DbIdtoGene.get(key) == null)
-				DbIdtoGene.put(key, node);
-		}
-	}
+    public void indexByDBID(Bioentity node) {
+        String key = node.getId();
+        if (key.indexOf(':') < 0)
+            log.error("Bad key: " + key);
+        if (key.length() > 0) {
+            if (DbIdtoGene.get(key) == null)
+                DbIdtoGene.put(key, node);
+            else
+                log.debug("Already indexed by DBID " + node);
+        }
+    }
 
-	public void indexNodeByPTN(Bioentity node) {
-		String ptn_id = node.getPersistantNodeID();
-		ptnIdtoGene.put(ptn_id, node);
-		indexByDBID(node);
-	}
-	
-	public Bioentity getGeneByPTNId(String id) {
-		Bioentity node = null;
-		if (id != null && ptnIdtoGene != null)
-			node = ptnIdtoGene.get(id);
-		return node;
-	}
+    public void indexNodeByPTN(Bioentity node) {
+        String ptn_id = node.getPersistantNodeID();
+        if (ptnIdtoGene.get(ptn_id) == null)
+            ptnIdtoGene.put(ptn_id, node);
+        else
+            log.debug("Already indexed " + node + " by ptn");
+        if (DbIdtoGene.get(node.getId()) == null)
+            indexByDBID(node);
+    }
 
-	public Bioentity getGeneByANId(String id) {
-		if (id.length() == 0)
-			return null;
-		Bioentity node = paintIdtoGene.get(id);
-		if (node == null && id.startsWith("PTHR")) {
-			id = id.substring(id.indexOf('_') + 1);
-			node = paintIdtoGene.get(id);
-		}
-		return node;
-	}
+    public Bioentity getGeneByPTNId(String id) {
+        Bioentity node = null;
+        if (id != null && ptnIdtoGene != null)
+            node = ptnIdtoGene.get(id);
+        return node;
+    }
 
-	public List<Bioentity> getGenesBySeqId(String db, String id) {
-		String key = db + ':' + id.toUpperCase();
-		return getGenesBySeqId(key);
-	}
+    public Bioentity getGeneByANId(String id) {
+        if (id.length() == 0)
+            return null;
+        Bioentity node = paintIdtoGene.get(id);
+        if (node == null && id.startsWith("PTHR")) {
+            id = id.substring(id.indexOf('_') + 1);
+            node = paintIdtoGene.get(id);
+        }
+        return node;
+    }
 
-	public List<Bioentity> getGenesBySeqId(String key) {
-		List<Bioentity> node = seqIdtoGene.get(key);
-		if (node == null && key.contains("PTHR")) {
-			key = key.substring(key.indexOf('_') + 1);
-			node = seqIdtoGene.get(key.toUpperCase());
-		}
-		return node;
-	}
+    public List<Bioentity> getGenesBySeqId(String db, String id) {
+        String key = db + ':' + id.toUpperCase();
+        return getGenesBySeqId(key);
+    }
 
-	public Bioentity getGeneByDbId(String key) {
-		return DbIdtoGene.get(key);
-	}
+    public List<Bioentity> getGenesBySeqId(String key) {
+        List<Bioentity> node = seqIdtoGene.get(key);
+        if (node == null && key.contains("PTHR")) {
+            key = key.substring(key.indexOf('_') + 1);
+            node = seqIdtoGene.get(key.toUpperCase());
+        }
+        return node;
+    }
+
+    public Bioentity getGeneByDbId(String key) {
+        return DbIdtoGene.get(key);
+    }
 
 }

@@ -40,6 +40,7 @@ public class Constant {
 	public final static String PAINT_REF = "PAINT_REF";
 	public final static String OLD_SOURCE = "RefGenome";
 	public final static String PAINT_AS_SOURCE = "GO Central";
+    public final static String REACTOME = "Reactome";
 
 	private final static String CONTRIBUTES = "contributes_to";
 	private final static String COLOCATES = "colocalizes_with";
