@@ -35,7 +35,7 @@ public class IDmap {
     private static final long serialVersionUID = 1L;
 
     private HashMap<String, List<Bioentity>> seqIdtoGene;
-    private HashMap<String, Bioentity> paintIdtoGene;
+    private HashMap<String, Bioentity> ANidToGene;
     private HashMap<String, Bioentity> DbIdtoGene;
     private HashMap<String, Bioentity> ptnIdtoGene;
 
@@ -53,10 +53,10 @@ public class IDmap {
     }
 
     public void clearGeneIDs() {
-        if (paintIdtoGene == null) {
-            paintIdtoGene = new HashMap<String, Bioentity>();
+        if (ANidToGene == null) {
+            ANidToGene = new HashMap<String, Bioentity>();
         } else {
-            paintIdtoGene.clear();
+            ANidToGene.clear();
         }
         if (seqIdtoGene == null) {
             seqIdtoGene = new HashMap<String, List<Bioentity>>();
@@ -76,13 +76,13 @@ public class IDmap {
     }
 
     public void indexByANid(Bioentity node) {
-        String an_number = node.getPaintId();
+        String an_number = node.getANid();
         if (an_number == null || an_number.length() == 0) {
-            log.error("Paint ID for node is missing!");
-        } else if (paintIdtoGene.get(an_number) != null) {
+            log.error("PANTHER AN ID for node is missing!");
+        } else if (ANidToGene.get(an_number) != null) {
             log.error("We've already indexed this node: " + an_number);
         } else {
-            paintIdtoGene.put(an_number, node);
+            ANidToGene.put(an_number, node);
         }
     }
 
@@ -101,7 +101,7 @@ public class IDmap {
             if (!genes.contains(node))
                 genes.add(node);
             else {
-                log.debug("Already indexed " + key);
+                log.info("Already indexed " + key);
             }
         }
     }
@@ -114,7 +114,7 @@ public class IDmap {
             if (DbIdtoGene.get(key) == null)
                 DbIdtoGene.put(key, node);
             else
-                log.debug("Already indexed by DBID " + node);
+                log.info("Already indexed by DBID " + node);
         }
     }
 
@@ -123,7 +123,7 @@ public class IDmap {
         if (ptnIdtoGene.get(ptn_id) == null)
             ptnIdtoGene.put(ptn_id, node);
         else
-            log.debug("Already indexed " + node + " by ptn");
+            log.info("Already indexed " + node + " by ptn");
         if (DbIdtoGene.get(node.getId()) == null)
             indexByDBID(node);
     }
@@ -138,10 +138,10 @@ public class IDmap {
     public Bioentity getGeneByANId(String id) {
         if (id.length() == 0)
             return null;
-        Bioentity node = paintIdtoGene.get(id);
+        Bioentity node = ANidToGene.get(id);
         if (node == null && id.startsWith("PTHR")) {
             id = id.substring(id.indexOf('_') + 1);
-            node = paintIdtoGene.get(id);
+            node = ANidToGene.get(id);
         }
         return node;
     }
