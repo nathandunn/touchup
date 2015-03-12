@@ -10,6 +10,8 @@ import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -81,7 +83,25 @@ public class AnnotationUtil {
     public static void collectExpAnnotations(Family family) {
         Tree tree = family.getTree();
         List<Bioentity> leaves = tree.getLeaves();
-        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org");
+ //       RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr"){
+        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
+            @Override
+            protected void logRequest(URI uri) {
+                super.logRequest(uri);
+            }
+
+            @Override
+            protected void logRequestError(URI uri, IOException exception) {
+                log.error("Encountered " + uri, exception);
+            }
+
+            @Override
+            protected void defaultRandomWait() {
+                log.info("waiting " + System.currentTimeMillis());
+                randomWait(2000, 5000);
+                log.info("retrying " + System.currentTimeMillis());
+            }
+        };
         for (Bioentity leaf : leaves) {
             String key = leaf.getId();
             try {
@@ -101,18 +121,35 @@ public class AnnotationUtil {
                         log.info(bioentities.size() + " annotations returned for " + key);
                         continue;
                     }
-                    List<GeneAnnotation> annotations = annots.getGeneAnnotations();
-                    paintAnnotationsFilter(leaf, annotations);
+                    List<GeneAnnotation> golr_annotations = annots.getGeneAnnotations();
+                    List<GeneAnnotation> exp_annotations = paintAnnotationsFilter(leaf, golr_annotations);
+                    leaf.setAnnotations(exp_annotations);
+                    // lets compare and fill in any missing fields
+                    if (golr_annotations != null && golr_annotations.size() > 0) {
+                        Bioentity go_node = golr_annotations.get(0).getBioentityObject();
+                        leaf.setFullName(go_node.getFullName());
+                        if (leaf.getNcbiTaxonId() == null ||
+                                leaf.getNcbiTaxonId().length() == 0 ||
+                                leaf.getNcbiTaxonId().endsWith(":1")) {
+                            leaf.setNcbiTaxonId(go_node.getNcbiTaxonId());
+                        }
+                        if (go_node.getSynonyms() != null) {
+                            for (String synonym : go_node.getSynonyms()) {
+                                leaf.addSynonym(synonym);
+                            }
+                        }
+                    }
                 }
             } catch (Exception e) {
-                log.info("Problem filtering out previous PAINT annotations for " + leaf);
+                log.info("Problem collecting experimental annotations for "
+                        + leaf + " " + e);
             }
         }
     }
 
-    private static void paintAnnotationsFilter(Bioentity node, List<GeneAnnotation> all_annotations) {
+    private static List<GeneAnnotation> paintAnnotationsFilter(Bioentity node, List<GeneAnnotation> all_annotations) {
+        List<GeneAnnotation> exp_annotations = new ArrayList<>();
         if (all_annotations != null) {
-            List<GeneAnnotation> exp_annotations = new ArrayList<>();
             for (GeneAnnotation annotation : all_annotations) {
                 String eco = annotation.getShortEvidence();
                 if (Constant.EXP_strings.contains(eco)) {
@@ -138,31 +175,12 @@ public class AnnotationUtil {
                     }
                 }
             }
-            node.setAnnotations(exp_annotations);
-            // lets compare
-            Bioentity go_node = all_annotations.get(0).getBioentityObject();
-            node.setFullName(go_node.getFullName());
-            node.setNcbiTaxonId(go_node.getNcbiTaxonId());
-            if (go_node.getSynonyms() != null) {
-                for (String synonym : go_node.getSynonyms()) {
-                    node.addSynonym(synonym);
-                }
-            }
         }
+        return exp_annotations;
     }
 
     public static List<GeneAnnotation> getExpAssociations(Bioentity leaf) {
-        List<GeneAnnotation> annotations = leaf.getAnnotations();
-        List<GeneAnnotation> exp_annotations = new ArrayList<>();
-        if (annotations != null) {
-            for (GeneAnnotation annotation : annotations) {
-                String eco = annotation.getShortEvidence();
-                if (Constant.EXP_strings.contains(eco)) {
-                    exp_annotations.add(annotation);
-                }
-            }
-        }
-        return exp_annotations;
+        return paintAnnotationsFilter(leaf, leaf.getAnnotations());
     }
 
     public static List<GeneAnnotation> getAspectExpAssociations(Bioentity leaf, String aspect) {
@@ -181,11 +199,15 @@ public class AnnotationUtil {
         return (source.equals(Constant.PAINT_AS_SOURCE) || source.equals(Constant.OLD_SOURCE));
     }
 
-    public static boolean isExcluded(String pub_id) {
+    private static boolean isExcluded(String pub_id) {
         boolean excluded = false;
         for (int i = 0; i < high_throughput.length && !excluded; i++) {
             excluded = pub_id.equals(high_throughput[i]);
         }
         return excluded;
+    }
+
+    public static boolean isAncestralNode(Bioentity node) {
+        return node.getDb().equals(Constant.PANTHER_DB);
     }
 }

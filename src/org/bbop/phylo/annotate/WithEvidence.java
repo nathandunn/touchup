@@ -96,7 +96,15 @@ public class WithEvidence {
 						 */
 					boolean add = (exp_term.equals(go_id)) || OWLutil.moreSpecific(exp_term, go_id);
 
+                    /*
+                    * Don't add this node if it is already included.
+                     */
 					if (add) {
+                        for (String with_id : exp_withs) {
+                            add &= !with_id.equals(leaf.getId());
+                        }
+                    }
+                    if (add) {
 						exp_withs.add(leaf.getId());
 						/*
 						 * The code below is carrying out an unrelated function

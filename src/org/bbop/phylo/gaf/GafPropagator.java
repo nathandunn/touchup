@@ -21,6 +21,7 @@ package org.bbop.phylo.gaf;
 
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.PaintAction;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.panther.IDmap;
@@ -104,10 +105,17 @@ public class GafPropagator {
                     LogAlert.logMissing(gaf_node, gaf_annotation);
                 }
             } else {
+                int seq_count = 0;
+                GeneAnnotation original = gaf_annotation;
                 for (Bioentity seq_node : seqs) {
+                    if (seq_count > 0) {
+                        // clone the gaf annotation
+                        gaf_annotation = new GeneAnnotation(original);
+                    }
                     gaf_annotation.setBioentityObject(seq_node);
                     gaf_annotation.setBioentity(seq_node.getId());
                     parseAnnotations(family, seq_node, gaf_annotation, pruned_list, negate_list);
+                    seq_count++;
                 }
             } // end for loop going through gaf file contents
         }
@@ -116,6 +124,7 @@ public class GafPropagator {
             node.setPrune(true);
             PaintAction.inst().pruneBranch(node, pruned_list.get(node), true);
         }
+
         if (!negate_list.isEmpty()) {
             applyNots(family, negate_list);
         }
@@ -139,26 +148,16 @@ public class GafPropagator {
             String evi_code = gaf_annotation.getShortEvidence();
 
             if (!evi_code.equals(Constant.ANCESTRAL_EVIDENCE_CODE)) {
-                boolean negation = gaf_annotation.isNegated();
-
-                if (negation) {
-                    List<GeneAnnotation> not_annots = negate_list.get(node);
-                    if (not_annots == null) {
-                        not_annots = new ArrayList<>();
-                        negate_list.put(node, not_annots);
-                    }
-                    not_annots.add(gaf_annotation);
-                } else {
-                    List<String> go_ids = new ArrayList<>();
-                    if (OWLutil.isObsolete(gaf_annotation.getCls())) {
-                        go_ids = OWLutil.replacedBy(gaf_annotation.getCls());
-                        if (go_ids.size() == 0) {
-                            LogAlert.logObsolete(node, gaf_annotation);
+                List<String> go_ids = getLatestGOID(node, gaf_annotation);
+                for (String go_id : go_ids) {
+                    if (gaf_annotation.isNegated()) {
+                        List<GeneAnnotation> not_annots = negate_list.get(node);
+                        if (not_annots == null) {
+                            not_annots = new ArrayList<>();
+                            negate_list.put(node, not_annots);
                         }
+                        not_annots.add(gaf_annotation);
                     } else {
-                        go_ids.add(gaf_annotation.getCls());
-                    }
-                    for (String go_id : go_ids) {
                         if (OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
                             LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node, family.getTree());
                             if (invalid == null) {
@@ -184,10 +183,29 @@ public class GafPropagator {
                 gafdoc = builder.buildDocument(gaf_file.getAbsolutePath());
                 propagate(gafdoc, family);
             } catch (IOException | URISyntaxException e) {
+                log.warn("URI Syntax exception for " + family.getFamily_name());
                 ok = false;
             }
         }
         return ok;
+    }
+
+    private static List<String> getLatestGOID(Bioentity node, GeneAnnotation gaf_annotation) {
+        List<String> go_ids = new ArrayList<>();
+        if (OWLutil.isObsolete(gaf_annotation.getCls())) {
+            go_ids = OWLutil.replacedBy(gaf_annotation.getCls());
+            if (go_ids.size() == 0) {
+                LogAlert.logObsolete(node, gaf_annotation);
+            }
+            if (go_ids.size() > 1) {
+                log.info("Got " + go_ids.size() + " replacement IDs for " + gaf_annotation.getCls());
+                LogAlert.logObsolete(node, gaf_annotation);
+                go_ids.clear();
+            }
+        } else {
+            go_ids.add(gaf_annotation.getCls());
+        }
+        return go_ids;
     }
 
     private static void applyNots(Family family, Map<Bioentity, List<GeneAnnotation>> negate_list) {
@@ -197,55 +215,81 @@ public class GafPropagator {
         These need to be removed before processing the NOT
          */
 
-        Map<Bioentity, List<GeneAnnotation>> toBeSkipped = new HashMap<>();
+        /*
+        For each protein node that had one or more NOT qualifiers in the GAF files
+        */
+        List<Bioentity> skip_list = new ArrayList();
         for (Bioentity node : negate_list.keySet()) {
-            List<GeneAnnotation> row_list = negate_list.get(node);
-            List<GeneAnnotation> skipList = new ArrayList<>();
-            toBeSkipped.put(node, skipList);
-            for (GeneAnnotation not_annot : row_list) {
-                Collection<String> withs = not_annot.getWithInfos();
-                for (Iterator<String> with_it = withs.iterator(); with_it.hasNext(); ) {
-                    String with = with_it.next();
-                    Bioentity with_node = IDmap.inst().getGeneByDbId(with);
-                    if (with_node != null && negate_list.containsKey(with_node)) {
-                        List<GeneAnnotation> check_list = negate_list.get(with_node);
-                        for (GeneAnnotation check_annot : check_list) {
-                            if (not_annot.getCls().equals(check_annot.getCls())) {
-                                skipList.add(not_annot);
+            if (AnnotationUtil.isAncestralNode(node)) {
+            /*
+                Remove any annotations to descendants
+             */
+                List<Bioentity> leaves = family.getTree().getLeafDescendants(node);
+                List<GeneAnnotation> ancestral_negations = negate_list.get(node);
+                for (Bioentity leaf : leaves) {
+                    for (GeneAnnotation ancestral_negation : ancestral_negations) {
+                    /*
+                    If this descendant is negated check to see if it is the same GO term
+                     */
+                        if (negate_list.containsKey(leaf)) {
+                            List<GeneAnnotation> leaf_negations = negate_list.get(leaf);
+                            for (int i = leaf_negations.size() - 1; i >= 0; i--) {
+                                GeneAnnotation leaf_negation = leaf_negations.get(i);
+                                if (ancestral_negation.getCls().equals(leaf_negation.getCls())) {
+                                /*
+                                redundant, the ancestral negation will produce this
+                                remove it from the actionable list
+                                 */
+                                    leaf_negations.remove(i);
+                                    if (leaf_negations.isEmpty()) {
+                                        skip_list.add(leaf);
+                                    }
+                                }
                             }
                         }
-
                     }
                 }
             }
         }
 
+        for (Bioentity skip : skip_list) {
+            negate_list.remove(skip);
+        }
 
         for (Bioentity node : negate_list.keySet()) {
-            List<GeneAnnotation> row_list = negate_list.get(node);
-            List<GeneAnnotation> skipList = toBeSkipped.get(node);
-            for (GeneAnnotation notted_gaf_annot : row_list) {
-                if (skipList != null && skipList.contains(notted_gaf_annot)) {
-                    continue;
-                }
+            for (GeneAnnotation notted_gaf_annot : negate_list.get(node)) {
 				/*
 				 * Need to propagate this change to all descendants
 				 */
                 List<GeneAnnotation> associations = node.getAnnotations();
                 if (associations != null) {
                     for (GeneAnnotation assoc : associations) {
-                        if (assoc.getCls().equals(notted_gaf_annot.getCls())) {
-                            List<String> all_evidence = assoc.getReferenceIds();
+                        boolean match = AnnotationUtil.isPAINTAnnotation(assoc);
+                        if (match) {
+                            match = assoc.getCls().equals(notted_gaf_annot.getCls());
+                            if (!match) {
+                                match = OWLutil.moreSpecific(notted_gaf_annot.getCls(), assoc.getCls());
+                                if (match) {
+                                    log.info("negating subclass for " + notted_gaf_annot);
+                                }
+                            }
+                            if (match) {
+                                List<String> all_evidence = assoc.getReferenceIds();
 						/*
 						 * Should just be one piece of evidence
 						 */
-                            if (all_evidence.size() == 1) {
-                                PaintAction.inst().setNot(family, node, assoc, notted_gaf_annot.getShortEvidence(), true);
+                                if (all_evidence.size() == 1) {
+                                    String eco = notted_gaf_annot.getShortEvidence();
+                                    if (!eco.equals(Constant.KEY_RESIDUES_EC) &&
+                                            !eco.equals(Constant.DIVERGENT_EC)) {
+                                        log.error("Bad ECO in " + notted_gaf_annot);
+                                        eco = Constant.DIVERGENT_EC;
+                                    }
+                                    PaintAction.inst().setNot(family, node, assoc, eco, true);
+                                }
                             }
                         }
                     }
-                } else {
-                    log.debug("No annotations to negate for " + node.getDBID());
                 }
             }
         }

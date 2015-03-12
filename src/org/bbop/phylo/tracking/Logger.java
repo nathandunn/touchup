@@ -61,20 +61,20 @@ public class Logger {
 				log_file = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			}
 			if (FileUtil.validFile(log_file)) {
-				List<String> log_content = FileUtil.readFile(log_file);
-				if (log_content != null) {
-					clearBoilerPlate(log_content);
-					clearEditLog(log_content);
-					for (int i = 0; i < log_content.size(); i++) {
-						String line = log_content.get(i).trim();
-						notes.add(line);
-					}
-				} else {
-					logger.error("Couldn't read" + log_file);
-				}
-			} else {
-				logger.error("Invalid path for log file " + log_file);
-			}
+                List<String> log_content = FileUtil.readFile(log_file);
+                if (log_content != null) {
+                    clearBoilerPlate(log_content);
+                    clearEditLog(log_content);
+                    for (int i = 0; i < log_content.size(); i++) {
+                        String line = log_content.get(i).trim();
+                        notes.add(line);
+                    }
+                } else {
+                    logger.error("Couldn't read" + log_file);
+                }
+            } else {
+                logger.warn("No log file yet exists for " + log_file);
+            }
 		} else {
 			logger.error("Invalid path for family directory " + family_dir);
 		}

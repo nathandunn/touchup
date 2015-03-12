@@ -98,7 +98,6 @@ public class ParsingHack {
         if (gene == null) {
             String [] db_source = getDBparts(row);
             if (db_source == null || db_source.length == 0) {
-                log.error("Unable to parse " + row);
                 return null;
             }
             String db = dbNameHack(db_source[0]);
@@ -118,8 +117,6 @@ public class ParsingHack {
                 }
             }
         }
-        if (gene == null)
-            log.warn("Unable to locate node for " + row);
         return gene;
     }
 
@@ -134,8 +131,6 @@ public class ParsingHack {
                 String taxon = TaxonFinder.getTaxonID(parts[0]);
                 if (taxon != null) {
                     node.setNcbiTaxonId(taxon);
-                } else {
-                    log.debug("no taxon found for " + parts[0]);
                 }
                 String[] db_source = getDBparts(name);
                 String[] seq_source = getSeqParts(name);

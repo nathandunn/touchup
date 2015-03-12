@@ -23,15 +23,16 @@ package org.bbop.phylo.touchup;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.gaf.GafPropagator;
 import org.bbop.phylo.model.Family;
+import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
-import org.bbop.phylo.panther.IDmap;
-import org.bbop.phylo.util.*;
+import org.bbop.phylo.util.FileUtil;
+import org.bbop.phylo.util.OWLutil;
+import org.bbop.phylo.util.ResourceLoader;
 
 import javax.swing.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -123,20 +124,24 @@ public class Main {
 
 		log.info(families.size() + " families to touch up");
 		Map<String, FamilySummary> run_summary = new HashMap<>();
+ //       boolean start = false;
 		for (String family_name : families) {
-			log.info("Touching up " + family_name + " (" + (families.indexOf(family_name)+1) + " of " + families.size() + ")");
-			clear();
-			if (loadPaint(family_name)) {
-				savePaint();
-				Logger.write(family_name);
-				FamilySummary family_summary = new FamilySummary();
-				run_summary.put(family_name, family_summary);
+  //          start |= family_name.startsWith("PTHR23105");
+//            if (start) {
+                log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
+                clear();
+                if (loadPaint(family_name)) {
+                    savePaint();
+                    Logger.write(family_name);
+                    FamilySummary family_summary = new FamilySummary();
+                    run_summary.put(family_name, family_summary);
 
-			} else {
-				log.error("Unable to load " + family_name);
-			}
-		}
-		logSummary(run_summary);
+                } else {
+                    log.error("Unable to load " + family_name);
+                }
+                logSummary(run_summary);
+//            }
+        }
 		return run_summary.size();
 	}
 

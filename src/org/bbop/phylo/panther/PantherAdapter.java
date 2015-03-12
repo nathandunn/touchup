@@ -399,8 +399,6 @@ public abstract class PantherAdapter {
                 Bioentity gene = ParsingHack.findThatNode(seqWt.get(0));
                 if (gene != null)
                     weights.put(gene, new Double(seqWt.get(1)));
-                else
-                    log.warn ("Unable to parse ID from wts row " + seqWt.get(0));
             }
         }
         else {
