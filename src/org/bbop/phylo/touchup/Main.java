@@ -31,6 +31,7 @@ import org.bbop.phylo.tracking.Logger;
 import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
 import org.bbop.phylo.util.ResourceLoader;
+import org.bbop.phylo.util.TaxonChecker;
 
 import javax.swing.*;
 import java.io.File;
@@ -38,186 +39,225 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
-	/**
-	 * 
-	 */
-	protected Thread runner;
+    /**
+     *
+     */
+    protected Thread runner;
 
-	private static String[] args;
+    private static String[] args;
 
-	private Family family;
+    private Family family;
 
-	private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(Main.class);
+    private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(Main.class);
 
-	/**
-	 * Method declaration
-	 *
-	 *
-	 * @param args either a family name, a file containing a list of family names, or a directory where the families are
-	 *
-	 * @see
-	 */
-	public static void main(final String[] args) {
-		Main.args = args;
-		Main theRunner = new Main();
+    /**
+     * Method declaration
+     *
+     *
+     * @param args either a family name, a file containing a list of family names, or a directory where the families are
+     *
+     * @see
+     */
+    public static void main(final String[] args) {
+        Main.args = args;
+        Main theRunner = new Main();
 
-		SwingUtilities.invokeLater(theRunner.mainRun);
+        SwingUtilities.invokeLater(theRunner.mainRun);
 
-		Runtime.getRuntime().addShutdownHook(new Thread(theRunner.mainRun) {
-			public void run() {
-				Preferences.inst().writePreferences(Preferences.inst());
-			}
-		});
-	}
+        Runtime.getRuntime().addShutdownHook(new Thread(theRunner.mainRun) {
+            public void run() {
+                Preferences.inst().writePreferences(Preferences.inst());
+            }
+        });
+    }
 
-	private final Runnable mainRun =
-			new Runnable() {
-		// this thread runs in the AWT event queue
-		public void run() {
-			if (args.length == 0) {
-				System.err.println("Please provide a family ID.");
-				System.exit(1);
-			}
+    private final Runnable mainRun =
+            new Runnable() {
+                // this thread runs in the AWT event queue
+                public void run() {
+                    int family_count = 0;
+                    if (args.length == 0 || (args.length % 2) == 1) {
+                        provideHelp();
+                        System.exit(0);
+                    }
+                    List<String> families;
+                    String start_with_family = null;
+                    String family_file = null;
+                    for (int i = 0; i < args.length; i += 2) {
+                        if (args[i].contains("t")) {
+                            Preferences.inst().setTreeDir(args[i + 1]);
+                        } else if (args[i].contains("s")) {
+                            start_with_family = args[i + 1];
+                        } else if (args[i].contains("f") || args[i].contains("d") || args[i].contains("l")) {
+                            family_file = args[i + 1];
+                        } else {
+                            provideHelp();
+                            System.exit(0);
+                        }
+                    }
 
-			if (args.length > 1)
-				Preferences.inst().setTreeDir(args[1]);
-			try {
-				int family_count = touchup(args[0]);
-				log.info("Touched up " + family_count + " PAINT families");
-			System.exit(0);
-			}
-			catch (Exception e) { // should catch RuntimeException
-				e.printStackTrace();
-				System.exit(2);
-			}
-		}
-	};
+                    File f = new File(family_file);
 
-	private int touchup(String arg) {
-		File f = new File(arg);
-		List<String> families;
-
-		if (f.isDirectory()) {
-			Preferences.inst().setGafDir(arg);
-			String [] files = f.list();
-            Arrays.sort(files);
-			families = new ArrayList<>();
-			for (String file : files) {
-				if (file.startsWith("PTHR")) {
-					families.add(file);
-				}
-			}
-		} else if (f.canRead()) {
-			families = FileUtil.readFile(new File(arg));
-			for (int i = families.size() - 1; i >= 0; i--) {
-				// allow for commenting out lines in the input file
-				if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {
-					families.remove(i);
-				}
-			}
-		} else {
-			families = new ArrayList<>();
-			if (arg.startsWith("PTHR")) {
-				families.add(arg);
-			}
-		}
-
-		log.info(families.size() + " families to touch up");
-		Map<String, FamilySummary> run_summary = new HashMap<>();
- //       boolean start = false;
-		for (String family_name : families) {
-  //          start |= family_name.startsWith("PTHR23105");
-//            if (start) {
-                log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
-                clear();
-                if (loadPaint(family_name)) {
-                    savePaint();
-                    Logger.write(family_name);
-                    FamilySummary family_summary = new FamilySummary();
-                    run_summary.put(family_name, family_summary);
-
-                } else {
-                    log.error("Unable to load " + family_name);
+                    if (f.isDirectory()) {
+                        Preferences.inst().setGafDir(family_file);
+                        String [] files = f.list();
+                        Arrays.sort(files);
+                        families = new ArrayList<>();
+                        boolean start = false;
+                        for (String file : files) {
+                            if (file.startsWith("PTHR")) {
+                                start |= start_with_family == null || file.startsWith(start_with_family);
+                                if (start) {
+                                    families.add(file);
+                                }
+                            }
+                        }
+                    } else if (f.canRead()) {
+                        families = FileUtil.readFile(new File(family_file));
+                        for (int i = families.size() - 1; i >= 0; i--) {
+                            // allow for commenting out lines in the input file
+                            if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {
+                                families.remove(i);
+                            }
+                        }
+                    } else {
+                        families = new ArrayList<>();
+                        if (family_file.startsWith("PTHR")) {
+                            families.add(family_file);
+                        }
+                    }
+                    try {
+                        family_count = touchup(families);
+                        log.info("Touched up " + family_count + " PAINT families");
+                        System.exit(0);
+                    }
+                    catch (Exception e) { // should catch RuntimeException
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
                 }
-                logSummary(run_summary);
-//            }
+            };
+
+    private int touchup(List<String> families) {
+        log.info(families.size() + " families to touch up");
+        Map<String, FamilySummary> run_summary = new HashMap<>();
+        int count = 0;
+        for (String family_name : families) {
+            log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
+            clear();
+            Family family = new Family();
+            boolean available = gafFileExists(family_name);
+            if (!available) {
+                log.info("Missing GAF file for " + family_name);
+            } else {
+                available &= family.fetch(family_name);
+                if (available) {
+                    boolean proceed = TaxonChecker.isLive();
+                    if (proceed) {
+                        proceed &= resetAnnotations(family);
+                        if (proceed) {
+                            savePaint();
+                            Logger.write(family_name);
+                            FamilySummary family_summary = new FamilySummary();
+                            run_summary.put(family_name, family_summary);
+                        }
+                    }
+                    if (!proceed) {
+                        logSummary(run_summary, count);
+                        return run_summary.size();
+                    }
+                } else {
+                    log.error("Unable to load tree for " + family_name);
+                }
+            }
+            count++;
         }
-		return run_summary.size();
-	}
+        logSummary(run_summary, count);
+        return run_summary.size();
+    }
 
-	private void clear() {
-		IDmap.inst().clearGeneIDs();
-		LogAction.clearLog();
-		LogAlert.clearLog();
-		OWLutil.clearTerms();
-	}
+    private void clear() {
+        IDmap.inst().clearGeneIDs();
+        LogAction.clearLog();
+        LogAlert.clearLog();
+        OWLutil.clearTerms();
+        System.gc();
+    }
 
-	private boolean loadPaint(String family_name) {
-	family = new Family();
-		boolean available = gafFileExists(family_name) && family.fetch(family_name);
-		if (available) {
-			AnnotationUtil.collectExpAnnotations(family);
-
+    private boolean resetAnnotations(Family family) {
+        boolean reset = true;
+        try {
+            AnnotationUtil.collectExpAnnotationsBatched(family);
 			/*
 			 * The file may be null, in which case the following two methods
 			 * simply return
 			 */
-			Logger.importPrior(family_name);
+            Logger.importPrior(family.getFamily_name());
 
-			GafPropagator.importAnnotations(family);
+            GafPropagator.importAnnotations(family);
 
-		} else {
-			family = null;
-			log.info("Unable to touchup " + family_name);
-		}
-		System.gc();
-		return family != null;
-	}
+        } catch (Exception e) {
+            reset = false;
+        }
+        return reset;
+    }
 
-	private void savePaint() {
-		if (family != null) {
-			// Need to add the supporting experimental annotations to the withs
-			family.save();
-		}
-	}
+    private void savePaint() {
+        if (family != null) {
+            // Need to add the supporting experimental annotations to the withs
+            family.save();
+        }
+    }
 
-	private void logSummary(Map<String, FamilySummary> summaries) {
-		String program_name = ResourceLoader.inst().loadVersion();
-		File log_dir = new File(Preferences.inst().getGafDir());
-		if (FileUtil.validPath(log_dir)) {
-			File logFileName = new File(log_dir, program_name + Constant.LOG_SUFFIX);
-			List<String> contents = new ArrayList<>();
-			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
-			contents.add("");
+    private void logSummary(Map<String, FamilySummary> summaries, int count) {
+        String program_name = ResourceLoader.inst().loadVersion();
+        File log_dir = new File(Preferences.inst().getGafDir());
+        if (FileUtil.validPath(log_dir)) {
+            File logFileName = new File(log_dir, program_name + Constant.LOG_SUFFIX);
+            List<String> contents = new ArrayList<>();
+            contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
+            contents.add("");
             contents.add("\n");
-			Set<String> families = summaries.keySet();
+            Set<String> families = summaries.keySet();
             int review_cnt = 0;
-			for (String family_name : families) {
-				FamilySummary report = summaries.get(family_name);
-				review_cnt += report.summarize(family_name, contents);
-			}
-			try {
-                contents.set(1, "Touched up " + summaries.size() + " PAINT families, " + review_cnt + " need reviewing.");
-				FileUtil.writeFile(logFileName, contents);
-			} catch (IOException e) {
-				log.error("Unable to log touchup summary: " + e.getMessage());
-			}
-		}
-	}
+            for (String family_name : families) {
+                FamilySummary report = summaries.get(family_name);
+                review_cnt += report.summarize(family_name, contents);
+            }
+            try {
+                contents.set(1, "Touched up " + summaries.size() + " PAINT families, " + (
+                        summaries.size() - count) + " are missing GAF files and " + review_cnt + " need reviewing.");
+                FileUtil.writeFile(logFileName, contents);
+            } catch (IOException e) {
+                log.error("Unable to log touchup summary: " + e.getMessage());
+            }
+        }
+    }
 
-	private boolean gafFileExists(String family_name) {
-		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
-		boolean ok = FileUtil.validPath(family_dir);
-		if (ok) {
-			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
-			ok = FileUtil.validFile(gaf_file);
-			if (!ok) {
-				log.info("Can't read: " + gaf_file);
-			}
+    private boolean gafFileExists(String family_name) {
+        File family_dir = new File(Preferences.inst().getGafDir(), family_name);
+        boolean ok = FileUtil.validPath(family_dir);
+        if (ok) {
+            File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
+            ok = FileUtil.validFile(gaf_file);
+            if (!ok) {
+                log.info("Can't read: " + gaf_file);
+            }
 
-		} else {
-			log.info("Invalid path: " + family_dir);
-		}
-		return ok;
-	}
+        } else {
+            log.info("Invalid path: " + family_dir);
+        }
+        return ok;
+    }
+
+    private void provideHelp() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("USAGE:\n");
+        buffer.append("\t -f <familyname> // touches up a single PAINT family\n");
+        buffer.append("\t -l <filename> // obtains family names from contents of the file\n");
+        buffer.append("\t -d <directoryname> // touches up families listed in this directory\n");
+        buffer.append("\t -d <directoryname> -s <starting family name> // as above, but solely the alphabetically latter part of directory\n");
+        buffer.append("\n\t // optionally a -t argument may be added to any of the above to indicate the correct PANTHER tree directory\n");
+        log.error(buffer);
+    }
 }

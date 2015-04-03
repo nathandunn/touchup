@@ -158,7 +158,7 @@ public class LogEntry {
 			break;
 		}
 		case TOO_SPECIFIC: {
-			note = "all descendent's annotations are to more general terms";
+			note = "all descendant's annotations are to more general terms";
 			break;
 		}
 		case WRONG_TAXA: {

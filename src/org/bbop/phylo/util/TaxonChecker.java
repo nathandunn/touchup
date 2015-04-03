@@ -37,72 +37,86 @@ import java.net.URLConnection;
  */
 public class TaxonChecker {
 
-	//	private static final String TAXON_SERVER_URL = "http://localhost:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
-	//	private static final String TAXON_SERVER_URL = "http://toaster.lbl.gov:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
-	//	id=GO:0007400&id=GO:0048658&id=GO:0090127&taxid=NCBITaxon:3702&taxid=NCBITaxon:9606&
-	private static final String TAXON_SERVER_URL = "http://owlservices.berkeleybop.org/isClassApplicableForTaxon?format=txt&idstyle=obo";
+    //	private static final String TAXON_SERVER_URL = "http://localhost:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
+    //	private static final String TAXON_SERVER_URL = "http://toaster.lbl.gov:9999/isClassApplicableForTaxon?format=txt&idstyle=obo";
+    //	id=GO:0007400&id=GO:0048658&id=GO:0090127&taxid=NCBITaxon:3702&taxid=NCBITaxon:9606&
+    private static final String TAXON_SERVER_URL = "http://owlservices.berkeleybop.org/isClassApplicableForTaxon?format=txt&idstyle=obo";
 
-	private static boolean not_running = false;
+    private static final String TAXON_SERVER_TEST = "&id=GO:0007400&taxid=NCBITaxon:3702";
 
-	private static final Logger log = Logger.getLogger(TaxonChecker.class);
+    private static boolean server_is_down = false;
 
-	public static boolean checkTaxons(Bioentity node, String go_id) {
-		boolean okay = true;
-		if (not_running) {
-			return okay;
-		}
-		StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id);
-		okay = addTaxIDs (node, taxon_query);
-		if (okay) {
-			URL servlet;
-			StringBuffer taxon_reply = new StringBuffer();
-			try {
-				servlet = new URL(taxon_query.toString());
-			}
-			catch (MalformedURLException muex){
-				//			muex.printStackTrace();
-				log.error("Attempted to create URL: " + muex.getLocalizedMessage()  + " " + taxon_query);
-				return okay;
-			}
-			BufferedReader in;
-			try {
-				URLConnection conn = servlet.openConnection();
-				conn.setConnectTimeout(1000); // 1 second timeout
-				in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-				String inputLine;
-				while ((inputLine = in.readLine()) != null) {
-					taxon_reply.append(inputLine).append(' ');
-				}
-				in.close();
-				okay = !(taxon_reply.toString().contains("false"));
-				if (!okay) {
-					log.info("Invalid taxon for term: " + go_id + " " + taxon_reply);
-				}
-			} catch (IOException e1) {
-				if (!not_running) {
-					log.error("Attempted to open URL: " + e1.getLocalizedMessage() +  " " + taxon_query);
-					not_running = true;
-				}
-			}
-		} else {
-			okay = true;
-		}
-		return okay;
-	}
+    private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
-	private static boolean addTaxIDs(Bioentity node, StringBuffer taxon_query) {
-		String taxon_id = node.getNcbiTaxonId();
-		if (taxon_id != null) {
-			int separator = taxon_id.indexOf(':');
-			if (separator > 0) {
-				taxon_id = taxon_id.substring(separator + 1);
-			}
-			taxon_id = "NCBITaxon:" + taxon_id;
-			taxon_query.append("&taxid=").append(taxon_id);
-			return true;
-		}
-		else
-			return false;
-	}
+    public static boolean checkTaxons(Bioentity node, String go_id) {
+        boolean okay = true;
+        if (server_is_down) {
+            return false;
+        }
+        StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id);
+        okay = addTaxIDs(node, taxon_query);
+        if (okay) {
+            String taxon_reply = askTaxonServer(taxon_query);
+            okay = !server_is_down && !(taxon_reply.contains("false"));
+            if (!okay) {
+                if (!server_is_down)
+                    log.info("Invalid taxon for term: " + go_id + " " + taxon_reply);
+            }
+        }
+        return okay;
+    }
+
+    private static String askTaxonServer(StringBuffer taxon_query) {
+        URL servlet;
+        StringBuffer taxon_reply = new StringBuffer();
+        try {
+            servlet = new URL(taxon_query.toString());
+        } catch (MalformedURLException muex) {
+            log.error("Attempted to create URL: " + muex.getLocalizedMessage() + " " + taxon_query);
+            server_is_down = true;
+            return taxon_reply.toString();
+        }
+        BufferedReader in;
+        try {
+            URLConnection conn = servlet.openConnection();
+            conn.setConnectTimeout(1000); // 1 second timeout
+            in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                taxon_reply.append(inputLine).append(' ');
+            }
+            in.close();
+        } catch (IOException e1) {
+            if (!server_is_down) {
+                log.error("Attempted to open URL: " + e1.getLocalizedMessage() + " " + taxon_query);
+                server_is_down = true;
+            }
+        }
+        return taxon_reply.toString();
+    }
+
+    public static boolean isLive() {
+        if (!server_is_down) {
+            // check it
+            StringBuffer test_query = new StringBuffer(TAXON_SERVER_URL + TAXON_SERVER_TEST);
+            askTaxonServer(test_query);
+        }
+        return !server_is_down;
+    }
+
+    private static boolean addTaxIDs(Bioentity node, StringBuffer taxon_query) {
+        String taxon_id = node.getNcbiTaxonId();
+        if (taxon_id != null) {
+            int separator = taxon_id.indexOf(':');
+            if (separator > 0) {
+                taxon_id = taxon_id.substring(separator + 1);
+            }
+            taxon_id = "NCBITaxon:" + taxon_id;
+            taxon_query.append("&taxid=").append(taxon_id);
+            return true;
+        }
+        else
+            return false;
+    }
 
 }
