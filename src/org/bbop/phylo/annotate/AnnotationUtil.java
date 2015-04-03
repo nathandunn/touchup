@@ -85,8 +85,8 @@ public class AnnotationUtil {
     public static void collectExpAnnotations(Family family) throws Exception {
         Tree tree = family.getTree();
         List<Bioentity> leaves = tree.getLeaves();
-        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
-            //       RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
+        //RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
+        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
             @Override
             protected void logRequest(URI uri) {
                 super.logRequest(uri);
@@ -165,7 +165,7 @@ public class AnnotationUtil {
             id2gene.put(key, leaf);
             // while we're at it, include the sequence ID
             // as a synonym
-            leaf.addSynonym(leaf.getSeqDb() + ':' + leaf.getSeqId());
+            addSynonym(leaf, leaf.getSeqDb() + ':' + leaf.getSeqId());
         }
         askGolr(retriever, gene_names, id2gene);
 
@@ -232,7 +232,7 @@ public class AnnotationUtil {
             }
             if (!go_node.getId().equals(leaf.getId()) && !go_node.getDb().equals("UniProtKB")) {
                 // default to the identifier used by the GO database
-                leaf.addSynonym(leaf.getDBID());
+                addSynonym(leaf, leaf.getDBID());
                 leaf.setId(go_node.getId());
             }
             if (leaf.getFullName() == null || leaf.getFullName().length() == 0) {
@@ -240,9 +240,20 @@ public class AnnotationUtil {
             }
             if (go_node.getSynonyms() != null) {
                 for (String synonym : go_node.getSynonyms()) {
-                    leaf.addSynonym(synonym);
+                    addSynonym(leaf, synonym);
                 }
             }
+        }
+    }
+
+    private static void addSynonym(Bioentity leaf, String synonym) {
+        boolean add_it = synonym.length() > 0;
+        List<String> existing_synonyms = leaf.getSynonyms();
+        for (int i = 0; i < existing_synonyms.size() && add_it; i++) {
+            add_it = !synonym.equalsIgnoreCase(existing_synonyms.get(i));
+        }
+        if (add_it) {
+            leaf.addSynonym(synonym);
         }
     }
 
