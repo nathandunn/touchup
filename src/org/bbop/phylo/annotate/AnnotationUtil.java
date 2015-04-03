@@ -157,7 +157,7 @@ public class AnnotationUtil {
         };
 
         List<String> gene_names = new ArrayList<>();
-        Map<String, Bioentity> id2gene = new HashMap();
+        Map<String, Bioentity> id2gene = new HashMap<>();
 
         for (Bioentity leaf : leaves) {
             String key = leaf.getId();
@@ -220,7 +220,7 @@ public class AnnotationUtil {
     }
 
     private static void processGolrAnnotations(Bioentity leaf, List<GeneAnnotation> golr_annotations) {
-        List<GeneAnnotation> exp_annotations = paintAnnotationsFilter(leaf, golr_annotations);
+        List<GeneAnnotation> exp_annotations = paintAnnotationsFilter(golr_annotations);
         leaf.setAnnotations(exp_annotations);
         // lets compare and fill in any missing fields
         if (golr_annotations != null && golr_annotations.size() > 0) {
@@ -257,7 +257,7 @@ public class AnnotationUtil {
         }
     }
 
-    private static List<GeneAnnotation> paintAnnotationsFilter(Bioentity node, List<GeneAnnotation> all_annotations) {
+    private static List<GeneAnnotation> paintAnnotationsFilter(List<GeneAnnotation> all_annotations) {
         List<GeneAnnotation> exp_annotations = new ArrayList<>();
         if (all_annotations != null) {
             for (GeneAnnotation annotation : all_annotations) {
@@ -290,7 +290,7 @@ public class AnnotationUtil {
     }
 
     public static List<GeneAnnotation> getExpAssociations(Bioentity leaf) {
-        return paintAnnotationsFilter(leaf, leaf.getAnnotations());
+        return paintAnnotationsFilter(leaf.getAnnotations());
     }
 
     public static List<GeneAnnotation> getAspectExpAssociations(Bioentity leaf, String aspect) {
