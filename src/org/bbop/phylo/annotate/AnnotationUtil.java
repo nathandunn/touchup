@@ -82,7 +82,7 @@ public class AnnotationUtil {
 
     private static final Logger log = Logger.getLogger("AnnotationUtil.class");
 
-    public static void collectExpAnnotations(Family family) throws Exception {
+/*    public static void collectExpAnnotations(Family family) throws Exception {
         Tree tree = family.getTree();
         List<Bioentity> leaves = tree.getLeaves();
         //RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
@@ -131,13 +131,14 @@ public class AnnotationUtil {
                 throw new Exception(message, e.getCause());
             }
         }
-    }
+    }*/
 
     public static void collectExpAnnotationsBatched(Family family) throws Exception {
         Tree tree = family.getTree();
         List<Bioentity> leaves = tree.getLeaves();
-        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
-            //       RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
+        //RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
+        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
+            }
             @Override
             protected void logRequest(URI uri) {
                 super.logRequest(uri);
