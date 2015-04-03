@@ -137,8 +137,7 @@ public class AnnotationUtil {
         Tree tree = family.getTree();
         List<Bioentity> leaves = tree.getLeaves();
         //RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
-        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
-            }
+        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org", 3, true) {
             @Override
             protected void logRequest(URI uri) {
                 super.logRequest(uri);
