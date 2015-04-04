@@ -151,44 +151,50 @@ public class AnnotationUtil {
             @Override
             protected void defaultRandomWait() {
                 log.info("waiting " + System.currentTimeMillis());
-                randomWait(2000, 5000);
+                randomWait(5000, 10000);
                 log.info("retrying " + System.currentTimeMillis());
             }
         };
 
         List<String> gene_names = new ArrayList<>();
         Map<String, Bioentity> id2gene = new HashMap<>();
-
-        for (Bioentity leaf : leaves) {
-            String key = leaf.getId();
-            gene_names.add(key);
-            id2gene.put(key, leaf);
-            // while we're at it, include the sequence ID
-            // as a synonym
-            addSynonym(leaf, leaf.getSeqDb() + ':' + leaf.getSeqId());
-        }
-        askGolr(retriever, gene_names, id2gene);
-
-        for (String gene_name : id2gene.keySet()) {
-            Bioentity leaf = id2gene.get(gene_name);
-
-
-            String key = leaf.getSeqDb() + ':' + leaf.getSeqId();
-            List<GolrAnnotationDocument> golrDocuments;
-
-            golrDocuments = retriever.getGolrAnnotationsForGene(key);
-
-            if (golrDocuments.size() == 0) {
-                golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
+        int increment = 100;
+        for (int i = 0; i < leaves.size(); i += increment) {
+            gene_names.clear();
+            id2gene.clear();
+            int limit = Math.min(leaves.size(), i + increment);
+            for (int position = i; position < limit; position++) {
+                Bioentity leaf = leaves.get(position);
+                String key = leaf.getId();
+                gene_names.add(key);
+                id2gene.put(key, leaf);
+                // while we're at it, include the sequence ID
+                // as a synonym
+                addSynonym(leaf, leaf.getSeqDb() + ':' + leaf.getSeqId());
             }
+            askGolr(retriever, gene_names, id2gene);
 
-            if (golrDocuments.size() > 0) {
-                GafDocument annots = retriever.convert(golrDocuments);
-                Collection<Bioentity> bioentities = annots.getBioentities();
-                if (bioentities.size() != 1) {
-                    log.info(bioentities.size() + " annotations returned for " + leaf.getId());
-                } else {
-                    processGolrAnnotations(leaf, annots.getGeneAnnotations());
+            for (String gene_name : id2gene.keySet()) {
+                Bioentity leaf = id2gene.get(gene_name);
+
+
+                String key = leaf.getSeqDb() + ':' + leaf.getSeqId();
+                List<GolrAnnotationDocument> golrDocuments;
+
+                golrDocuments = retriever.getGolrAnnotationsForGene(key);
+
+                if (golrDocuments.size() == 0) {
+                    golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
+                }
+
+                if (golrDocuments.size() > 0) {
+                    GafDocument annots = retriever.convert(golrDocuments);
+                    Collection<Bioentity> bioentities = annots.getBioentities();
+                    if (bioentities.size() != 1) {
+                        log.info(bioentities.size() + " annotations returned for " + leaf.getId());
+                    } else {
+                        processGolrAnnotations(leaf, annots.getGeneAnnotations());
+                    }
                 }
             }
         }
@@ -214,6 +220,7 @@ public class AnnotationUtil {
         } catch (Exception e) {
             String message = "Problem collecting experimental annotations for \n" + e.getMessage();
             log.info(message);
+            System.exit(-1);
         }
     }
 
