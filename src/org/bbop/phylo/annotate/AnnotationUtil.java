@@ -180,8 +180,6 @@ public class AnnotationUtil {
 
             if (golrDocuments.size() == 0) {
                 golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
-            } else {
-                log.info("Found gene using seq ID for " + leaf);
             }
 
             if (golrDocuments.size() > 0) {
