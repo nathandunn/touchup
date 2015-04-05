@@ -40,6 +40,7 @@ public class GafRecorder {
             gaf_writer.setStream(gaf_file);
             gaf_writer.write(gaf_doc);
             IOUtils.closeQuietly(gaf_writer);
+            log.info("Wrote updated GAF to " + gaf_file);
         }
     }
 
