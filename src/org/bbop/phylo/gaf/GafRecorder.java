@@ -2,6 +2,7 @@ package org.bbop.phylo.gaf;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.WithEvidence;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
@@ -56,11 +57,10 @@ public class GafRecorder {
             List<GeneAnnotation> annotations = node.getAnnotations();
             if (annotations != null) {
                 for (GeneAnnotation annotation : annotations) {
-                    String assigned_by = annotation.getAssignedBy();
                     /**
                      * Only save those associations made within the context of PAINT
                      */
-                    boolean include = assigned_by.equals(Constant.PAINT_AS_SOURCE) || assigned_by.equals(Constant.OLD_SOURCE);
+                    boolean include = AnnotationUtil.isPAINTAnnotation(annotation);
                     include &= annotation.isMRC() || node.isLeaf() || annotation.isDirectNot();
                     if (include) {
                         if (node.isLeaf()) {

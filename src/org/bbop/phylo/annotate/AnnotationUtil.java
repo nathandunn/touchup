@@ -311,7 +311,16 @@ public class AnnotationUtil {
 
     public static boolean isPAINTAnnotation(GeneAnnotation assoc) {
         String source = assoc.getAssignedBy();
-        return (source.equals(Constant.PAINT_AS_SOURCE) || source.equals(Constant.OLD_SOURCE));
+        boolean is_gocentral = (source.equals(Constant.PAINT_AS_SOURCE)
+                        || source.equals(Constant.OLD_SOURCE));
+        boolean is_paint = is_gocentral;
+        if (is_gocentral) {
+            List<String> refs = assoc.getReferenceIds();
+            for (String ref : refs) {
+                is_paint &= ref.startsWith(Constant.PAINT_REF);
+            }
+        }
+        return is_paint;
     }
 
     private static boolean isExcluded(String pub_id) {
