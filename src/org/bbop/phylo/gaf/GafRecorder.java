@@ -41,6 +41,8 @@ public class GafRecorder {
             gaf_writer.write(gaf_doc);
             IOUtils.closeQuietly(gaf_writer);
             log.info("Wrote updated GAF to " + gaf_file);
+        } else {
+            log.error("Unable to save GAF file for " + family_name + " in " + family_dir);
         }
     }
 

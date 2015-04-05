@@ -46,8 +46,6 @@ public class Main {
 
     private static String[] args;
 
-    private Family family;
-
     private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(Main.class);
 
     /**
@@ -75,7 +73,7 @@ public class Main {
             new Runnable() {
                 // this thread runs in the AWT event queue
                 public void run() {
-                    int family_count = 0;
+                    int family_count;
                     if (args.length == 0 || (args.length % 2) == 1) {
                         provideHelp();
                         System.exit(0);
@@ -156,7 +154,7 @@ public class Main {
                     if (proceed) {
                         proceed &= resetAnnotations(family);
                         if (proceed) {
-                            savePaint();
+                            family.save();
                             Logger.write(family_name);
                             FamilySummary family_summary = new FamilySummary();
                             run_summary.put(family_name, family_summary);
@@ -200,13 +198,6 @@ public class Main {
             reset = false;
         }
         return reset;
-    }
-
-    private void savePaint() {
-        if (family != null) {
-            // Need to add the supporting experimental annotations to the withs
-            family.save();
-        }
     }
 
     private void logSummary(Map<String, FamilySummary> summaries, int count) {

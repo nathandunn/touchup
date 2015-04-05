@@ -20,6 +20,7 @@ public class ParsingHack {
         if (name.equals("UniProtKB/Swiss-Prot") ||
                 name.equals("Uniprot") ||
                 name.equals("Gene") ||
+                name.equals("GeneID") ||
                 name.equals("EnsemblGenome")) {
             revision = "UniProtKB";
         }
@@ -149,6 +150,10 @@ public class ParsingHack {
                             node.addSynonym(db_source[1]);
                     }
                     IDmap.inst().indexByDBID(node);
+                    if (!db_source[0].equals(node.getDb())) {
+                        // as insurance index for original ID too
+                        IDmap.inst().indexByDBID(db_source[0] + ':' + db_source[1], node);
+                    }
                 } else {
                     log.info("Couldn't get db from " + name);
                 }

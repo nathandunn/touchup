@@ -108,6 +108,10 @@ public class IDmap {
 
     public void indexByDBID(Bioentity node) {
         String key = node.getId();
+        indexByDBID(key, node);
+    }
+
+    public void indexByDBID(String key, Bioentity node) {
         if (key.indexOf(':') < 0)
             log.error("Bad key: " + key);
         if (key.length() > 0) {
