@@ -243,6 +243,12 @@ public class AnnotationUtil {
             if (leaf.getFullName() == null || leaf.getFullName().length() == 0) {
                 leaf.setFullName(go_node.getFullName());
             }
+            if (go_node.getSymbol() != null) {
+                leaf.setSymbol(go_node.getSymbol());
+            } else if (leaf.getSymbol() == null) {
+                // don't leave it blank
+                leaf.setSymbol(leaf.getDBID());
+            }
             if (go_node.getSynonyms() != null) {
                 for (String synonym : go_node.getSynonyms()) {
                     addSynonym(leaf, synonym);
