@@ -218,7 +218,7 @@ public class PaintAction {
         String code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
         assoc.setEvidence(code, null);
         assoc.setWithInfos(withs);
-        return assoc;
+       return assoc;
     }
 
     private void removeMoreGeneralTerms(Bioentity node, String go_id, List<GeneAnnotation> removed) {

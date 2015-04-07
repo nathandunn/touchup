@@ -20,9 +20,11 @@ public class ParsingHack {
         if (name.equals("UniProtKB/Swiss-Prot") ||
                 name.equals("Uniprot") ||
                 name.equals("Gene") ||
-                name.equals("GeneID") ||
-                name.equals("EnsemblGenome")) {
-            revision = "UniProtKB";
+                name.equals("GeneID")) {
+                 revision = "UniProtKB";
+        }
+        if (name.equals("EnsemblGenome") || name.equalsIgnoreCase("ensembl")) {
+            revision = "ENSEMBL";
         }
         else if (name.equals("ENTREZ")) {
             revision = "RefSeq";
@@ -158,6 +160,9 @@ public class ParsingHack {
                     log.info("Couldn't get db from " + name);
                 }
                 node.setSeqId(seq_source[0], seq_source[1]);
+                if (node.getSeqId() != null && node.getSeqId().length() > 0) {
+                    node.addSynonym(node.getSeqDb() +':' + node.getSeqId());
+                }
                 IDmap.inst().indexBySeqID(node);
             }
         }
