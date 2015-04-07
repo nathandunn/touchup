@@ -22,6 +22,7 @@
 package org.bbop.phylo.util;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Tree;
 import owltools.gaf.Bioentity;
 
 import java.io.BufferedReader;
@@ -30,6 +31,8 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author suzi
@@ -48,16 +51,18 @@ public class TaxonChecker {
 
     private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
-    public static boolean checkTaxons(Bioentity node, String go_id) {
+    public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
         boolean okay = true;
         if (server_is_down) {
             return false;
         }
-        StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id);
-        okay = addTaxIDs(node, taxon_query);
-        if (okay) {
+
+        List<String> taxa_to_check = getTaxIDs(tree, node);
+        for (String taxon : taxa_to_check) {
+            StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id);
+            taxon_query.append("&taxid=").append("NCBITaxon:" + taxon);
             String taxon_reply = askTaxonServer(taxon_query);
-            okay = !server_is_down && !(taxon_reply.contains("false"));
+            okay &= !server_is_down && !(taxon_reply.contains("false"));
             if (!okay) {
                 if (!server_is_down)
                     log.info("Invalid taxon for term: " + go_id + " " + taxon_reply);
@@ -104,19 +109,38 @@ public class TaxonChecker {
         return !server_is_down;
     }
 
-    private static boolean addTaxIDs(Bioentity node, StringBuffer taxon_query) {
-        String taxon_id = node.getNcbiTaxonId();
-        if (taxon_id != null) {
-            int separator = taxon_id.indexOf(':');
-            if (separator > 0) {
-                taxon_id = taxon_id.substring(separator + 1);
-            }
-            taxon_id = "NCBITaxon:" + taxon_id;
-            taxon_query.append("&taxid=").append(taxon_id);
-            return true;
+    private static List<String> getTaxIDs(Tree tree, Bioentity node) {
+        List<String> taxon_to_check = new ArrayList<>();
+
+        boolean check_leaves = false;
+        String taxon_id = parseTaxonID(node);
+        if (taxon_id == null || taxon_id.equals("1")) {
+            check_leaves = true;
         }
-        else
-            return false;
+        if (check_leaves) {
+            // too vague, look for children
+            List<Bioentity> leaves = tree.getLeafDescendants(node);
+            for (Bioentity leaf : leaves) {
+                String leaf_taxon = parseTaxonID(leaf);
+                if (leaf_taxon != null && !leaf_taxon.equals("1")) {
+                    taxon_to_check.add(leaf_taxon);
+                }
+            }
+        } else {
+            taxon_to_check.add(taxon_id);
+        }
+        return taxon_to_check;
     }
 
+    private static String parseTaxonID(Bioentity node) {
+        String ncbi_taxon_id = node.getNcbiTaxonId();
+        String taxon_id = null;
+        if (ncbi_taxon_id != null) {
+            int separator = ncbi_taxon_id.indexOf(':');
+            if (separator > 0) {
+                taxon_id = ncbi_taxon_id.substring(separator + 1);
+            }
+        }
+        return taxon_id;
+    }
 }

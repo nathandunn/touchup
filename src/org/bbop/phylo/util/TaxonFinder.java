@@ -59,7 +59,7 @@ public class TaxonFinder {
 				taxon_id = taxa2IDs.get(speciesNameHack(species_name));
 			}
 		}
-		return taxon_id;
+		return Constant.TAXON_PREFIX+taxon_id;
 	}
 
 	public static String getSpecies(String taxon_id) {
@@ -69,8 +69,8 @@ public class TaxonFinder {
 	private static void loadTaxaMapping() {
 		taxa2IDs = new HashMap<String, String>();
 		IDs2taxa = new HashMap<String, String>();
-		taxa2IDs.put("LUCA", Constant.TAXON_PREFIX+"1");
-		IDs2taxa.put(Constant.TAXON_PREFIX+"1", "LUCA");
+		taxa2IDs.put("LUCA", "1");
+		IDs2taxa.put("1", "LUCA");
 		loadUniProtTaxa();
 		loadNCBITaxa();
 	}
@@ -84,7 +84,7 @@ public class TaxonFinder {
 					if (!id_pair.contains("authority")) {
 						id_pair = id_pair.replace('\t', ' ');
 						String ids[] = id_pair.split("\\|");
-						String taxon_id = Constant.TAXON_PREFIX + (ids[0].trim());
+						String taxon_id = ids[0].trim();
 						String name = ids[1].trim();
 						if (!ids[2].contains(name)) {
 							name = (name + " " + ids[2].trim()).trim();
@@ -94,6 +94,8 @@ public class TaxonFinder {
 						if (id_pair.contains("scientific name")) {
 							IDs2taxa.put(taxon_id, name);
 						}
+                        if (!isNumeric(taxon_id))
+                            System.err.println("Stop right here");
 						taxa2IDs.put(name, taxon_id);
 					}
 					id_pair = reader.readLine();
@@ -105,7 +107,12 @@ public class TaxonFinder {
 		}
 	}
 
-	private static void loadUniProtTaxa() {
+    private static boolean isNumeric(String str)
+    {
+        return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
+    }
+
+    private static void loadUniProtTaxa() {
 		BufferedReader reader = ResourceLoader.inst().loadResource(UNIPROT_TAXA);
 		if (reader != null) {
 			try {
@@ -114,11 +121,15 @@ public class TaxonFinder {
 					if (line.contains("N=") && !line.contains("Official")) {
 						int index = line.indexOf(' ');
 						String code = line.substring(0, index);
-						index += 3;
-						String taxon_id = Constant.TAXON_PREFIX + line.substring(index, line.indexOf(':')).trim();
-						index = line.indexOf("N=") + 2;
-						String name = line.substring(index).trim();
-						if (!IDs2taxa.containsKey(taxon_id))
+                        String [] parts = line.split(":");
+                        index = parts[0].lastIndexOf(' ') + 1;
+                        String taxon_id = parts[0].substring(index).trim();
+						index = parts[1].indexOf("N=") + 2;
+						String name = parts[1].substring(index).trim();
+                        if (!isNumeric(taxon_id))
+                            System.err.println("Stop right here");
+
+                        if (!IDs2taxa.containsKey(taxon_id))
 							IDs2taxa.put(taxon_id, name);
 						if (!taxa2IDs.containsKey(name))
 							taxa2IDs.put(name, taxon_id);
