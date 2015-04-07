@@ -63,10 +63,10 @@ public class TaxonChecker {
             taxon_query.append("&taxid=").append("NCBITaxon:" + taxon);
             String taxon_reply = askTaxonServer(taxon_query);
             okay &= !server_is_down && !(taxon_reply.contains("false"));
-            if (!okay) {
-                if (!server_is_down)
-                    log.info("Invalid taxon for term: " + go_id + " " + taxon_reply);
-            }
+       }
+        if (!okay) {
+            if (!server_is_down)
+                log.info("Invalid taxon for term: " + go_id + " to " + node);
         }
         return okay;
     }
