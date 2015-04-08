@@ -113,7 +113,7 @@ public class TaxonChecker {
 
         boolean check_leaves = false;
         String taxon_id = parseTaxonID(node);
-        if (taxon_id == null || taxon_id.equals("1")) {
+        if (taxon_id == null || taxon_id.equals("1") || taxon_id.equals("2")) {
             check_leaves = true;
         }
         if (check_leaves) {
