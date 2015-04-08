@@ -263,6 +263,9 @@ public class AnnotationUtil {
         for (int i = 0; i < existing_synonyms.size() && add_it; i++) {
             add_it = !synonym.equalsIgnoreCase(existing_synonyms.get(i));
         }
+        add_it &= leaf.getLocalId() == null || !synonym.equalsIgnoreCase(leaf.getLocalId());
+        add_it &= leaf.getSymbol() == null || !synonym.equalsIgnoreCase(leaf.getSymbol());
+
         if (add_it) {
             leaf.addSynonym(synonym);
         }

@@ -59,8 +59,7 @@ public class TaxonChecker {
 
         List<String> taxa_to_check = getTaxIDs(tree, node);
         for (String taxon : taxa_to_check) {
-            StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id);
-            taxon_query.append("&taxid=").append("NCBITaxon:" + taxon);
+            StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id + "&taxid=NCBITaxon:" + taxon);
             String taxon_reply = askTaxonServer(taxon_query);
             okay &= !server_is_down && !(taxon_reply.contains("false"));
        }
