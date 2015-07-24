@@ -20,23 +20,33 @@
 
 package org.bbop.phylo.touchup;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.swing.SwingUtilities;
+
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.gaf.GafPropagator;
 import org.bbop.phylo.model.Family;
+import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
+import org.bbop.phylo.panther.PantherAdapter;
+import org.bbop.phylo.panther.PantherFileAdapter;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
 import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
-import org.bbop.phylo.util.ResourceLoader;
 import org.bbop.phylo.util.TaxonChecker;
 
-import javax.swing.*;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import owltools.gaf.io.ResourceLoader;
 
 public class Main {
     /**
@@ -143,12 +153,14 @@ public class Main {
         for (String family_name : families) {
             log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
             clear();
-            Family family = new Family();
             boolean available = gafFileExists(family_name);
             if (!available) {
                 log.info("Missing GAF file for " + family_name);
             } else {
-                available &= family.fetch(family_name);
+                Family family = new Family(family_name);
+                Tree tree = new Tree(family_name);
+        		PantherAdapter adapter = new PantherFileAdapter();
+        		available &= family.fetch(tree, adapter);
                 if (available) {
                     boolean proceed = TaxonChecker.isLive();
                     if (proceed) {

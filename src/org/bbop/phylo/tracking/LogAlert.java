@@ -20,12 +20,13 @@
 
 package org.bbop.phylo.tracking;
 
-import org.bbop.phylo.util.OWLutil;
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.bbop.phylo.util.OWLutil;
+
+import owltools.gaf.Bioentity;
+import owltools.gaf.GeneAnnotation;
 
 public class LogAlert {
 	/**
@@ -74,7 +75,6 @@ public class LogAlert {
 
 	public static void report(List<String> contents) {
 		if (!invalids.isEmpty() || !missing.isEmpty() || !obsoletes.isEmpty()) {
-			contents.add(Logger.WARNING_SECTION);
 			if (!invalids.isEmpty()) {
 				contents.add("## Annotations that have been removed.");
 				for (LogEntry entry : invalids) {

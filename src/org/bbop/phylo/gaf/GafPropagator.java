@@ -20,6 +20,15 @@ package org.bbop.phylo.gaf;
  */
 
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.PaintAction;
@@ -31,15 +40,11 @@ import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.GafObjectsBuilder;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.*;
 
 public class GafPropagator {
 

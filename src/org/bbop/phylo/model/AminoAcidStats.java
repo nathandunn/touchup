@@ -1,9 +1,9 @@
 package org.bbop.phylo.model;
 
-import org.apache.log4j.Logger;
-
 import java.util.HashMap;
 import java.util.Set;
+
+import org.apache.log4j.Logger;
 
 
 class AminoAcidStats {

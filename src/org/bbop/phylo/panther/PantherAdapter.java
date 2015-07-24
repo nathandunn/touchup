@@ -19,21 +19,21 @@
  */
 package org.bbop.phylo.panther;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+
 import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.touchup.Preferences;
 import org.bbop.phylo.util.FileUtil;
-import org.bbop.phylo.util.TaxonFinder;
-import owltools.gaf.Bioentity;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
+import owltools.gaf.Bioentity;
+import owltools.gaf.species.TaxonFinder;
 
 /**
  * Created by suzi on 12/15/14.
@@ -42,14 +42,9 @@ public abstract class PantherAdapter {
 
     private static final Logger log = Logger.getLogger(PantherAdapter.class);
 
-    protected List<String> tree_content;
-    protected List<String> attr_content;
-    protected List<String> msa_content;
-    protected List<String> wts_content;
-
     private static final String MSG_ERROR_WRITING_FILE = "Error writing file ";
 
-    public abstract Tree fetchTree(String family_name);
+    public abstract boolean fetchTree(Family family, Tree tree);
 
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
@@ -59,16 +54,16 @@ public abstract class PantherAdapter {
         File treeFileName = new File(family_dir, id + Constant.TREE_SUFFIX);
         File attrFileName = new File(family_dir, id + Constant.ATTR_SUFFIX);
 
-        ok &= writeData(treeFileName, tree_content);
-        ok &= writeData(attrFileName, attr_content);
+        ok &= writeData(treeFileName, family.getTreeContent());
+        ok &= writeData(attrFileName, family.getAttrContent());
 
-        if (msa_content != null && ok) {
+        if (family.getMsaContent() != null && ok) {
             File msaFileName = new File(family_dir, id + Constant.MSA_SUFFIX);
-            ok &= writeData(msaFileName, msa_content);
+            ok &= writeData(msaFileName, family.getMsaContent());
         }
-        if (wts_content != null && ok) {
+        if (family.getWtsContent() != null && ok) {
             File wtsFileName = new File(family_dir, id + Constant.WTS_SUFFIX);
-            ok &= writeData(wtsFileName, wts_content);
+            ok &= writeData(wtsFileName, family.getWtsContent());
         }
         return ok;
     }
@@ -112,27 +107,16 @@ public abstract class PantherAdapter {
                 ParsingHack.parseIDstr(node, row.substring(index + 1));
             }
         }
-        recordOrigChildOrder(root);
 
         return root;
 
     }
 
-    private void recordOrigChildOrder(Bioentity node) {
-        if (null == node) {
-            return;
-        }
-
-        node.setOriginalChildrenToCurrentChildren();
-        List<Bioentity> children = node.getChildren();
-        if (children != null) {
-            for (Bioentity child : children) {
-                recordOrigChildOrder(child);
-            }
-        }
+    protected Bioentity createNode() {
+    	return new Bioentity();
     }
 
-    Bioentity parseTreeString(String s) {
+    private Bioentity parseTreeString(String s) {
         Bioentity node = null;
         Bioentity root = null;
         StringTokenizer st = new StringTokenizer(s, Constant.DELIM, true);
@@ -143,11 +127,11 @@ public abstract class PantherAdapter {
 					/*
 					 * The real root node, first one set
 					 */
-                    node = new Bioentity();
+                    node = createNode();
                     root = node;
                 }
                 else {
-                    Bioentity newChild = new Bioentity();
+                    Bioentity newChild = createNode();
                     List<Bioentity> children = node.getChildren();
                     if (null == children) {
                         children = new ArrayList<Bioentity>();
@@ -195,7 +179,7 @@ public abstract class PantherAdapter {
 						 */
                         node = node.getParent();
                     } else if (index > 0) {
-                        Bioentity newChild = new Bioentity();
+                        Bioentity newChild = createNode();
                         if (-1 == squareIndexStart) {
                             newChild.setDistanceFromParent(Float.valueOf(token.substring(index+1)).floatValue());
                             setTypeAndId(token.substring(0, index), newChild); // this use to be included in setType itself
@@ -306,20 +290,20 @@ public abstract class PantherAdapter {
         String id = row.get(0);
         String ptn = row.get(row.size() - 1);
         Bioentity node = ParsingHack.findThatNode(id);
-        if (node == null || (node.getPersistantNodeID() != null && !node.getPersistantNodeID().equals(ptn))) {
-			/*
-			 * This should never happen!
-			 */
-            if (node == null) {
-                log.error("This node is not in the family tree: " + id + " - " + ptn);
-            } else {
-                log.error("Yikes, " + node.getPersistantNodeID() + " does not equal " + ptn);
-            }
-            return;
-        }
+        if (node == null) {
+        	/*
+        	 * This should never happen!
+        	 */
+        	log.error("This node is not in the family tree: " + id + " - " + ptn);
+        	return;
+        } 
+        if (node.getPersistantNodeID() != null && node.getPersistantNodeID().equals(ptn)) {
+        	log.error("Yikes, " + node.getPersistantNodeID() + " does not equal " + ptn);
+        	log.error("\tGene is " + id);
+        } 
         else {
-            node.setPersistantNodeID("PANTHER", ptn);
-            IDmap.inst().indexNodeByPTN(node);
+        	node.setPersistantNodeID("PANTHER", ptn);
+        	IDmap.inst().indexNodeByPTN(node);
         }
 
         for (int j = 0; j < row.size(); j++) {
@@ -343,69 +327,6 @@ public abstract class PantherAdapter {
             }
         }
     }
-
-    private static final String PREFIX_SEQ_START = ">";
-
-    int parseSeqs(List<String> seqInfo, Map<Bioentity, String> sequences) {
-
-        int seq_length = 0;
-
-        if ((null == seqInfo) || (0 == seqInfo.size())){
-            return seq_length;
-        }
-
-        IDmap mapper = IDmap.inst();
-
-        StringBuffer  sb = new StringBuffer();
-        Bioentity node = null;
-        for (String line : seqInfo){
-            if (line.startsWith(PREFIX_SEQ_START)) {
-                String paint_id = line.replaceFirst(PREFIX_SEQ_START, Constant.STR_EMPTY);
-                if (node != null) {
-                    String seq = sb.toString();
-                    sequences.put(node, seq);
-                    // Get the maximum sequence length
-                    if (seq_length == 0){
-                        seq_length = seq.length();
-                    }
-                }
-                node = mapper.getGeneByANId(paint_id);
-                if (node == null) {
-                    log.error("Unable to get gene " + paint_id + " for MSA data");
-                    continue;
-                }
-                sb.delete(0, sb.length());
-            }
-            else {
-                sb.append(line.trim());
-            }
-        }
-        if (node != null) {
-            String seq = sb.toString();
-            sequences.put(node, seq);
-            // Get the maximum sequence length
-            if (seq_length == 0){
-                seq_length = seq.length();
-            }
-        }
-        return seq_length;
-    }
-
-    void parseWts(List<String> wtsInfo, Map<Bioentity, Double> weights) {
-        if (wtsInfo != null && wtsInfo.size() > 0) {
-            // Ignore first two lines
-            for (int i = 2; i < wtsInfo.size(); i++){
-                List<String>  seqWt = ParsingHack.tokenize(wtsInfo.get(i), Constant.SPACE);
-                Bioentity gene = ParsingHack.findThatNode(seqWt.get(0));
-                if (gene != null)
-                    weights.put(gene, new Double(seqWt.get(1)));
-            }
-        }
-        else {
-            weights.clear();
-        }
-    }
-
 
 }
 

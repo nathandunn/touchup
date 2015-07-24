@@ -1,8 +1,8 @@
 package org.bbop.phylo.touchup;
 
-import org.bbop.phylo.tracking.LogAlert;
-
 import java.util.List;
+
+import org.bbop.phylo.tracking.LogAlert;
 
 /**
  * Created by suzi on 1/30/15.

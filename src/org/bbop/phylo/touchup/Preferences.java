@@ -20,13 +20,19 @@
 
 package org.bbop.phylo.touchup;
 
-import org.apache.log4j.Logger;
-
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
 import java.beans.DefaultPersistenceDelegate;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
 
 /**
  * Used for reading previous or default user settings from property file and storing current user settings

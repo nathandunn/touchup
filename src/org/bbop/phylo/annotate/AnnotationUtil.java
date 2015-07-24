@@ -1,22 +1,23 @@
 package org.bbop.phylo.annotate;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 import org.bbop.golr.java.RetrieveGolrAnnotations;
 import org.bbop.golr.java.RetrieveGolrAnnotations.GolrAnnotationDocument;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
 
 public class AnnotationUtil {
 
@@ -78,60 +79,22 @@ public class AnnotationUtil {
             "PMID:8660468",
             "PMID:9020838",
             "PMID:9182565",
+            "PMID:16926386",
+            "PMID:18433157",
+            "PMID:19482547",
+            "PMID:19946888",
+            "PMID:21423176",
+            "PMID:22020285",
+            "PMID:22658674",
+            "PMID:22681889",
+            "PMID:23580065",
+            "PMID:24270810",
+            "PMID:25416956",
+            "GO_REF:0000052",
+            "GO_REF:0000054",
     };
 
     private static final Logger log = Logger.getLogger("AnnotationUtil.class");
-
-/*    public static void collectExpAnnotations(Family family) throws Exception {
-        Tree tree = family.getTree();
-        List<Bioentity> leaves = tree.getLeaves();
-        //RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
-        RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org") {
-            @Override
-            protected void logRequest(URI uri) {
-                super.logRequest(uri);
-            }
-
-            @Override
-            protected void logRequestError(URI uri, IOException exception) {
-                log.error("Encountered " + uri, exception);
-            }
-
-            @Override
-            protected void defaultRandomWait() {
-                log.info("waiting " + System.currentTimeMillis());
-                randomWait(2000, 5000);
-                log.info("retrying " + System.currentTimeMillis());
-            }
-        };
-        for (Bioentity leaf : leaves) {
-            String key = leaf.getId();
-            try {
-                List<GolrAnnotationDocument> golrDocuments = retriever.getGolrAnnotationsForGene(key);
-                if (golrDocuments.size() == 0) {
-                    // Try with the seq ID as key
-                    key = leaf.getSeqDb() + ':' + leaf.getSeqId();
-                    golrDocuments = retriever.getGolrAnnotationsForGene(key);
-                }
-                if (golrDocuments.size() == 0) {
-                    golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
-                }
-                if (golrDocuments.size() > 0) {
-                    GafDocument annots = retriever.convert(golrDocuments);
-                    Collection<Bioentity> bioentities = annots.getBioentities();
-                    if (bioentities.size() != 1) {
-                        log.info(bioentities.size() + " annotations returned for " + key);
-                        continue;
-                    }
-                    processGolrAnnotations(leaf, annots.getGeneAnnotations());
-                }
-            } catch (Exception e) {
-                String message = "Problem collecting experimental annotations for " + leaf + "\n" + e.getMessage();
-                log.info(message);
-                throw new Exception(message, e.getCause());
-            }
-        }
-    }*/
 
     public static void collectExpAnnotationsBatched(Family family) throws Exception {
         Tree tree = family.getTree();
@@ -275,34 +238,39 @@ public class AnnotationUtil {
         List<GeneAnnotation> exp_annotations = new ArrayList<>();
         if (all_annotations != null) {
             for (GeneAnnotation annotation : all_annotations) {
-                String eco = annotation.getShortEvidence();
-                if (Constant.EXP_strings.contains(eco)) {
-                    boolean keep = true;
-                    if (annotation.getWithInfos() != null) {
-                        List<String> withs = (List<String>) annotation.getWithInfos();
-                        for (int i = withs.size() - 1; i >= 0 && keep; i--) {
-                            keep &= !withs.get(i).startsWith(Constant.PANTHER_DB);
-                        }
-                    }
-                    if (keep) {
-                        keep = !annotation.getAssignedBy().contains(Constant.REACTOME);
-                    }
-                    if (keep) {
-                        List<String> pub_ids = annotation.getReferenceIds();
-                        keep = false;
-                        for (String pub_id : pub_ids) {
-                            keep |= !isExcluded(pub_id);
-                        }
-                    }
-                    if (keep) {
+                if (isExpAnnotation(annotation)) {
                         exp_annotations.add(annotation);
-                    }
                 }
             }
         }
         return exp_annotations;
     }
 
+    public static boolean isExpAnnotation(GeneAnnotation annotation) {
+    	String eco = annotation.getShortEvidence();
+    	boolean keep = false;
+        if (Constant.EXP_strings.contains(eco)) {
+        	keep = true;
+            if (annotation.getWithInfos() != null) {
+                List<String> withs = (List<String>) annotation.getWithInfos();
+                for (int i = withs.size() - 1; i >= 0 && keep; i--) {
+                    keep &= !withs.get(i).startsWith(Constant.PANTHER_DB);
+                }
+            }
+            if (keep) {
+                keep = !annotation.getAssignedBy().contains(Constant.REACTOME);
+            }
+            if (keep) {
+                List<String> pub_ids = annotation.getReferenceIds();
+                keep = false;
+                for (String pub_id : pub_ids) {
+                    keep |= !isExcluded(pub_id);
+                }
+            }
+        }
+        return keep;
+    }
+    
     public static List<GeneAnnotation> getExpAssociations(Bioentity leaf) {
         return paintAnnotationsFilter(leaf.getAnnotations());
     }
@@ -317,6 +285,18 @@ public class AnnotationUtil {
         }
         return filtered_associations;
     }
+    
+    public static List<GeneAnnotation> getAspectPaintAssociations(Bioentity node, String aspect) {
+        List<GeneAnnotation> paint_assoc = new ArrayList<>();
+        List<GeneAnnotation> associations = node.getAnnotations();
+        for (GeneAnnotation annotation : associations) {
+            if (isPAINTAnnotation(annotation) && annotation.getAspect().equals(aspect)) {
+               paint_assoc.add(annotation);
+            }
+        }
+        return paint_assoc;
+    }
+
 
     public static boolean isPAINTAnnotation(GeneAnnotation assoc) {
         String source = assoc.getAssignedBy();

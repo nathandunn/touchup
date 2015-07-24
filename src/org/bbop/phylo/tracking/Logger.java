@@ -1,16 +1,17 @@
 package org.bbop.phylo.tracking;
 
-import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.touchup.Preferences;
-import org.bbop.phylo.util.FileUtil;
-import org.bbop.phylo.util.ResourceLoader;
-import org.bbop.phylo.util.TaxonFinder;
-import owltools.gaf.Bioentity;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.bbop.phylo.touchup.Constant;
+import org.bbop.phylo.touchup.Preferences;
+import org.bbop.phylo.util.FileUtil;
+
+import owltools.gaf.Bioentity;
+import owltools.gaf.io.ResourceLoader;
+import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
 
@@ -36,7 +37,9 @@ public class Logger {
 			String program_name = ResourceLoader.inst().loadVersion();
 			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
 			LogAction.report(contents);
+			contents.add(Logger.WARNING_SECTION);
 			LogAlert.report(contents);
+			contents.add(NOTES_SECTION);
 			logNotes(contents);
 			logBoilerplate(contents);
 			try {
@@ -46,6 +49,16 @@ public class Logger {
 				logger.error(e.getMessage());
 			}
 		}
+	}
+	
+	public static List<String> getLog() {
+		List<String> contents = new ArrayList<>();
+		LogAction.report(contents);
+		contents.add(Logger.WARNING_SECTION);
+		LogAlert.report(contents);
+		contents.add(NOTES_SECTION);
+		logNotes(contents);
+		return contents;
 	}
 
 	public static void importPrior(String family_name) {
@@ -79,9 +92,19 @@ public class Logger {
 			logger.error("Invalid path for family directory " + family_dir);
 		}
 	}
+	
+	public static void updateNotes(String text) {
+		String [] lines = text.split("\n");
+		notes.clear();
+		for (int i = 0; i < lines.length; i++) {
+			notes.add(lines[i]);
+		}
+	}
 
-	private static void logNotes(List<String> contents) {
-		contents.add(NOTES_SECTION);
+	public static void logNotes(List<String> contents) {
+		if (notes == null) {
+			notes = new ArrayList<>();
+		}
 		contents.addAll(notes);
 		contents.add("");
 	}
@@ -138,7 +161,8 @@ public class Logger {
 			// if this is not the root node, but the clade is unknown
 			species = "node";
 		}
-		return (species + '_' + node.getDBID());
+		String prefix = species != null ? (species + '_') : "";
+		return (prefix + node.getDBID());
 	}
 }
 

@@ -19,15 +19,16 @@
  */
 package org.bbop.phylo.annotate;
 
-import org.apache.log4j.Logger;
-import org.bbop.phylo.model.Tree;
-import org.bbop.phylo.util.OWLutil;
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Tree;
+import org.bbop.phylo.util.OWLutil;
+
+import owltools.gaf.Bioentity;
+import owltools.gaf.GeneAnnotation;
 
 
 public class WithEvidence {

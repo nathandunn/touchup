@@ -7,7 +7,6 @@ import java.util.Map;
 
 public class Constant {
 
-	public static final String VERSION = "VERSION";
 	public static final String BP_ID = "GO:0008150";
 	public static final String CC_ID = "GO:0005575";
 	public static final String MF_ID = "GO:0003674";
@@ -44,9 +43,10 @@ public class Constant {
 
 	private final static String CONTRIBUTES = "contributes_to";
 	private final static String COLOCATES = "colocalizes_with";
+	private final static String INTEGRAL_TO = "integral_to";
 	
-	public final static String TAXON_PREFIX = "taxon:";
-	
+//	public final static String TAXON_PREFIX = "taxon:";
+
 	public final static String STR_EMPTY = "";
 	public static final String DELIM = ",();";
 	public static final String PIPE = "\\|";
@@ -87,10 +87,11 @@ public class Constant {
 
 	public static final String[] Qual_Strings = { 
 		CONTRIBUTES,
-		COLOCATES 
+		COLOCATES,
+		INTEGRAL_TO
 	};
 
-	private static final Map<String, String> NOT_QUALIFIERS_TO_EVIDENCE_CODES = new HashMap<String, String>();
+	public static final Map<String, String> NOT_QUALIFIERS_TO_EVIDENCE_CODES = new HashMap<String, String>();
 	static {
 		NOT_QUALIFIERS_TO_EVIDENCE_CODES.put(NOT_DIVERGENT, DIVERGENT_EC);
 		NOT_QUALIFIERS_TO_EVIDENCE_CODES.put(NOT_DESCENDANT_SEQUENCES, DESCENDANT_EVIDENCE_CODE);
@@ -134,4 +135,5 @@ public class Constant {
 	public final static String DEFAULT_IN = DEFAULT_ROOT + "gene-associations/submission/paint/";
 	public final static String DEFAULT_OUT = DEFAULT_ROOT + "gene-associations/submission/splat";
 	public static final String PROTEIN = "protein";
+	
 }

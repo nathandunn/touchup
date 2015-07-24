@@ -19,12 +19,16 @@
  */
 package org.bbop.phylo.model;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.panther.PantherAdapter;
-import org.bbop.phylo.panther.PantherFileAdapter;
 import org.bbop.phylo.touchup.Constant;
 
-import java.io.Serializable;
+import owltools.gaf.Bioentity;
 
 public class Family implements Serializable {
 
@@ -40,25 +44,63 @@ public class Family implements Serializable {
 	private String family_name;
 	private PantherAdapter adapter;
 	private Tree tree;
+    private List<String> tree_content;
+    private List<String> attr_content;
+    private List<String> msa_content;
+    private List<String> wts_content;
 
-	public Family() {
+	public Family(String family_name) {
+		setFamily_name(family_name);
 	}
 
-	public boolean fetch(String family_name) {
+	public boolean fetch(Tree seed, PantherAdapter adapter) {
 		/*
-		 * Assumption is that all of the PANTHER families are present in files locally
+		 * Assumption for touchup is that all of the PANTHER families are present in files locally
 		 * The update of the families is handled asynchronously and should hopefully ensure
 		 * that the more up-to-date versions are available
 		 */
-		setFamily_name(family_name);
-		adapter = new PantherFileAdapter();
-		tree = adapter.fetchTree(family_name);
-		if (tree == null) {
+		this.adapter = adapter;
+		boolean got_tree = adapter.fetchTree(this, seed);
+		if (got_tree) {
+			this.tree = seed;
+		} else {
 			setFamily_name(null);
 		}
 		// Force garbage collection after a new book is opened
 		System.gc();
-		return (tree != null);
+		return (got_tree);
+	}
+
+	public List<String> getTreeContent() {
+		return tree_content;
+	}
+
+	public void setTreeContent(List<String> tree_content) {
+		this.tree_content = tree_content;
+	}
+
+	public List<String> getAttrContent() {
+		return attr_content;
+	}
+
+	public void setAttrContent(List<String> attr_content) {
+		this.attr_content = attr_content;
+	}
+
+	public List<String> getMsaContent() {
+		return msa_content;
+	}
+
+	public void setMsaContent(List<String> msa_content) {
+		this.msa_content = msa_content;
+	}
+
+	public List<String> getWtsContent() {
+		return wts_content;
+	}
+
+	public void setWtsContent(List<String> wts_content) {
+		this.wts_content = wts_content;
 	}
 
 	public boolean save() {
@@ -84,5 +126,6 @@ public class Family implements Serializable {
 	public String getReference() {
 		return Constant.PAINT_REF + ':' + family_name.substring("PTHR".length());
 	}
+	
 }
 

@@ -25,3 +25,6 @@ canned_comments.xml
 /.classpath
 /.project
 /.settings
+/bin/
+**/.DS_Store
+

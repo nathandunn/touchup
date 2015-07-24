@@ -26,10 +26,13 @@ import org.obolibrary.oboformat.parser.OBOFormatParserException;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLPropertyExpression;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
 import owltools.gaf.parser.DefaultAspectProvider;
@@ -47,6 +50,8 @@ public class OWLutil {
 	private static OWLGraphWrapper go_graph;
 	private static AspectProvider aspect_provider;
 	private static Map<String, OWLClass> OWLclasses;
+	private static Set<OWLPropertyExpression> isaPartOf;
+	private static Set<OWLPropertyExpression> isaPartOfRegulates;
 
 	private static synchronized void initialize() {
 		if (go_graph == null) {
@@ -55,6 +60,17 @@ public class OWLutil {
 				String iriString = "http://purl.obolibrary.org/obo/go.owl";
 				go_graph = new OWLGraphWrapper(pw.parse(iriString));
 				OWLclasses = new HashMap<>();
+				OWLObjectProperty part_of = go_graph.getOWLObjectPropertyByIdentifier("BFO:0000050"); // part_of
+				OWLObjectProperty regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002211"); // regulates
+				OWLObjectProperty pos_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002213"); // positively regulates
+				OWLObjectProperty neg_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002212"); // negatively regulates
+				isaPartOf = Collections.<OWLPropertyExpression>singleton(part_of);
+				isaPartOfRegulates = new HashSet<>();
+				isaPartOfRegulates.add(part_of);
+				isaPartOfRegulates.add(regulates);
+				isaPartOfRegulates.add(neg_regulates);
+				isaPartOfRegulates.add(pos_regulates);
+				
 			} catch (OWLOntologyCreationException e) {
 				e.printStackTrace();
 			} catch (OBOFormatParserException e) {
@@ -158,13 +174,20 @@ public class OWLutil {
 	}
 
 	public static boolean moreSpecific(String check_term, String against_term) {
+		return moreSpecific(check_term, against_term, isaPartOf);
+	}
+	
+	public static boolean moreSpecific(String check_term, String against_term, boolean regulates) {
+		return moreSpecific(check_term, against_term, isaPartOfRegulates);
+	}
+	private static boolean moreSpecific(String check_term, String against_term, Set<OWLPropertyExpression> relations) {
 		initialize();
 		OWLClass check = getTerm(check_term);
-		OWLClass against = getTerm(against_term);
-		Set<OWLObject> broader_terms = go_graph.getAncestors(check, Collections.<OWLPropertyExpression>emptySet());
+		OWLClass against = getTerm(against_term); 		
+		Set<OWLObject> broader_terms = go_graph.getAncestors(check, relations);
 		return broader_terms.contains(against);
 	}
-
+	
 	public static boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
 		initialize();
 		List<GeneAnnotation> associations = AnnotationUtil.getExpAssociations(node);
@@ -213,7 +236,7 @@ public class OWLutil {
 		return aspect_provider.getAspect(term_id);
 	}
 
-	private static OWLClass getTerm(String go_id) {
+	public static OWLClass getTerm(String go_id) {
 		OWLClass term = OWLclasses.get(go_id);
 		if (term == null) {
 			term = go_graph.getOWLClassByIdentifier(go_id);

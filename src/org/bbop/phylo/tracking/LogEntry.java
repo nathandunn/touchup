@@ -20,14 +20,15 @@
 
 package org.bbop.phylo.tracking;
 
-import org.apache.log4j.Logger;
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+
+import org.apache.log4j.Logger;
+
+import owltools.gaf.Bioentity;
+import owltools.gaf.GeneAnnotation;
 
 public class LogEntry {
 	/**

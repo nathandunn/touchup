@@ -19,19 +19,21 @@
  */
 package org.bbop.phylo.panther;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.MSA;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.touchup.Preferences;
 import org.bbop.phylo.util.FileUtil;
-import org.bbop.phylo.util.TaxonFinder;
-import owltools.gaf.Bioentity;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import owltools.gaf.Bioentity;
+import owltools.gaf.species.TaxonFinder;
 
 public class PantherFileAdapter extends PantherAdapter {
 	/**
@@ -57,11 +59,10 @@ public class PantherFileAdapter extends PantherAdapter {
 	 *
 	 * @see
 	 */
-	public Tree fetchTree(String family_name) {
+	public boolean fetchTree(Family family, Tree tree) {
 		boolean ok;
-		Tree tree = null;
 		System.gc();
-		File family_dir = new File(Preferences.inst().getTreeDir(), family_name);
+		File family_dir = new File(Preferences.inst().getTreeDir(), tree.getId());
 
 		ok = FileUtil.validPath(family_dir);
 		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
@@ -71,18 +72,18 @@ public class PantherFileAdapter extends PantherAdapter {
 		ok &= FileUtil.validFile(attrFileName);
 
 		if (ok) {
-			tree_content = FileUtil.readFile(treeFileName);
-			Bioentity root = parsePantherTree(tree_content);
+			family.setTreeContent(FileUtil.readFile(treeFileName));
+			Bioentity root = parsePantherTree(family.getTreeContent());
 			if (root != null) {
-				tree = new Tree(family_name, root);
+				tree.growTree(root);
 
 				// Read the attribute file
-				attr_content = FileUtil.readFile(attrFileName);
+				family.setAttrContent(FileUtil.readFile(attrFileName));
 				// Load the attr file to obtain the PTN #s
-				List<List<String>> rows = ParsingHack.parsePantherAttr(attr_content);
+				List<List<String>> rows = ParsingHack.parsePantherAttr(family.getAttrContent());
 				decorateNodes(rows, tree);
 
-				fetchMSA(family_name);
+				fetchMSA(family);
 			}
 
 			if (tree.getRoot().getNcbiTaxonId() == null) {
@@ -90,29 +91,23 @@ public class PantherFileAdapter extends PantherAdapter {
 				tree.getRoot().setNcbiTaxonId(taxon);
 			}
 		}
-		return tree;
+		return ok;
 	}
 
 
-	private MSA fetchMSA(String family_name) {
-		File family_dir = new File(Preferences.inst().getTreeDir(), family_name);
+	private void fetchMSA(Family family) {
+		File family_dir = new File(Preferences.inst().getTreeDir(), family.getFamily_name());
 		FileUtil.validPath(family_dir);
 		File msaFileName = new File(family_dir, "tree" + Constant.MSA_SUFFIX);
-		Map<Bioentity, String> sequences = new HashMap<Bioentity, String>();
-		int seq_length = 0;
 		if (FileUtil.validFile(msaFileName)) {
-			msa_content = FileUtil.readFile(msaFileName);
-			seq_length = parseSeqs(msa_content, sequences);
+			family.setMsaContent(FileUtil.readFile(msaFileName));
 		}
 
 		// Check for wts file
 		File wtsFileName = new File(family_dir, "cluster" + Constant.WTS_SUFFIX);
-		Map <Bioentity, Double> weights = new HashMap<Bioentity, Double>();
 		if (FileUtil.validFile(wtsFileName)) {
-			wts_content = FileUtil.readFile(wtsFileName);
-			parseWts(wts_content, weights);
+			family.setWtsContent(FileUtil.readFile(wtsFileName));
 		}
-		return new MSA(sequences, seq_length, weights);
 	}
 }
 

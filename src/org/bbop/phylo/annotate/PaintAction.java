@@ -20,6 +20,13 @@
 package org.bbop.phylo.annotate;
 
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
@@ -29,15 +36,9 @@ import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.tracking.LogEntry.LOG_ENTRY_TYPE;
 import org.bbop.phylo.util.OWLutil;
 import org.bbop.phylo.util.TaxonChecker;
+
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
 
 
 public class PaintAction {
