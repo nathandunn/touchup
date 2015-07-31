@@ -23,7 +23,10 @@ package org.bbop.phylo.tracking;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bbop.phylo.annotate.PaintAction;
+import org.bbop.phylo.model.Family;
 import org.bbop.phylo.touchup.Constant;
+import org.bbop.phylo.tracking.LogEntry.LOG_ENTRY_TYPE;
 import org.bbop.phylo.util.OWLutil;
 
 import owltools.gaf.Bioentity;
@@ -68,31 +71,30 @@ public class LogAction {
 		}
 	}
 
-	public static void logAssociation(Bioentity node, GeneAnnotation assoc, List<GeneAnnotation> removed) {
-		LogEntry entry = new LogEntry(node, assoc, removed);
+	public static void logAssociation(Bioentity node, GeneAnnotation assoc) {
+		LogEntry entry = new LogEntry(node, assoc, LOG_ENTRY_TYPE.ASSOC, null);
 		done_log.add(entry);
 	}
 
-	//	public void logDisassociation(Bioentity node, String removed) {
-	//		LogEntry remove = findEntry(node, removed, LogEntry.Action.ASSOC);
-	//		if (remove != null) {
-	//			PaintAction.inst().redoDescendentAssociations(remove.getRemovedAssociations());
-	//			done_log.remove(remove);
-	//			undone_log.add(remove);
-	//		}
-	//	}
-	//
+	public static void logDisassociation(Bioentity node, String go_id) {
+		//		LogEntry remove = LogAction.findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.ASSOC);
+		//		if (remove != null) {
+		//			done_log.remove(remove);
+		//			undone_log.add(remove);
+		//		}
+	}
+
 	public static void logNot(GeneAnnotation annotation) {
-		LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation);
+		LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation, LOG_ENTRY_TYPE.NOT, null);
 		done_log.add(entry);
 	}
 
 	public static void logUnNot(Bioentity node, String go_id) {
-		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
-		if (remove != null) {
-			done_log.remove(remove);
-			undone_log.add(remove);
-		}
+		//		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
+		//		if (remove != null) {
+		//			done_log.remove(remove);
+		//			undone_log.add(remove);
+		//		}
 	}
 
 	public static void logPruning(Bioentity node, String date, List<GeneAnnotation> purged) {
@@ -101,7 +103,7 @@ public class LogAction {
 			done_log.remove(branch);
 			undone_log.add(branch);
 		} else {
-			branch = new LogEntry(node, date, purged);
+			branch = new LogEntry(node, null, LOG_ENTRY_TYPE.PRUNE, purged);
 			done_log.add(branch);
 		}
 	}
@@ -115,7 +117,7 @@ public class LogAction {
 		}
 	}
 
-	public static void undo(GeneAnnotation assoc) {
+	public static Bioentity undo(Family family, GeneAnnotation assoc) {
 		LogEntry entry = null;
 		for (int i = 0; i < done_log.size() && entry  == null; i++) {
 			LogEntry check = done_log.get(i);
@@ -123,24 +125,28 @@ public class LogAction {
 					check.getTerm().equals(assoc.getCls()))
 				entry = check;
 		}
-		done_log.remove(entry);
-		takeAction(entry, true);
-		undone_log.add(entry);
+		return undo(family, entry);
 	}
 
-	public static void undo() {
+	public static Bioentity undo(Family family) {
 		int index = done_log.size() - 1;
 		LogEntry entry = done_log.get(index);
-		done_log.remove(index);
-		takeAction(entry, true);
-		undone_log.add(entry);
+		return undo(family, entry);
 	}
 
-	public static void redo() {
+	private static Bioentity undo (Family family, LogEntry entry) {
+		done_log.remove(entry);
+		takeAction(family, entry, true);
+		undone_log.add(entry);
+		return entry.getNode();
+	}
+
+	public static Bioentity redo(Family family) {
 		int index = undone_log.size() - 1;
 		LogEntry entry = undone_log.remove(index);
-		takeAction(entry, false);
+		takeAction(family, entry, false);
 		done_log.add(entry);
+		return entry.getNode();
 	}
 
 	public static int report(List<String> contents) {
@@ -161,28 +167,28 @@ public class LogAction {
 		}
 		return pruned;
 	}
-	
+
 	public static void reportMF(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
 		}
 		contents.add("");
 	}
-	
+
 	public static void reportCC(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
 		}
 		contents.add("");
 	}
-	
+
 	public static void reportBP(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
 		}
 		contents.add("");
 	}
-	
+
 	public static int reportPruned(List<String> contents) {
 		int pruned = 0;
 		for (LogEntry entry : done_log) {
@@ -197,21 +203,21 @@ public class LogAction {
 			contents.add("");
 		return pruned;
 	}
-	
+
 	private static void reportAspect(LogEntry entry,
 			List<String> contents,
 			String aspect,
 			String syntax_candy_4has,
 			String syntax_candy_4not) {
 		GeneAnnotation annotation = entry.getLoggedAssociation();
-		if (annotation != null && annotation.getAspect().equals(aspect)) {
+		if (annotation == null || (annotation.getAspect().equals(aspect))) {
 			switch (entry.getAction()) {
 			case ASSOC: {
 				if (annotation.isContributesTo()) {
 					syntax_candy_4has = syntax_candy_4has.replace("has", "contributes to");
 				}
 				if (annotation.isColocatesWith()) {
-					syntax_candy_4has = " co-locates with ";
+					syntax_candy_4has = " co-localizes with ";
 				}
 				if (annotation.isIntegralTo()) {
 					syntax_candy_4has = syntax_candy_4has.replace("has", "is integral to");
@@ -231,6 +237,11 @@ public class LogAction {
 						" (" + annotation.getCls() + ") ");
 				break;
 			}
+			case PRUNE: {
+				contents.add(entry.getDate() + ": Pruned - " +
+						Logger.makeLabel(entry.getNode()));
+				break;
+			}
 			default:
 				logger.info("Not logging " + entry.getNode());
 				break;
@@ -238,32 +249,31 @@ public class LogAction {
 		}
 	}
 
-	private static void takeAction(LogEntry entry, boolean undo) {
+	private static void takeAction(Family family, LogEntry entry, boolean undo) {
+		PaintAction dab = PaintAction.inst();
 		switch (entry.getAction()) {
 		case ASSOC: {
 			if (undo) {
-				//				stroke.undoAssociation(entry.getNode(), entry.getTerm());
-				//				stroke.redoDescendantAssociations(entry.getRemovedAssociations());
+				dab.undoAssociation(family, entry.getLoggedAssociation());
 			} else {
-				//				entry.getRemovedAssociations().clear();
-				//				stroke.redoAssociation(entry.getLoggedAssociation(), entry.getRemovedAssociations());
+				dab.propagateAssociation(family, entry.getLoggedAssociation());
 			}
 			break;
 		}
 		case NOT: {
 			if (undo) {
-				//				stroke.unNot(entry.getEvidence(), entry.getNode(), false);
+				dab.unNot(entry.getLoggedAssociation());
 			} else {
-				//				stroke.setNot(entry.getEvidence(), entry.getNode(), entry.getEvidence().getCode(), false);
+				dab.setNot(family, entry.getNode(), entry.getLoggedAssociation(), entry.getLoggedAssociation().getShortEvidence(), false);
 			}
 			break;
 		}
 		case PRUNE: {
 			entry.getNode().setPrune(!entry.getNode().isPruned());
 			if (undo) {
-				//				stroke.graftBranch(entry.getNode(), entry.getRemovedAssociations(), false);
+				dab.graftBranch(entry.getNode(), entry.getRemovedAssociations(), false);
 			} else {
-				//				stroke.pruneBranch(entry.getNode(), false);
+				dab.pruneBranch(entry.getNode(), false);
 			}
 			break;
 		}
@@ -296,13 +306,17 @@ public class LogAction {
 			int index = log.size() - 1;
 			LogEntry entry = log.get(index);
 			GeneAnnotation assoc = entry.getLoggedAssociation();
-			String aspect = assoc.getAspect();
-			if (aspect.equals(Constant.MF)) {
-				reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
-			} else if (aspect.equals(Constant.CC)) {
-				reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
-			} if (aspect.equals(Constant.BP)) {
-				reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
+			if (assoc != null) {
+				String aspect = assoc.getAspect();
+				if (aspect.equals(Constant.MF)) {
+					reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
+				} else if (aspect.equals(Constant.CC)) {
+					reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
+				} if (aspect.equals(Constant.BP)) {
+					reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
+				}
+			} else { // Pruning/grafting
+				reportAspect(entry, contents, null, null, null);
 			}
 			return contents.get(0);
 		} else

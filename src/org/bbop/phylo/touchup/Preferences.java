@@ -42,8 +42,6 @@ public class Preferences {
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = -5472475387423113108L;
-
 	private String gafdir = "/Users/suzi/projects/go/gene-associations/submission/paint/";
 	private String treedir = "/Users/suzi/projects/go/data/trees/panther/";
 
@@ -65,6 +63,7 @@ public class Preferences {
 		if (preferences == null) {
 			XMLDecoder d;
 			try {
+				log.error("preferences are in  " + Preferences.getPrefsXMLFile());
 				d = new XMLDecoder(new BufferedInputStream(new FileInputStream(
 						Preferences.getPrefsXMLFile())));
 				preferences = (Preferences) d.readObject();

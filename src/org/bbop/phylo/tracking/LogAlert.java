@@ -32,8 +32,6 @@ public class LogAlert {
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 1L;
-
 	private static List<LogEntry> invalids;
 	private static List<LogEntry> missing;
 	private static List<LogEntry> obsoletes;
@@ -59,17 +57,17 @@ public class LogAlert {
 	}
 
 	public static void logMissing(Bioentity node, GeneAnnotation assoc) {
-		LogEntry entry = new LogEntry(node, assoc, LogEntry.LOG_ENTRY_TYPE.MISSING);
+		LogEntry entry = new LogEntry(node, assoc, LogEntry.LOG_ENTRY_TYPE.MISSING, null);
 		missing.add(entry);
 	}
 
 	public static void logInvalid(Bioentity node, GeneAnnotation assoc, LogEntry.LOG_ENTRY_TYPE type) {
-		LogEntry entry = new LogEntry(node, assoc, type);
+		LogEntry entry = new LogEntry(node, assoc, type, null);
 		invalids.add(entry);
 	}
 
 	public static void logObsolete(Bioentity node, GeneAnnotation assoc) {
-		LogEntry entry = new LogEntry(node, assoc, LogEntry.LOG_ENTRY_TYPE.OBSOLETE_TERM);
+		LogEntry entry = new LogEntry(node, assoc, LogEntry.LOG_ENTRY_TYPE.OBSOLETE_TERM, null);
 		obsoletes.add(entry);
 	}
 

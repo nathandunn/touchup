@@ -114,7 +114,7 @@ public class WithEvidence {
 						 */
 						if (exp_assoc.hasQualifiers()) {
 							if (exp_assoc.isColocatesWith())
-								qualifiers |= GeneAnnotation.COLOCATES_WITH_MASK;
+								qualifiers |= GeneAnnotation.COLOCALIZES_MASK;
 							if (exp_assoc.isContributesTo())
 								qualifiers |= GeneAnnotation.CONTRIBUTES_TO_MASK;
 							if (exp_assoc.isIntegralTo())

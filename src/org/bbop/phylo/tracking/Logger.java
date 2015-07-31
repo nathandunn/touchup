@@ -89,7 +89,7 @@ public class Logger {
                 logger.warn("No log file yet exists for " + log_file);
             }
 		} else {
-			logger.error("Invalid path for family directory " + family_dir);
+			logger.error("Family directory doesn't exist for: " + family_dir);
 		}
 	}
 	

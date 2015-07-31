@@ -20,6 +20,16 @@ package org.bbop.phylo.util;
  */
 
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.obolibrary.oboformat.parser.OBOFormatParserException;
@@ -27,7 +37,6 @@ import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLPropertyExpression;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
@@ -40,9 +49,6 @@ import owltools.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
 import owltools.graph.OWLGraphWrapper;
 import owltools.io.ParserWrapper;
 
-import java.io.IOException;
-import java.util.*;
-
 public class OWLutil {
 
 	protected static Logger log = Logger.getLogger(OWLutil.class);
@@ -50,8 +56,13 @@ public class OWLutil {
 	private static OWLGraphWrapper go_graph;
 	private static AspectProvider aspect_provider;
 	private static Map<String, OWLClass> OWLclasses;
+	private static Map<String, String> term_labels;
 	private static Set<OWLPropertyExpression> isaPartOf;
 	private static Set<OWLPropertyExpression> isaPartOfRegulates;
+
+	private static final int LESS_THAN = -1;
+	private static final int GREATER_THAN = 1;
+	private static final int EQUAL_TO = 0;
 
 	private static synchronized void initialize() {
 		if (go_graph == null) {
@@ -60,6 +71,7 @@ public class OWLutil {
 				String iriString = "http://purl.obolibrary.org/obo/go.owl";
 				go_graph = new OWLGraphWrapper(pw.parse(iriString));
 				OWLclasses = new HashMap<>();
+				term_labels = new HashMap<>();
 				OWLObjectProperty part_of = go_graph.getOWLObjectPropertyByIdentifier("BFO:0000050"); // part_of
 				OWLObjectProperty regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002211"); // regulates
 				OWLObjectProperty pos_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002213"); // positively regulates
@@ -70,7 +82,19 @@ public class OWLutil {
 				isaPartOfRegulates.add(regulates);
 				isaPartOfRegulates.add(neg_regulates);
 				isaPartOfRegulates.add(pos_regulates);
-				
+
+				Map<String, String> mappings = new HashMap<String, String>();
+				mappings.put("GO:0008150", "P");
+				mappings.put("GO:0003674", "F");
+				mappings.put("GO:0005575", "C");
+
+				// Step 1: create a factory, that how you choose the implementation
+				OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
+				// Step 2: Create the reasoner from the ontology
+				OWLReasoner reasoner = reasonerFactory.createReasoner(go_graph.getSourceOntology());
+
+				aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings, reasoner);
+
 			} catch (OWLOntologyCreationException e) {
 				e.printStackTrace();
 			} catch (OBOFormatParserException e) {
@@ -88,6 +112,7 @@ public class OWLutil {
 	public static void clearTerms() {
 		if (OWLclasses != null) {
 			OWLclasses.clear();
+			term_labels.clear();
 			System.gc();
 		}
 	}
@@ -104,17 +129,24 @@ public class OWLutil {
 		if (all_annotations != null && term_id != null) {
 			for (int i = 0; i < all_annotations.size() && annotated_with_term == null; i++) {
 				GeneAnnotation check = all_annotations.get(i);
-				String go_id = check.getCls();
-				if (term_id.equals(go_id)) {
-					annotated_with_term = check;
-				}
-				else if (moreSpecific(go_id, term_id)) {
-					annotated_with_term = check;
+				if (check.getAspect().equals(getAspect(term_id))) {
+					String go_id = check.getCls();
+					if (term_id.equals(go_id)) {
+						annotated_with_term = check;
+					}
+					else if (moreSpecific(go_id, term_id)) {
+						if (!check.isNegated()) {
+							annotated_with_term = check;
+						} else {
+							log.debug("Ignoring more specific annotation to " + go_id + " because it's negated");
+						}
+					}
 				}
 			}
 		}
 		return annotated_with_term;
 	}
+
 
 	public static boolean isObsolete(String go_id) {
 		initialize();
@@ -137,11 +169,12 @@ public class OWLutil {
 			}
 		} else {
 			go_ids = new ArrayList<>();
-				/* try looking it up as an alt-id */
+			/* try looking it up as an alt-id */
 			term = go_graph.getOWLClassByIdentifier(go_id, true);
 			if (term != null) {
 				String term_id = go_graph.getIdentifier(term);
 				OWLclasses.put(term_id, term);
+				term_labels.put(term_id, getTermLabel(term_id));
 				go_ids.add(term_id);
 			}
 
@@ -152,6 +185,10 @@ public class OWLutil {
 	public static boolean isExcluded(String go_id) {
 		initialize();
 		OWLClass term = getTerm(go_id);
+		return isExcluded(term);
+	}
+
+	private static boolean isExcluded(OWLClass term) {
 		List<String> subsets = go_graph.getSubsets(term);
 		boolean isExcluded = false;
 		for(String subset : subsets) {
@@ -165,29 +202,77 @@ public class OWLutil {
 
 	public static String getTermLabel(String go_id) {
 		initialize();
-		OWLClass term = getTerm(go_id);
-        if (term != null) {
-            return go_graph.getLabelOrDisplayId(term);
-        } else {
-            return go_id + " no label";
-        }
+		String label = term_labels.get(go_id);
+		if (label == null) {
+			OWLClass term = getTerm(go_id);
+			if (term != null) {
+				label = go_graph.getLabelOrDisplayId(term);
+			} else {
+				label = go_id + " no label";
+			}
+			term_labels.put(go_id, label);
+		}
+		return label;
 	}
 
 	public static boolean moreSpecific(String check_term, String against_term) {
 		return moreSpecific(check_term, against_term, isaPartOf);
 	}
-	
+
 	public static boolean moreSpecific(String check_term, String against_term, boolean regulates) {
 		return moreSpecific(check_term, against_term, isaPartOfRegulates);
 	}
+
 	private static boolean moreSpecific(String check_term, String against_term, Set<OWLPropertyExpression> relations) {
 		initialize();
 		OWLClass check = getTerm(check_term);
-		OWLClass against = getTerm(against_term); 		
-		Set<OWLObject> broader_terms = go_graph.getAncestors(check, relations);
-		return broader_terms.contains(against);
+		OWLClass against = getTerm(against_term);
+		return moreSpecific(check, against, relations);
 	}
-	
+
+	private static boolean moreSpecific(OWLClass o1, OWLClass o2, Set<OWLPropertyExpression> relations) {
+		Set<OWLObject> broader_terms = go_graph.getAncestors(o1, relations);
+		return broader_terms.contains(o2);
+	}
+
+	public static List<String> getAncestors(String term) {
+		initialize();
+		OWLClass check = getTerm(term);
+		Set<OWLObject> broader_terms = go_graph.getAncestors(check, isaPartOf);
+		Set<OWLClass> allClasses = new HashSet<OWLClass>();
+		for (OWLObject owlObject : broader_terms) {
+			allClasses.addAll(owlObject.getClassesInSignature());
+		}
+		List<String> ancestors = new ArrayList<>();
+		List<OWLClass> sortedClasses = new ArrayList<OWLClass>(allClasses);
+		Collections.sort(sortedClasses, new Comparator<OWLClass>() {
+
+			@Override
+			public int compare(OWLClass o1, OWLClass o2) {
+				/*
+				 * Within a single aspect we want the more specific terms first
+				 */
+				if (OWLutil.moreSpecific(o1, o2, isaPartOf)) {
+					return LESS_THAN;
+				} else if (OWLutil.moreSpecific(o2, o1, isaPartOf)) {
+					return GREATER_THAN;
+				} else {
+					return EQUAL_TO;
+				}
+			}
+		});
+
+		String aspect = getAspect(term);
+		for (OWLClass owlClass : sortedClasses) {
+			String cls = go_graph.getIdentifier(owlClass);
+			String cls_aspect = getAspect(cls);
+			if (aspect.equals(cls_aspect) && !isExcluded(owlClass)) {
+				ancestors.add(cls);
+			}
+		}
+		return ancestors;
+	}
+
 	public static boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
 		initialize();
 		List<GeneAnnotation> associations = AnnotationUtil.getExpAssociations(node);
@@ -220,19 +305,6 @@ public class OWLutil {
 
 	public static String getAspect(String term_id) {
 		initialize();
-		if (aspect_provider == null) {
-			Map<String, String> mappings = new HashMap<String, String>();
-			mappings.put("GO:0008150", "P");
-			mappings.put("GO:0003674", "F");
-			mappings.put("GO:0005575", "C");
-
-			// Step 1: create a factory, that how you choose the implementation
-			OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
-			// Step 2: Create the reasoner from the ontology
-			OWLReasoner reasoner = reasonerFactory.createReasoner(go_graph.getSourceOntology());
-
-			aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings , reasoner);
-		}
 		return aspect_provider.getAspect(term_id);
 	}
 
@@ -241,6 +313,7 @@ public class OWLutil {
 		if (term == null) {
 			term = go_graph.getOWLClassByIdentifier(go_id);
 			OWLclasses.put(go_id, term);
+			term_labels.put(go_id, getTermLabel(go_id));
 		}
 		return term;
 	}
