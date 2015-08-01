@@ -76,26 +76,26 @@ public class LogAction {
 		done_log.add(entry);
 	}
 
-	public static void logDisassociation(Bioentity node, String go_id) {
-		//		LogEntry remove = LogAction.findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.ASSOC);
-		//		if (remove != null) {
-		//			done_log.remove(remove);
-		//			undone_log.add(remove);
-		//		}
-	}
-
+//	public static void logDisassociation(Bioentity node, String go_id) {
+//		//		LogEntry remove = LogAction.findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.ASSOC);
+//		//		if (remove != null) {
+//		//			done_log.remove(remove);
+//		//			undone_log.add(remove);
+//		//		}
+//	}
+//
 	public static void logNot(GeneAnnotation annotation) {
 		LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation, LOG_ENTRY_TYPE.NOT, null);
 		done_log.add(entry);
 	}
 
-	public static void logUnNot(Bioentity node, String go_id) {
-		//		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
-		//		if (remove != null) {
-		//			done_log.remove(remove);
-		//			undone_log.add(remove);
-		//		}
-	}
+//	public static void logUnNot(Bioentity node, String go_id) {
+//		//		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
+//		//		if (remove != null) {
+//		//			done_log.remove(remove);
+//		//			undone_log.add(remove);
+//		//		}
+//	}
 
 	public static void logPruning(Bioentity node, String date, List<GeneAnnotation> purged) {
 		LogEntry branch = findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
@@ -108,16 +108,16 @@ public class LogAction {
 		}
 	}
 
-	public static void logGrafting(Bioentity node) {
+	public static void logGrafting(Family family, Bioentity node) {
 		LogEntry branch = findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
 		if (branch != null) {
-			//			PaintAction.inst().graftBranch(branch.getNode(), branch.getRemovedAssociations(), false);
 			done_log.remove(branch);
+			PaintAction.inst().graftBranch(family, node, branch.getRemovedAssociations(), false);
 			undone_log.add(branch);
 		}
 	}
 
-	public static Bioentity undo(Family family, GeneAnnotation assoc) {
+	public static LogEntry undo(Family family, GeneAnnotation assoc) {
 		LogEntry entry = null;
 		for (int i = 0; i < done_log.size() && entry  == null; i++) {
 			LogEntry check = done_log.get(i);
@@ -128,25 +128,25 @@ public class LogAction {
 		return undo(family, entry);
 	}
 
-	public static Bioentity undo(Family family) {
+	public static LogEntry undo(Family family) {
 		int index = done_log.size() - 1;
 		LogEntry entry = done_log.get(index);
 		return undo(family, entry);
 	}
 
-	private static Bioentity undo (Family family, LogEntry entry) {
+	private static LogEntry undo (Family family, LogEntry entry) {
 		done_log.remove(entry);
 		takeAction(family, entry, true);
 		undone_log.add(entry);
-		return entry.getNode();
+		return entry;
 	}
 
-	public static Bioentity redo(Family family) {
+	public static LogEntry redo(Family family) {
 		int index = undone_log.size() - 1;
 		LogEntry entry = undone_log.remove(index);
 		takeAction(family, entry, false);
 		done_log.add(entry);
-		return entry.getNode();
+		return entry;
 	}
 
 	public static int report(List<String> contents) {
@@ -271,12 +271,14 @@ public class LogAction {
 		case PRUNE: {
 			entry.getNode().setPrune(!entry.getNode().isPruned());
 			if (undo) {
-				dab.graftBranch(entry.getNode(), entry.getRemovedAssociations(), false);
+				dab.graftBranch(family, entry.getNode(), entry.getRemovedAssociations(), false);
 			} else {
 				dab.pruneBranch(entry.getNode(), false);
 			}
 			break;
 		}
+		default:
+			break;
 		}
 	}
 

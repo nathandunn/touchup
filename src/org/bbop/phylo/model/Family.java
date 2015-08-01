@@ -20,15 +20,11 @@
 package org.bbop.phylo.model;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.panther.PantherAdapter;
 import org.bbop.phylo.touchup.Constant;
-
-import owltools.gaf.Bioentity;
 
 public class Family implements Serializable {
 

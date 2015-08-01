@@ -99,6 +99,8 @@ public class Tree extends BioentityDocument implements Serializable {
 	 */
 	protected void addChildNodesInOrder(Bioentity node, List<Bioentity> node_list) {
 		if (node != null) {
+			if (node.isPruned())
+				log.debug("Pruned node");
 			if (node.isTerminus()) {
 				node_list.add(node);
 			} else {

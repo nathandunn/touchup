@@ -60,7 +60,7 @@ public class GafPropagator {
     private static void propagate(GafDocument gafdoc, Family family) throws IOException {
         List<GeneAnnotation> gaf_annotations = gafdoc.getGeneAnnotations();
 
-        Map<Bioentity, String> pruned_list = new HashMap<>();
+        Map<Bioentity, String> prune_dates = new HashMap<>();
         Map<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
 
         IDmap mapper = IDmap.inst();
@@ -119,15 +119,15 @@ public class GafPropagator {
                     }
                     gaf_annotation.setBioentityObject(seq_node);
                     gaf_annotation.setBioentity(seq_node.getId());
-                    parseAnnotations(family, seq_node, gaf_annotation, pruned_list, negate_list);
+                    parseAnnotations(family, seq_node, gaf_annotation, prune_dates, negate_list);
                     seq_count++;
                 }
             } // end for loop going through gaf file contents
         }
-        Set<Bioentity> pruned = pruned_list.keySet();
+        Set<Bioentity> pruned = prune_dates.keySet();
         for (Bioentity node : pruned) {
             node.setPrune(true);
-            PaintAction.inst().pruneBranch(node, pruned_list.get(node), true);
+            PaintAction.inst().pruneBranch(node, prune_dates.get(node), true);
         }
 
         if (!negate_list.isEmpty()) {
@@ -138,11 +138,11 @@ public class GafPropagator {
     private static void parseAnnotations(Family family,
                                          Bioentity node,
                                          GeneAnnotation gaf_annotation,
-                                         Map<Bioentity, String> pruned_list,
+                                         Map<Bioentity, String> prune_dates,
                                          Map<Bioentity, List<GeneAnnotation>> negate_list) {
 
         if (gaf_annotation.isCut()) {
-            pruned_list.put(node, gaf_annotation.getLastUpdateDate());
+            prune_dates.put(node, gaf_annotation.getLastUpdateDate());
         }
 		/*
 		 * Ignore the rows (from older GAFs) that are for descendant nodes 

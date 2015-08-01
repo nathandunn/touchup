@@ -290,7 +290,7 @@ public class AnnotationUtil {
         List<GeneAnnotation> paint_assoc = new ArrayList<>();
         List<GeneAnnotation> associations = node.getAnnotations();
         for (GeneAnnotation annotation : associations) {
-            if (isPAINTAnnotation(annotation) && annotation.getAspect().equals(aspect)) {
+            if (isPAINTAnnotation(annotation) && (aspect == null || annotation.getAspect().equals(aspect))) {
                paint_assoc.add(annotation);
             }
         }

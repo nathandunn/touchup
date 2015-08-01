@@ -36,7 +36,7 @@ public class LogAlert {
 	private static List<LogEntry> missing;
 	private static List<LogEntry> obsoletes;
 
-	private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(LogAlert.class);
+//	private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(LogAlert.class);
 
 	public static void clearLog() {
 		if (invalids != null) {
