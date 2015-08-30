@@ -20,11 +20,14 @@ public class Constant {
 
 	public static final String TREE_SUFFIX = ".tree";
 	public static final String ATTR_SUFFIX = ".tab";
-	public static final String MSA_SUFFIX = ".mia";
+	public static final String MSA_SUFFIX = ".pir";
 	public static final String WTS_SUFFIX = ".wts";
 	public static final String GAF_SUFFIX = ".gaf";
 	public static final String LOG_SUFFIX = ".log";
 	public static final String OLDLOG_SUFFIX = ".txt";
+	
+	public static final String GAFDIR = "/Users/suzi/projects/go/gene-associations/submission/paint/";
+	public static final String TREEDIR = "/Users/suzi/projects/go/data/trees/panther/";
 
 	private final static String NOT_KEY_RESIDUES = "NOT due to change in key residue(s)";
 	public final static String KEY_RESIDUES_EC = "IKR";
@@ -40,13 +43,12 @@ public class Constant {
 	public final static String OLD_SOURCE = "RefGenome";
 	public final static String PAINT_AS_SOURCE = "GO_Central";
     public final static String REACTOME = "Reactome";
+	public static final String CURATOR_EVIDENCE_CODE = "IC";
 
 	private final static String CONTRIBUTES = "contributes_to";
 	private final static String COLOCATES = "colocalizes_with";
 	private final static String INTEGRAL_TO = "integral_to";
 	
-//	public final static String TAXON_PREFIX = "taxon:";
-
 	public final static String STR_EMPTY = "";
 	public static final String DELIM = ",();";
 	public static final String PIPE = "\\|";

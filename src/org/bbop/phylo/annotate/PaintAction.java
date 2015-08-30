@@ -77,7 +77,7 @@ public class PaintAction {
 			return LogEntry.LOG_ENTRY_TYPE.PRUNE;
 		}
 
-		if (OWLutil.isExcluded(go_id)) {
+		if (OWLutil.inst().isExcluded(go_id)) {
 			/*
 			Can't use terms that are merely for the logic of the ontology
 			and not relevant or informative for the biology
@@ -86,7 +86,7 @@ public class PaintAction {
 		}
 		// check to make sure that this term is more specific than any inherited terms
 		// and the node is not annotated to this term already
-		if (OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) != null) {
+		if (AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) != null) {
 			return (LogEntry.LOG_ENTRY_TYPE.ALREADY_ASSOCIATED);
 		}
 
@@ -99,7 +99,7 @@ public class PaintAction {
 		 *  check to make sure that this term is more generic than directly annotated descendants
 		 * if all of them are more general, then disallow the annotation
 		 */
-		if (OWLutil.descendantsAllBroader(node, go_id, true)) {
+		if (OWLutil.inst().descendantsAllBroader(node, go_id, true)) {
 			return (LogEntry.LOG_ENTRY_TYPE.TOO_SPECIFIC);
 		}
 		// applicable term for this taxon?
@@ -112,12 +112,13 @@ public class PaintAction {
 	/*
 	 * Called after a drop of a term onto a node in the tree or when loading a GAF file
 	 */
-	public GeneAnnotation propagateAssociation(Family family, Bioentity node, String go_id, String date, int qualifiers) {
-		WithEvidence withs = new WithEvidence(family.getTree(), node, go_id);
+	public GeneAnnotation propagateAssociation(Family family, Bioentity node, String go_id, WithEvidence withs, String date, int qualifiers) {
+		// includes regulation children as well
 		List<String> exp_withs = withs.getExpWiths();
 		boolean negate = withs.isExperimentalNot();
 
 		int go_qualifiers = getGOqualifiers(qualifiers);
+		// todo: add dialog box back
 		List<String> top_with = new ArrayList<> ();
 		top_with.add(node.getId());
 
@@ -127,6 +128,7 @@ public class PaintAction {
 				family.getReference(),
 				date,
 				negate,
+				withs.regulates(),
 				top_with,
 				exp_withs);
 
@@ -143,6 +145,7 @@ public class PaintAction {
 			String reference,
 			String date,
 			boolean negate,
+			boolean curator_inference,
 			List<String> top_with,
 			List<String> exp_withs) {
 		GeneAnnotation top_assoc = null;
@@ -150,15 +153,15 @@ public class PaintAction {
 		 * Only proceed if this is not one of the original sources of information for this association
 		 * and this node is not yet annotated to either this term
 		 */
-		if (!exp_withs.contains(node.getId()) && OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+		if (!exp_withs.contains(node.getId()) && AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
 			if (top_with.contains(node.getId())) {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, exp_withs);
+				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, curator_inference, exp_withs);
 				// not dirty if this is restoring annotations from a saved file
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, top_with);
+				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, curator_inference, top_with);
 			}
 
 			/*
@@ -184,6 +187,7 @@ public class PaintAction {
 								reference,
 								date,
 								negate,
+								curator_inference,
 								top_with,
 								exp_withs);
 					}
@@ -200,6 +204,7 @@ public class PaintAction {
 			String date,
 			boolean is_MRC,
 			boolean is_directNot,
+			boolean curator_inference,
 			List<String> withs) {
 		GeneAnnotation assoc = new GeneAnnotation();
 		assoc.setBioentity(node.getId());
@@ -207,7 +212,7 @@ public class PaintAction {
 		assoc.setCls(go_id);
 		assoc.setQualifiers(qualifiers);
 		assoc.addReferenceId(reference);
-		assoc.setAspect(OWLutil.getAspect(go_id));
+		assoc.setAspect(OWLutil.inst().getAspect(go_id));
 		assoc.setAssignedBy(Constant.PAINT_AS_SOURCE);
 		if (date == null) {
 			date = getDate();
@@ -216,8 +221,13 @@ public class PaintAction {
 
 		assoc.setDirectMRC(is_MRC);
 		assoc.setDirectNot(is_directNot);
-		String code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
-		assoc.setEvidence(code, null);
+		String evidence_code;
+		if (!curator_inference) {
+			evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
+		} else {
+			evidence_code = is_MRC ? Constant.CURATOR_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
+		}
+		assoc.setEvidence(evidence_code, null);
 		assoc.setWithInfos(withs);
 		return assoc;
 	}
@@ -256,6 +266,7 @@ public class PaintAction {
 							association.getReferenceIds().get(0),
 							association.getLastUpdateDate(),
 							negate,
+							withs.regulates(),
 							top_with,
 							exp_withs);
 				}
@@ -287,7 +298,7 @@ public class PaintAction {
 			for (GeneAnnotation assoc : current_set) {
 				if (AnnotationUtil.isPAINTAnnotation(assoc)) {
 					String check_term = assoc.getCls();
-					if (!go_id.equals(check_term) && OWLutil.moreSpecific(go_id, check_term)) {
+					if (!go_id.equals(check_term) && OWLutil.inst().moreSpecific(go_id, check_term)) {
 						removal.add(assoc);
 						//						if (removed != null)
 						//							removed.add(assoc);
@@ -381,6 +392,7 @@ public class PaintAction {
 							family.getReference(),
 							archived_annot.getLastUpdateDate(),
 							negate,
+							withs.regulates(),
 							top_with,
 							exp_withs);
 				}
@@ -416,6 +428,7 @@ public class PaintAction {
 					family.getReference(),
 					ancestral_assoc.getLastUpdateDate(),
 					negate,
+					withs.regulates(),
 					top_with,
 					exp_withs);
 			restoration = true;
@@ -439,6 +452,7 @@ public class PaintAction {
 			String reference,
 			String date,
 			boolean negate,
+			boolean curator_inference,
 			List<String> top_with,
 			List<String> exp_withs) {
 		GeneAnnotation top_assoc = null;
@@ -446,15 +460,15 @@ public class PaintAction {
 		 * Only proceed if this is not one of the original sources of information for this association
 		 * and this node is not yet annotated to either this term
 		 */
-		if (!exp_withs.contains(node.getId()) && OWLutil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+		if (!exp_withs.contains(node.getId()) && AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
 			if (top_with.contains(node.getId())) {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, exp_withs);
+				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, curator_inference, exp_withs);
 				// not dirty if this is restoring annotations from a saved file
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, top_with);
+				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, curator_inference, top_with);
 			}
 
 			/*
@@ -480,6 +494,7 @@ public class PaintAction {
 								reference,
 								date,
 								negate,
+								curator_inference,
 								top_with,
 								exp_withs);
 					}
@@ -516,7 +531,7 @@ public class PaintAction {
 						// is first term/argument (from ancestral protein)
 						// is a broader term for the second term/argument (from descendant protein)
 						// then there is no need to re-associate the broader term.
-						covered |= OWLutil.moreSpecific(ancestral_term, check_term);
+						covered |= OWLutil.inst().moreSpecific(ancestral_term, check_term);
 					}
 					if (!covered) {
 						ancestral_collection.add(ancestral_assoc);
@@ -610,7 +625,7 @@ public class PaintAction {
 		assoc.setDirectNot(false);
 		assoc.setIsNegated(false);
 		assoc.setEvidence(Constant.ANCESTRAL_EVIDENCE_CODE, null);
-		String aspect = OWLutil.getAspect(assoc.getCls());
+		String aspect = OWLutil.inst().getAspect(assoc.getCls());
 		GeneAnnotation a = getAncestralNodeWithPositiveEvidenceForTerm(assoc.getBioentityObject().getParent(), assoc.getCls(), aspect);
 		if (a != null) {
 			Collection<String> withs = new ArrayList<>();
@@ -648,7 +663,7 @@ public class PaintAction {
 			/*
 			 * Better to see if the child term is_a (or is part_of) the parent term, rather than an exact match
 			 */
-			GeneAnnotation child_assoc = OWLutil.isAnnotatedToTerm(child.getAnnotations(), assoc.getCls());
+			GeneAnnotation child_assoc = AnnotationUtil.isAnnotatedToTerm(child.getAnnotations(), assoc.getCls(), assoc.getAspect());
 			if (child_assoc != null) {
 				child_assoc.setIsNegated(is_not);
 				child_assoc.setDirectNot(false);

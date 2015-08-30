@@ -29,7 +29,7 @@ import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.touchup.Preferences;
+import org.bbop.phylo.util.DirectoryUtil;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -48,7 +48,7 @@ public abstract class PantherAdapter {
 
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
-        File family_dir = new File(Preferences.inst().getGafDir(), id);
+        File family_dir = new File(DirectoryUtil.inst().getGafDir(), id);
 
         boolean ok = FileUtil.validPath(family_dir);
         File treeFileName = new File(family_dir, id + Constant.TREE_SUFFIX);
@@ -289,6 +289,9 @@ public abstract class PantherAdapter {
     private void parseAttributeRow(List<String> row, List<String> header) {
         String id = row.get(0);
         String ptn = row.get(row.size() - 1);
+//        if (id.contains("NPY2R")) {
+//        	log.debug("Make sure we get the right one");
+//        }
         Bioentity node = ParsingHack.findThatNode(id);
         if (node == null) {
         	/*
@@ -312,9 +315,7 @@ public abstract class PantherAdapter {
             value = value != null ? value.trim() : Constant.STR_EMPTY;
             if (tag.equals(ACC_TAG) || tag.equals(PROT_TAG)) {
                 if (node.getSeqId() == null) {
-                    node.setSeqId(node.getSeqDb(), value);
-                    IDmap.inst().indexBySeqID(node);
-                    log.info("Set accession after the fact for: " + value);
+                    log.info("accession after the fact for: " + value);
                 }
             } else if (tag.equals(ORG_TAG)) {
                 node.addSpeciesLabel(value);

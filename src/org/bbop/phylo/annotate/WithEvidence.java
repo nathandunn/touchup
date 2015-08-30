@@ -36,6 +36,7 @@ public class WithEvidence {
 	private static Logger log = Logger.getLogger(WithEvidence.class);
 
 	private List<String> exp_withs;
+	private List<String> regulator_of;
 	private List<String> notted_withs;
 	private int qualifiers;
 
@@ -43,27 +44,31 @@ public class WithEvidence {
 		initWiths(tree, node, go_id);
 	}
 
-	protected int getWithQualifiers() {
-		if (qualifiers > 0) {
-			//			QualifierDialog qual_dialog = new QualifierDialog(GUIManager.getManager().getFrame(), qual2nodes);
-			//			quals = qual_dialog.getQualifiers();
-		}
+	public int getWithQualifiers() {
 		return qualifiers;
 	}
 
 	public List<String> getExpWiths() {
-		if (exp_withs.size() > 0)
-			return exp_withs;
-		else
-			return notted_withs;
+		List<String> all_evidence = new ArrayList<>();
+		if (exp_withs.size() > 0 || regulator_of.size() > 0) {
+			all_evidence.addAll(exp_withs);
+			if (exp_withs.size() == 0) {
+				all_evidence.addAll(regulator_of);
+			}
+		} else if (notted_withs.size() > 0) {
+			all_evidence.addAll(notted_withs);
+		} else {
+			return regulator_of;
+		}
+		return all_evidence;
 	}
 
 	public boolean isExperimentalNot() {
-		return notted_withs.size() > 0 && exp_withs.size() == 0;
+		return notted_withs.size() > 0 && exp_withs.size() == 0 && regulator_of.size() == 0;
 	}
 
 	public boolean lacksEvidence() {
-		return exp_withs.size() == 0 && notted_withs.size() == 0;
+		return exp_withs.size() == 0 && notted_withs.size() == 0 && regulator_of.size() == 0;
 	}
 
 	//	public boolean isContradictory() {
@@ -74,6 +79,14 @@ public class WithEvidence {
 	public List <String> getNottedWiths () {
 		return notted_withs;
 	}
+	
+	public boolean regulates() {
+		return regulator_of.size() > 0;
+	}
+
+	public List<String> getRegulatorOfs() {
+		return regulator_of;
+	}
 
 	private void initWiths(Tree tree, Bioentity node, String go_id) {
 		/*
@@ -82,10 +95,10 @@ public class WithEvidence {
 		List<Bioentity> leaf_list = tree.getLeafDescendants(node);
 		exp_withs = new ArrayList<>();
 		notted_withs = new ArrayList<> ();
+		regulator_of = new ArrayList<> ();
 
 		qualifiers = 0;
 		for (Bioentity leaf : leaf_list) {
-			// Second argument is true because only the experimental codes can be used for inferencing
 			List<GeneAnnotation> exp_annotations = AnnotationUtil.getExpAssociations(leaf);
 			if (exp_annotations != null && !exp_annotations.isEmpty()) {
 				for (Iterator<GeneAnnotation> it_assoc = exp_annotations.iterator(); it_assoc.hasNext() && !exp_withs.contains(leaf.getId());) {
@@ -95,8 +108,8 @@ public class WithEvidence {
 						 * Is the term in question (go_id) a parental/broader term than
 						 * the term associated to the leaf node (exp_term)
 						 */
-					boolean add = (exp_term.equals(go_id)) || OWLutil.moreSpecific(exp_term, go_id);
-
+					boolean add = (exp_term.equals(go_id)) || OWLutil.inst().moreSpecific(exp_term, go_id);
+					
                     /*
                     * Don't add this node if it is already included.
                      */
@@ -124,6 +137,16 @@ public class WithEvidence {
 							notted_withs.add(leaf.getId());
 							if (exp_term.equals(go_id)) {
 								exp_withs.remove(leaf.getId());
+							}
+						}
+					} else {
+						if (OWLutil.inst().moreSpecific(exp_term, go_id, true)) {
+							boolean add_it = true;
+							for (String reg_term : regulator_of) {
+								add_it &= !reg_term.equals(exp_term);
+							}
+							if (add_it) {
+								regulator_of.add(exp_term);
 							}
 						}
 					}

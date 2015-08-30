@@ -18,7 +18,7 @@
  *
  */
 
-package org.bbop.phylo.touchup;
+package org.bbop.phylo.util;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -38,16 +38,17 @@ import org.apache.log4j.Logger;
  * Used for reading previous or default user settings from property file and storing current user settings
  */
 
-public class Preferences {
+public class DirectoryUtil {
 	/**
 	 *
 	 */
+
+	protected static Logger log = Logger.getLogger("org.bbop.phylo.DirectoryUtil");
+
+	private static DirectoryUtil directory;
+
 	private String gafdir = "/Users/suzi/projects/go/gene-associations/submission/paint/";
 	private String treedir = "/Users/suzi/projects/go/data/trees/panther/";
-
-	private static final Logger log = Logger.getLogger(Preferences.class);
-
-	private static Preferences preferences;
 
 	/**
 	 * Constructor declaration
@@ -56,65 +57,73 @@ public class Preferences {
 	 *
 	 * @see
 	 */
-	public Preferences() { //throws Exception {
+	public DirectoryUtil() { //throws Exception {
 	}
 
-	public static Preferences inst() {
-		if (preferences == null) {
+	public static DirectoryUtil inst() {
+		if (directory == null) {
 			XMLDecoder d;
 			try {
-				log.error("preferences are in  " + Preferences.getPrefsXMLFile());
 				d = new XMLDecoder(new BufferedInputStream(new FileInputStream(
-						Preferences.getPrefsXMLFile())));
-				preferences = (Preferences) d.readObject();
+						DirectoryUtil.getPrefsXMLFile())));
+				DirectoryUtil p = (DirectoryUtil) d.readObject();
+				directory = (DirectoryUtil) p;
 				d.close();
 			} catch (Exception e) {
 				log.info("Could not read preferences file from "
-						+ Preferences.getPrefsXMLFile());
+						+ DirectoryUtil.getPrefsXMLFile());
 			}
-			if (preferences == null)
-				preferences = new Preferences();
+			if (directory == null) {
+				synchronized (DirectoryUtil.class) {
+					if (directory == null) {
+						directory = new DirectoryUtil();
+					}
+				}
+			}
 		}
-		return preferences;
+		return directory;
 	}
 
-	void writePreferences(Preferences preferences){
+	protected static File getPrefsXMLFile() {
+		return new File(getPaintPrefsDir(), "directoryutil.xml");
+	}
+
+	protected static File getPaintPrefsDir() {
+		File f = new File("config");
+		f.mkdirs();
+		return f;
+	}
+
+	public static void writePreferences(DirectoryUtil dir_util) {
 		try {
 			XMLEncoder encoder = new XMLEncoder(new BufferedOutputStream(
 					new FileOutputStream(getPrefsXMLFile())));
-			log.info("Writing preferences to " + getPrefsXMLFile());
+			log.info("Writing directory preferences to " + getPrefsXMLFile());
 			encoder.setPersistenceDelegate(Font.class,
 					new DefaultPersistenceDelegate(
 							new String[]{ "name",
 									"style",
-									"size" }) );
+							"size" }) );
 			encoder.setPersistenceDelegate(Color.class,
 					new DefaultPersistenceDelegate(
 							new String[]{ "red",
 									"green",
-									"blue" }) );
-			encoder.writeObject(preferences);
+							"blue" }) );
+			encoder.writeObject(dir_util);
 			encoder.close();
+
 		} catch (IOException ex) {
 			log.info("Could not write verification settings!");
 			ex.printStackTrace();
 		}
 	}
 
-	private static File getPrefsXMLFile() {
-		return new File(getPaintPrefsDir(), "preferences.xml");
-	}
-
-	private static File getPaintPrefsDir() {
-		File f = new File("config");
-        f.mkdirs();
-        return f;
+	protected static ClassLoader getExtensionLoader() {
+		return DirectoryUtil.class.getClassLoader();
 	}
 
 	public Object clone() throws CloneNotSupportedException {
-
 		throw new CloneNotSupportedException();
-
 	}
 
 	public void setGafDir(String gafdir) {

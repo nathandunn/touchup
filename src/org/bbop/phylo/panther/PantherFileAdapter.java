@@ -20,16 +20,12 @@
 package org.bbop.phylo.panther;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.MSA;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.touchup.Preferences;
+import org.bbop.phylo.util.DirectoryUtil;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -39,9 +35,9 @@ public class PantherFileAdapter extends PantherAdapter {
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 1L;
+//	private static final long serialVersionUID = 1L;
 
-	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
+//	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
 	/**
 	 * Constructor declaration
 	 *
@@ -62,7 +58,7 @@ public class PantherFileAdapter extends PantherAdapter {
 	public boolean fetchTree(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
-		File family_dir = new File(Preferences.inst().getTreeDir(), tree.getId());
+		File family_dir = new File(DirectoryUtil.inst().getTreeDir(), tree.getId());
 
 		ok = FileUtil.validPath(family_dir);
 		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
@@ -96,9 +92,9 @@ public class PantherFileAdapter extends PantherAdapter {
 
 
 	private void fetchMSA(Family family) {
-		File family_dir = new File(Preferences.inst().getTreeDir(), family.getFamily_name());
+		File family_dir = new File(DirectoryUtil.inst().getTreeDir(), family.getFamily_name());
 		FileUtil.validPath(family_dir);
-		File msaFileName = new File(family_dir, "tree" + Constant.MSA_SUFFIX);
+		File msaFileName = new File(family_dir, "cluster" + Constant.MSA_SUFFIX);
 		if (FileUtil.validFile(msaFileName)) {
 			family.setMsaContent(FileUtil.readFile(msaFileName));
 		}

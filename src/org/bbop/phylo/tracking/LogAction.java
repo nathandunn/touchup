@@ -194,14 +194,18 @@ public class LogAction {
 		for (LogEntry entry : done_log) {
 			if (entry.getAction() == LogEntry.LOG_ENTRY_TYPE.PRUNE) {
 				pruned++;
-				contents.add(entry.getDate() + ": " +
-						Logger.makeLabel(entry.getNode()) +
-						" was cut from the tree");
+				reportPruned(entry, contents);
 			}
 		}
 		if (pruned > 0)
 			contents.add("");
 		return pruned;
+	}
+	
+	private static void reportPruned(LogEntry entry, List<String> contents) {
+		contents.add(entry.getDate() + ": " +
+				Logger.makeLabel(entry.getNode()) +
+				" cut from the tree");		
 	}
 
 	private static void reportAspect(LogEntry entry,
@@ -210,7 +214,7 @@ public class LogAction {
 			String syntax_candy_4has,
 			String syntax_candy_4not) {
 		GeneAnnotation annotation = entry.getLoggedAssociation();
-		if (annotation == null || (annotation.getAspect().equals(aspect))) {
+		if (annotation != null && annotation.getAspect().equals(aspect)) {
 			switch (entry.getAction()) {
 			case ASSOC: {
 				if (annotation.isContributesTo()) {
@@ -225,7 +229,7 @@ public class LogAction {
 				contents.add(annotation.getLastUpdateDate() + ": " +
 						Logger.makeLabel(entry.getNode()) +
 						syntax_candy_4has +
-						OWLutil.getTermLabel(annotation.getCls()) +
+						OWLutil.inst().getTermLabel(annotation.getCls()) +
 						" (" + annotation.getCls() + ") ");
 				break;
 			}
@@ -233,13 +237,8 @@ public class LogAction {
 				contents.add(annotation.getLastUpdateDate() + ": " +
 						Logger.makeLabel(entry.getNode()) +
 						syntax_candy_4not +
-						OWLutil.getTermLabel(annotation.getCls()) +
+						OWLutil.inst().getTermLabel(annotation.getCls()) +
 						" (" + annotation.getCls() + ") ");
-				break;
-			}
-			case PRUNE: {
-				contents.add(entry.getDate() + ": Pruned - " +
-						Logger.makeLabel(entry.getNode()));
 				break;
 			}
 			default:
@@ -318,7 +317,7 @@ public class LogAction {
 					reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
 				}
 			} else { // Pruning/grafting
-				reportAspect(entry, contents, null, null, null);
+				reportPruned(entry, contents);
 			}
 			return contents.get(0);
 		} else

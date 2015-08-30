@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.touchup.Preferences;
+import org.bbop.phylo.util.DirectoryUtil;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -29,7 +29,7 @@ public class Logger {
 	private static List<String> notes;
 
 	public static void write(String family_name) {
-		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
+		File family_dir = new File(DirectoryUtil.inst().getGafDir(), family_name);
 
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
@@ -61,8 +61,8 @@ public class Logger {
 		return contents;
 	}
 
-	public static void importPrior(String family_name) {
-		File family_dir = new File(Preferences.inst().getGafDir(), family_name);
+	public static void importPrior(String gaf_dir, String family_name) {
+		File family_dir = new File(gaf_dir, family_name);
 		if (notes == null) {
 			notes = new ArrayList<>();
 		} else {
@@ -89,7 +89,7 @@ public class Logger {
                 logger.warn("No log file yet exists for " + log_file);
             }
 		} else {
-			logger.error("Family directory doesn't exist for: " + family_dir);
+			logger.warn("Family directory doesn't exist yet for: " + family_dir);
 		}
 	}
 	
@@ -157,9 +157,9 @@ public class Logger {
 		if (species == null) {
 			species = node.getSpeciesLabel();
 		}
-		if (node.getParent() != null && (species.equals("LUCA") || species.equals("root"))) {
+		if (species.contains("LUCA")) {
 			// if this is not the root node, but the clade is unknown
-			species = "node";
+			species = (node.getParent() == null) ? "root" : "node";
 		}
 		String prefix = species != null ? (species + '_') : "";
 		return (prefix + node.getDBID());

@@ -152,7 +152,7 @@ public class LogEntry {
 			break;
 		}
 		case UNSUPPORTED: {
-			note = "lacks supporting evidence";
+			note = " using " + getLoggedAssociation().getWithInfos() + " - lacks supporting evidence";
 			break;
 		}
 		case TOO_SPECIFIC: {

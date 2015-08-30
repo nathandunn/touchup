@@ -19,9 +19,7 @@ public class ParsingHack {
 		/* The GO database is not using the suffix */
 		String revision = name;
 		if (name.equals("UniProtKB/Swiss-Prot") ||
-				name.equals("Uniprot") ||
-				name.equals("Gene") ||
-				name.equals("GeneID")) {
+				name.equals("Uniprot")) {
 			revision = "UniProtKB";
 		}
 		if (name.equals("EnsemblGenome") || name.equalsIgnoreCase("ensembl")) {
@@ -39,17 +37,17 @@ public class ParsingHack {
 		else if (name.equals("FlyBase")) {
 			revision = "FB";
 		}
+		else if (name.equals("WormBase")) {
+			revision = "WB";
+		}
 		return revision;
 	}
 
-	private static String dbIdHack(String db, String id, String acc) {
+	private static String dbIdHack(String db, String id) {
 		String revision = id;
-		if (db.equals("UniProtKB")) {
+		if (useUniProtID(db)) {
 			if (id.endsWith("gn")) {
 				revision = id.substring(0, id.length() - "gn".length());
-			} else if (acc != null) {
-				// Use the UniProt ID
-				revision = acc;
 			}
 		}
 		else if (db.equals("TAIR")) {
@@ -101,27 +99,30 @@ public class ParsingHack {
 			gene = mapper.getGeneByANId(paint_id);
 		if (gene == null) {
 			String [] db_source = getDBparts(row);
+			String [] seq_source = getSeqParts(row);
 			if (db_source == null || db_source.length == 0) {
 				return null;
 			}
-			gene = mapper.getGeneByDbId(db_source[0] + ':' + db_source[1]);
-			if (gene == null) {
-				String db = dbNameHack(db_source[0]);
-				String [] seq_source = getSeqParts(row);
-				String id = dbIdHack(db, db_source[1], seq_source[1]);
-				gene = mapper.getGeneByDbId(db + ':' + db_source[1]);
-				if (gene == null) {
-					if (seq_source.length >= 2) {
-						List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
-						if (genes != null) {
-							for (Bioentity check : genes) {
-								if (check.getDb().equals(db) && check.getLocalId().equals(id)) {
-									gene = check;
-								}
-							}
-						}
+			String db_name = dbNameHack(db_source[0]);			
+			String db_id = dbIdHack(db_name, db_source[1]);
+			String full_id = db_name + ':' + db_id;
+			List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
+			if (genes != null) {
+				for (int i = 0; i < genes.size() && gene == null; i++) {
+					Bioentity check = genes.get(i);
+					if (check.getId().equals(full_id)) {
+						gene = check;
 					}
 				}
+			} 
+			if (gene == null) {
+				genes = mapper.getGeneByDbId(full_id);
+		        if (genes != null && genes.size() == 1) {
+		        	gene = genes.get(0);
+		        } else {
+					log.debug("S.o.o.L. for " + full_id);
+		        	gene = null;
+		        }
 			}
 		}
 		return gene;
@@ -143,29 +144,58 @@ public class ParsingHack {
 				String[] seq_source = getSeqParts(idstr);
 				/*
 				 * Standard order from PANTHER Database is
-				 * SPECI|DbGene=gene_id|ProteinSeq=protein_id
+				 * SPECI|GeneDbNname=gene_id|ProteinDbName=protein_id
 				 * There may be multiple genes all with the same Protein ID
 				 */
 				if (db_source != null && db_source.length >= 2) {
-					IDmap.inst().indexByDBID(db_source[0] + ':' + db_source[1], node);
-					node.setDb(dbNameHack(db_source[0]));
-					node.setId(node.getDb() + ':' + dbIdHack(node.getDb(), db_source[1], seq_source[1]));
-					node.setSymbol(db_source[1]);
-					if (!db_source[0].equals(node.getDb())) {
-						// as insurance index for original ID too
-						IDmap.inst().indexByDBID(node);
+					String db_name = dbNameHack(db_source[0]);
+					String db_id = dbIdHack(db_name, db_source[1]);
+					node.setDb(db_name);
+					node.setId(node.getDb() + ':' + db_id);
+					node.setSeqId(seq_source[0], seq_source[1]);
+					IDmap.inst().indexByDBID(node);
+					if (node.getSeqId() != null && node.getSeqId().length() > 0) {
+						node.addSynonym(node.getSeqDb() +':' +  node.getSeqId());
 					}
 				} else {
 					log.info("Couldn't get db from " + idstr);
 				}
-				node.setSeqId(seq_source[0], seq_source[1]);
-				if (node.getSeqId() != null && node.getSeqId().length() > 0) {
-					node.addSynonym(node.getSeqDb() +':' + node.getSeqId());
-				}
-				IDmap.inst().indexBySeqID(node);
 			}
 		}
 	}
+
+	/*
+	 * This is largely for searching GoLR, to use the 
+	 * appropriate identifier from the submissions perspective
+	 */
+	public static boolean useUniProtID(String db_name) {
+		boolean use_uniprot = (db_name.equals("GeneID") || 
+				db_name.equals("Gene") ||
+				db_name.equals("Xenbase") ||
+				db_name.equals("ENSEMBL") || 
+				db_name.equals("UniProtKB") ||
+				db_name.equals("HGNC") ||
+				db_name.equals("EcoGene"));
+		if (!use_uniprot &&
+				!db_name.equalsIgnoreCase("genedb") &&
+				!db_name.equalsIgnoreCase("AspGD") &&
+				!db_name.equalsIgnoreCase("CGD") &&
+				!db_name.equalsIgnoreCase("dictyBase") &&
+				!db_name.equalsIgnoreCase("FB") &&
+				!db_name.equalsIgnoreCase("mgi") &&
+				!db_name.equalsIgnoreCase("pombase") &&
+				!db_name.equalsIgnoreCase("rgd") &&
+				!db_name.equalsIgnoreCase("sgd") &&
+				!db_name.equalsIgnoreCase("tair") &&
+				!db_name.equalsIgnoreCase("wb") &&
+				!db_name.equalsIgnoreCase("zfin")
+				) {
+			log.debug("Unknown Database name: " + db_name);
+			use_uniprot = true;
+		}
+		return use_uniprot;
+	}
+
 
 	public static List<String> tokenize(String input, String delim) {
 		List<String> v = new ArrayList<String>();

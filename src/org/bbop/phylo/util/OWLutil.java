@@ -20,6 +20,7 @@ package org.bbop.phylo.util;
  */
 
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,15 +33,17 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
+import org.geneontology.reasoner.ExpressionMaterializingReasoner;
 import org.obolibrary.oboformat.parser.OBOFormatParserException;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.model.OWLClass;
-import org.semanticweb.owlapi.model.OWLObject;
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
+import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
-import org.semanticweb.owlapi.model.OWLPropertyExpression;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
-import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
+import org.semanticweb.owlapi.util.OWLClassExpressionVisitorAdapter;
 
 import owltools.gaf.Bioentity;
 import owltools.gaf.GeneAnnotation;
@@ -49,67 +52,171 @@ import owltools.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
 import owltools.graph.OWLGraphWrapper;
 import owltools.io.ParserWrapper;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
+
 public class OWLutil {
 
 	protected static Logger log = Logger.getLogger(OWLutil.class);
 
-	private static OWLGraphWrapper go_graph;
-	private static AspectProvider aspect_provider;
-	private static Map<String, OWLClass> OWLclasses;
-	private static Map<String, String> term_labels;
-	private static Set<OWLPropertyExpression> isaPartOf;
-	private static Set<OWLPropertyExpression> isaPartOfRegulates;
+	private final OWLGraphWrapper go_graph;
+	private final AncestorTool ancestor_tool;
+	private final AspectProvider aspect_provider;
+	private final Map<String, OWLClass> OWLclasses;
+	private final Map<String, String> term_labels;
+	private final Set<OWLObjectProperty> isaPartOf;
+	private final Set<OWLObjectProperty> isaPartOfRegulates;
 
 	private static final int LESS_THAN = -1;
 	private static final int GREATER_THAN = 1;
 	private static final int EQUAL_TO = 0;
 
-	private static synchronized void initialize() {
-		if (go_graph == null) {
-			try {
-				ParserWrapper pw = new ParserWrapper();
-				String iriString = "http://purl.obolibrary.org/obo/go.owl";
-				go_graph = new OWLGraphWrapper(pw.parse(iriString));
-				OWLclasses = new HashMap<>();
-				term_labels = new HashMap<>();
-				OWLObjectProperty part_of = go_graph.getOWLObjectPropertyByIdentifier("BFO:0000050"); // part_of
-				OWLObjectProperty regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002211"); // regulates
-				OWLObjectProperty pos_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002213"); // positively regulates
-				OWLObjectProperty neg_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002212"); // negatively regulates
-				isaPartOf = Collections.<OWLPropertyExpression>singleton(part_of);
-				isaPartOfRegulates = new HashSet<>();
-				isaPartOfRegulates.add(part_of);
-				isaPartOfRegulates.add(regulates);
-				isaPartOfRegulates.add(neg_regulates);
-				isaPartOfRegulates.add(pos_regulates);
+	private static class AncestorTool implements Closeable {
 
-				Map<String, String> mappings = new HashMap<String, String>();
-				mappings.put("GO:0008150", "P");
-				mappings.put("GO:0003674", "F");
-				mappings.put("GO:0005575", "C");
+		private final Set<OWLObjectProperty> materializedProperties;
+		//		private final LoadingCache<OWLClass, Map<Set<OWLObjectProperty>,Set<OWLClass>>> cache;
+		private final ExpressionMaterializingReasoner reasoner;
 
-				// Step 1: create a factory, that how you choose the implementation
-				OWLReasonerFactory reasonerFactory = new ElkReasonerFactory();
-				// Step 2: Create the reasoner from the ontology
-				OWLReasoner reasoner = reasonerFactory.createReasoner(go_graph.getSourceOntology());
+		public AncestorTool(OWLOntology source, Set<OWLObjectProperty> materializedProperties, int cacheSize) {
+			super();
+			this.materializedProperties = materializedProperties;
+			//			cache = CacheBuilder.newBuilder()
+			//					.maximumSize(cacheSize)
+			//					.build(new CacheLoader<OWLClass, Map<Set<OWLObjectProperty>,Set<OWLClass>>>() {
+			//
+			//						@Override
+			//						public Map<Set<OWLObjectProperty>,Set<OWLClass>> load(OWLClass key) {
+			//							return new HashMap<>();
+			//						}
+			//					});
+			reasoner = new ExpressionMaterializingReasoner(source, new ElkReasonerFactory());
+			reasoner.materializeExpressions(materializedProperties);
+		}
 
-				aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings, reasoner);
+		public OWLReasoner getReasoner() {
+			return reasoner;
+		}
 
-			} catch (OWLOntologyCreationException e) {
-				e.printStackTrace();
-			} catch (OBOFormatParserException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+		@Override
+		public void close() throws IOException {
+			reasoner.dispose();
+		}
+
+		private int term_count = 0;
+		public Set<OWLClass> getAncestorClosure(OWLClass c, final Set<OWLObjectProperty> relations){
+			// check cache
+			//			Map<Set<OWLObjectProperty>,Set<OWLClass>> mgrcm = cache.getUnchecked(c);
+			//			Set<OWLClass> retmap = mgrcm.get(relations);
+			//			if( retmap == null ){ 
+			//				// create
+			//				retmap = createAncestorClosure(c, relations);
+			//				mgrcm.put(relations, retmap);
+			//			}
+			//			return retmap;
+			return createAncestorClosure(c, relations);
+		}
+
+		public Set<OWLClass> createAncestorClosure(OWLClass obj, Set<OWLObjectProperty> relations){
+
+			final Set<OWLClass> ancestors = new HashSet<>(); //
+
+			// reflexive
+			ancestors.add(obj);
+
+			findAncestors(obj, relations, ancestors);
+			return ancestors;
+		}
+
+		private void findAncestors(OWLClass c, final Set<OWLObjectProperty> props, final Set<OWLClass> ancestors) {
+			if (materializedProperties.containsAll(props) == false) {
+				SetView<OWLObjectProperty> missing = Sets.difference(props, materializedProperties);
+				throw new RuntimeException("Unable to use the following properties as they are not in the pre-materialized set: "+missing);
+			}
+			Set<OWLClassExpression> classExpressions = reasoner.getSuperClassExpressions(c, false);
+			for (OWLClassExpression ce : classExpressions) {
+				ce.accept(new OWLClassExpressionVisitorAdapter(){
+
+					@Override
+					public void visit(OWLClass cls) {
+						if (cls.isBuiltIn() == false) {
+							ancestors.add(cls);
+						}
+					}
+
+					@Override
+					public void visit(OWLObjectSomeValuesFrom svf) {
+						if (props.contains(svf.getProperty())) {
+							OWLClassExpression filler = svf.getFiller();
+							if (!filler.isAnonymous() && props.contains(svf.getProperty())) {
+								OWLClass cls = filler.asOWLClass();
+								ancestors.add(cls);
+							}
+						}
+					}
+
+				});
 			}
 		}
+	}
+
+	private OWLutil () {
+		try {
+			ParserWrapper pw = new ParserWrapper();
+			String iriString = "http://purl.obolibrary.org/obo/go.owl";
+			go_graph = new OWLGraphWrapper(pw.parse(iriString));
+			OWLclasses = new HashMap<>();
+			term_labels = new HashMap<>();
+			OWLObjectProperty part_of = go_graph.getOWLObjectPropertyByIdentifier("BFO:0000050"); // part_of
+			OWLObjectProperty regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002211"); // regulates
+			OWLObjectProperty pos_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002213"); // positively regulates
+			OWLObjectProperty neg_regulates = go_graph.getOWLObjectPropertyByIdentifier("RO:0002212"); // negatively regulates
+			isaPartOf = Collections.<OWLObjectProperty>singleton(part_of);
+			isaPartOfRegulates = new HashSet<>();
+			isaPartOfRegulates.add(part_of);
+			isaPartOfRegulates.add(regulates);
+			isaPartOfRegulates.add(neg_regulates);
+			isaPartOfRegulates.add(pos_regulates);
+
+			ancestor_tool = new AncestorTool(go_graph.getSourceOntology(), isaPartOfRegulates, 10000);
+
+			Map<String, String> mappings = new HashMap<String, String>();
+			mappings.put("GO:0008150", "P");
+			mappings.put("GO:0003674", "F");
+			mappings.put("GO:0005575", "C");
+
+			aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings, ancestor_tool.getReasoner());
+
+		} catch (OWLOntologyCreationException e) {
+			throw new RuntimeException(e);
+		} catch (OBOFormatParserException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	private static volatile OWLutil INSTANCE = null;
+
+	public static OWLutil inst() {
+		if (INSTANCE == null) {
+			synchronized (OWLutil.class) {
+				if (INSTANCE == null) {
+					INSTANCE = new OWLutil();
+				}
+			}
+		}
+		return INSTANCE;
 	}
 
 	/*
 		to avoid overuse of memory reset the term hash
 		after a new family is loaded
 	 */
-	public static void clearTerms() {
+	public void clearTerms() {
 		if (OWLclasses != null) {
 			OWLclasses.clear();
 			term_labels.clear();
@@ -117,45 +224,12 @@ public class OWLutil {
 		}
 	}
 
-	/*
-	 * Check each association to the gene product passed as a parameter
-	 * If that association is either directly to that term
-	 * or the existing association is to a more specific term
-	 * then return that association
-	 */
-	public static GeneAnnotation isAnnotatedToTerm(List<GeneAnnotation> all_annotations, String term_id) {
-		initialize();
-		GeneAnnotation annotated_with_term = null;
-		if (all_annotations != null && term_id != null) {
-			for (int i = 0; i < all_annotations.size() && annotated_with_term == null; i++) {
-				GeneAnnotation check = all_annotations.get(i);
-				if (check.getAspect().equals(getAspect(term_id))) {
-					String go_id = check.getCls();
-					if (term_id.equals(go_id)) {
-						annotated_with_term = check;
-					}
-					else if (moreSpecific(go_id, term_id)) {
-						if (!check.isNegated()) {
-							annotated_with_term = check;
-						} else {
-							log.debug("Ignoring more specific annotation to " + go_id + " because it's negated");
-						}
-					}
-				}
-			}
-		}
-		return annotated_with_term;
-	}
-
-
-	public static boolean isObsolete(String go_id) {
-		initialize();
+	public  boolean isObsolete(String go_id) {
 		OWLClass term = getTerm(go_id);
 		return term == null || (term != null && go_graph.isObsolete(term));
 	}
 
-	public static List<String> replacedBy(String go_id) {
-		initialize();
+	public  List<String> replacedBy(String go_id) {
 		OWLClass term = getTerm(go_id);
 		List<String> go_ids;
 		if (term != null) {
@@ -174,7 +248,7 @@ public class OWLutil {
 			if (term != null) {
 				String term_id = go_graph.getIdentifier(term);
 				OWLclasses.put(term_id, term);
-				term_labels.put(term_id, getTermLabel(term_id));
+				setTermLabel(term_id);
 				go_ids.add(term_id);
 			}
 
@@ -182,13 +256,12 @@ public class OWLutil {
 		return go_ids;
 	}
 
-	public static boolean isExcluded(String go_id) {
-		initialize();
+	public  boolean isExcluded(String go_id) {
 		OWLClass term = getTerm(go_id);
 		return isExcluded(term);
 	}
 
-	private static boolean isExcluded(OWLClass term) {
+	private  boolean isExcluded(OWLClass term) {
 		List<String> subsets = go_graph.getSubsets(term);
 		boolean isExcluded = false;
 		for(String subset : subsets) {
@@ -200,51 +273,60 @@ public class OWLutil {
 		return isExcluded;
 	}
 
-	public static String getTermLabel(String go_id) {
-		initialize();
+	public  String getTermLabel(String go_id) {
 		String label = term_labels.get(go_id);
 		if (label == null) {
-			OWLClass term = getTerm(go_id);
-			if (term != null) {
-				label = go_graph.getLabelOrDisplayId(term);
-			} else {
-				label = go_id + " no label";
-			}
-			term_labels.put(go_id, label);
+			label = setTermLabel(go_id);
 		}
 		return label;
 	}
 
-	public static boolean moreSpecific(String check_term, String against_term) {
+	private  String setTermLabel(String go_id) {
+		String label;
+		OWLClass term = getTerm(go_id);
+		if (term != null) {
+			label = go_graph.getLabelOrDisplayId(term);
+		} else {
+			label = go_id + " no label";
+		}
+		term_labels.put(go_id, label);
+		return label;
+	}
+
+	public  String getAspect(String term_id) {
+		String aspect;
+		aspect = aspect_provider.getAspect(term_id);
+		return aspect;
+	}
+
+	public  boolean moreSpecific(String check_term, String against_term) {
 		return moreSpecific(check_term, against_term, isaPartOf);
 	}
 
-	public static boolean moreSpecific(String check_term, String against_term, boolean regulates) {
+	public  boolean moreSpecific(String check_term, String against_term, boolean regulates) {
 		return moreSpecific(check_term, against_term, isaPartOfRegulates);
 	}
 
-	private static boolean moreSpecific(String check_term, String against_term, Set<OWLPropertyExpression> relations) {
-		initialize();
+	private  boolean moreSpecific(String check_term, String against_term, Set<OWLObjectProperty> relations) {
 		OWLClass check = getTerm(check_term);
 		OWLClass against = getTerm(against_term);
 		return moreSpecific(check, against, relations);
 	}
 
-	private static boolean moreSpecific(OWLClass o1, OWLClass o2, Set<OWLPropertyExpression> relations) {
-		Set<OWLObject> broader_terms = go_graph.getAncestors(o1, relations);
-		return broader_terms.contains(o2);
+	private  boolean moreSpecific(OWLClass o1, OWLClass o2, Set<OWLObjectProperty> relations) {
+		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(o1, relations);
+		if (broader_terms == null || o2 == null) {
+			return false; // ?? not sure what to do in this case
+		} else {
+			return broader_terms.contains(o2);
+		}
 	}
 
-	public static List<String> getAncestors(String term) {
-		initialize();
+	public  List<String> getAncestors(String term) {
 		OWLClass check = getTerm(term);
-		Set<OWLObject> broader_terms = go_graph.getAncestors(check, isaPartOf);
-		Set<OWLClass> allClasses = new HashSet<OWLClass>();
-		for (OWLObject owlObject : broader_terms) {
-			allClasses.addAll(owlObject.getClassesInSignature());
-		}
+		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(check, isaPartOf);
 		List<String> ancestors = new ArrayList<>();
-		List<OWLClass> sortedClasses = new ArrayList<OWLClass>(allClasses);
+		List<OWLClass> sortedClasses = new ArrayList<OWLClass>(broader_terms);
 		Collections.sort(sortedClasses, new Comparator<OWLClass>() {
 
 			@Override
@@ -252,9 +334,9 @@ public class OWLutil {
 				/*
 				 * Within a single aspect we want the more specific terms first
 				 */
-				if (OWLutil.moreSpecific(o1, o2, isaPartOf)) {
+				if (moreSpecific(o1, o2, isaPartOf)) {
 					return LESS_THAN;
-				} else if (OWLutil.moreSpecific(o2, o1, isaPartOf)) {
+				} else if (moreSpecific(o2, o1, isaPartOf)) {
 					return GREATER_THAN;
 				} else {
 					return EQUAL_TO;
@@ -273,11 +355,10 @@ public class OWLutil {
 		return ancestors;
 	}
 
-	public static boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
-		initialize();
+	public  boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
 		List<GeneAnnotation> associations = AnnotationUtil.getExpAssociations(node);
 		OWLClass annot_term = getTerm(go_id);
-		Set<OWLObject> broader_terms = go_graph.getAncestors(annot_term);
+		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(annot_term, Collections.<OWLObjectProperty>emptySet());
 		if (associations != null) {
 			for (GeneAnnotation annotation : associations) {
 				// since we've decided to always do positive annotations with NOTs being added afterwards, should make sure that
@@ -303,17 +384,11 @@ public class OWLutil {
 		return all_broader;
 	}
 
-	public static String getAspect(String term_id) {
-		initialize();
-		return aspect_provider.getAspect(term_id);
-	}
-
-	public static OWLClass getTerm(String go_id) {
+	public  OWLClass getTerm(String go_id) {
 		OWLClass term = OWLclasses.get(go_id);
 		if (term == null) {
 			term = go_graph.getOWLClassByIdentifier(go_id);
 			OWLclasses.put(go_id, term);
-			term_labels.put(go_id, getTermLabel(go_id));
 		}
 		return term;
 	}

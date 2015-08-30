@@ -99,10 +99,10 @@ public class Family implements Serializable {
 		this.wts_content = wts_content;
 	}
 
-	public boolean save() {
+	public boolean save(String comment) {
 		boolean saved = adapter.saveFamily(this);
 
-		GafRecorder.record(this);
+		GafRecorder.record(this, comment);
 
 		return saved;
 	}

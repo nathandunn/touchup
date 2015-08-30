@@ -21,9 +21,12 @@ package org.bbop.phylo.panther;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.touchup.Constant;
 
 import owltools.gaf.Bioentity;
 
@@ -33,12 +36,11 @@ public class IDmap {
      */
     private static IDmap INSTANCE = null;
 
-    private static final long serialVersionUID = 1L;
-
-    private HashMap<String, List<Bioentity>> seqIdtoGene;
     private HashMap<String, Bioentity> ANidToGene;
-    private HashMap<String, Bioentity> DbIdtoGene;
+    private HashMap<String, List<Bioentity>> seqIdtoGene;
+    private HashMap<String, List<Bioentity>> DbIdtoGene;
     private HashMap<String, Bioentity> ptnIdtoGene;
+    private Set<String> duplicates;
 
     private static final Logger log = Logger.getLogger(IDmap.class);
 
@@ -65,7 +67,7 @@ public class IDmap {
             seqIdtoGene.clear();
         }
         if (DbIdtoGene == null) {
-            DbIdtoGene = new HashMap<String, Bioentity>();
+            DbIdtoGene = new HashMap<String, List<Bioentity>>();
         } else {
             DbIdtoGene.clear();
         }
@@ -73,6 +75,9 @@ public class IDmap {
             ptnIdtoGene = new HashMap<String, Bioentity>();
         } else {
             ptnIdtoGene.clear();
+        }
+        if (duplicates == null) {
+        	duplicates = new HashSet<>();
         }
     }
 
@@ -98,6 +103,12 @@ public class IDmap {
             if (genes == null) {
                 genes = new ArrayList<Bioentity>();
                 seqIdtoGene.put(key, genes);
+            } else {
+            	String msg = ((genes.size() + 1) + " identical Seq ID for genes " + node.getSeqDb() + ":" + node.getSeqId() + " - ");
+            	for (Bioentity g : genes) {
+            		msg = msg + g.getId() + " ";
+            	}
+            	log.info(msg);
             }
             if (!genes.contains(node))
                 genes.add(node);
@@ -106,20 +117,40 @@ public class IDmap {
             }
         }
     }
+    
+    public void replace(Bioentity node, String old_id) {
+    	List<Bioentity> priors = DbIdtoGene.get(old_id);
+    	if (priors != null && priors.size() >= 1) {
+    		priors.remove(node);
+    	} else {
+    		log.debug("Couldn't find node to replace " + node.getId());
+    	}
+    	indexByDBID(node);
+    }
 
     public void indexByDBID(Bioentity node) {
         String key = node.getId();
         indexByDBID(key, node);
     }
 
-    public void indexByDBID(String key, Bioentity node) {
-        if (key.indexOf(':') < 0)
-            log.error("Bad key: " + key);
+    private void indexByDBID(String key, Bioentity node) {
+		indexBySeqID(node);
         if (key.length() > 0) {
-            if (DbIdtoGene.get(key) == null)
-                DbIdtoGene.put(key, node);
-            else
-                log.info("Already indexed by DBID " + node);
+        	List<Bioentity> priors = DbIdtoGene.get(key);
+            if (priors == null) {
+            	priors = new ArrayList<Bioentity>();
+            	DbIdtoGene.put(key, priors);
+            } else {
+            	String msg = (priors.size() + 1) + " identical Gene ID for Seqs " + node.getId() + " - ";
+            	for (Bioentity g : priors) {
+            		msg = msg + " " + g.getSeqDb() + ':' + g.getSeqId();
+            	}
+            	msg = msg + " " + node.getId();
+            	log.info(msg);
+            }
+            if (!priors.contains(node)) {
+                priors.add(node);
+            }
         }
     }
 
@@ -128,9 +159,11 @@ public class IDmap {
         if (ptnIdtoGene.get(ptn_id) == null)
             ptnIdtoGene.put(ptn_id, node);
         else
-            log.info("Already indexed " + node + " by ptn");
-        if (DbIdtoGene.get(node.getId()) == null)
+            log.info("Already indexed " + node + " by " + ptn_id);
+        if (DbIdtoGene.get(node.getId()) == null) {
+        	node.setSeqId(Constant.PANTHER_DB, ptn_id);
             indexByDBID(node);
+        }
     }
 
     public Bioentity getGeneByPTNId(String id) {
@@ -156,17 +189,18 @@ public class IDmap {
         return getGenesBySeqId(key);
     }
 
-    public List<Bioentity> getGenesBySeqId(String key) {
-        List<Bioentity> node = seqIdtoGene.get(key);
-        if (node == null && key.contains("PTHR")) {
+    private List<Bioentity> getGenesBySeqId(String key) {
+        List<Bioentity> nodes = seqIdtoGene.get(key);
+        if (nodes == null && key.contains("PTHR")) {
             key = key.substring(key.indexOf('_') + 1);
-            node = seqIdtoGene.get(key.toUpperCase());
+            nodes = seqIdtoGene.get(key.toUpperCase());
         }
-        return node;
+        return nodes;
     }
 
-    public Bioentity getGeneByDbId(String key) {
-        return DbIdtoGene.get(key);
+    public List<Bioentity> getGeneByDbId(String key) {
+        List<Bioentity> genes = DbIdtoGene.get(key);
+        return genes;
     }
 
 }

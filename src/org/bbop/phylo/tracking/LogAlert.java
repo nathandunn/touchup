@@ -79,8 +79,8 @@ public class LogAlert {
 					GeneAnnotation annotation = entry.getLoggedAssociation();
 					contents.add(annotation.getLastUpdateDate() + ": " +
 							Logger.makeLabel(entry.getNode()) + " to " +
-							OWLutil.getTermLabel(annotation.getCls()) +
-							" (" + annotation.getCls() + ") " + " - " + entry.getNotes());
+							OWLutil.inst().getTermLabel(annotation.getCls()) +
+							" (" + annotation.getCls() + ") " + entry.getNotes());
 				}
 			}
 			if (!missing.isEmpty()) {
@@ -95,7 +95,7 @@ public class LogAlert {
 						contents.add(annotation.getLastUpdateDate() + ": " +
 								entry.getNode().getDBID() +
 								" can not support previous annotation to " +
-								OWLutil.getTermLabel(annotation.getCls()) +
+								OWLutil.inst().getTermLabel(annotation.getCls()) +
 								" (" + annotation.getCls() + ") ");
 				}
 			}
@@ -106,12 +106,18 @@ public class LogAlert {
 					contents.add(annotation.getLastUpdateDate() + ": " +
 							entry.getNode().getDBID() +
 							" removed annotation to obsolete term - " +
-							OWLutil.getTermLabel(annotation.getCls()) +
+							OWLutil.inst().getTermLabel(annotation.getCls()) +
 							" (" + annotation.getCls() + ") ");
 				}
 			}
 			contents.add("");
 		}
+	}
+	
+	public static List<String> report() {
+		List<String> summary = new ArrayList<>();
+		report(summary);
+		return summary;
 	}
 
 	public static int getInvalidCount() {
@@ -124,6 +130,10 @@ public class LogAlert {
 
 	public static int getObsoleteCount() {
 		return (obsoletes == null) ? 0 : obsoletes.size();
+	}
+	
+	public static int getAlertCount() {
+		return getInvalidCount() + getMissingCount() + getObsoleteCount();
 	}
 }
 
