@@ -26,11 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-<<<<<<< HEAD
 import org.bbop.phylo.util.Constant;
-=======
-import org.bbop.phylo.touchup.Constant;
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 
 import owltools.gaf.Bioentity;
 
@@ -108,19 +104,12 @@ public class IDmap {
                 genes = new ArrayList<Bioentity>();
                 seqIdtoGene.put(key, genes);
             } else {
-<<<<<<< HEAD
             	String msg = ("Identical Seq ID (" +  node.getSeqDb() + ":" + node.getSeqId() + ") for " + 
             			(genes.size() + 1) + " different genes: ");
             	for (Bioentity g : genes) {
             		msg = msg + g.getId() + " ";
             	}
             	msg = msg + node.getId();
-=======
-            	String msg = ((genes.size() + 1) + " identical Seq ID for genes " + node.getSeqDb() + ":" + node.getSeqId() + " - ");
-            	for (Bioentity g : genes) {
-            		msg = msg + g.getId() + " ";
-            	}
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
             	log.info(msg);
             }
             if (!genes.contains(node))
@@ -147,30 +136,18 @@ public class IDmap {
     }
 
     private void indexByDBID(String key, Bioentity node) {
-<<<<<<< HEAD
-=======
-		indexBySeqID(node);
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
         if (key.length() > 0) {
         	List<Bioentity> priors = DbIdtoGene.get(key);
             if (priors == null) {
             	priors = new ArrayList<Bioentity>();
             	DbIdtoGene.put(key, priors);
             } else {
-<<<<<<< HEAD
             	String msg = ("Identical Gene ID (" + node.getId() + ") for " +
             			priors.size() + 1) + " different sequence IDs: ";
             	for (Bioentity g : priors) {
             		msg = msg + " " + g.getSeqDb() + ':' + g.getSeqId();
             	}
             	msg = msg + " " + node.getSeqDb() + ':' + node.getSeqId();
-=======
-            	String msg = (priors.size() + 1) + " identical Gene ID for Seqs " + node.getId() + " - ";
-            	for (Bioentity g : priors) {
-            		msg = msg + " " + g.getSeqDb() + ':' + g.getSeqId();
-            	}
-            	msg = msg + " " + node.getId();
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
             	log.info(msg);
             }
             if (!priors.contains(node)) {
@@ -188,10 +165,7 @@ public class IDmap {
         if (DbIdtoGene.get(node.getId()) == null) {
         	node.setSeqId(Constant.PANTHER_DB, ptn_id);
             indexByDBID(node);
-<<<<<<< HEAD
 			indexBySeqID(node);
-=======
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
         }
     }
 

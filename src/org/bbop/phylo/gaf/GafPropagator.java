@@ -35,16 +35,9 @@ import org.bbop.phylo.annotate.PaintAction;
 import org.bbop.phylo.annotate.WithEvidence;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.panther.IDmap;
-<<<<<<< HEAD
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.util.Constant;
-=======
-import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.tracking.LogAlert;
-import org.bbop.phylo.tracking.LogEntry;
-import org.bbop.phylo.util.DirectoryUtil;
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
 
@@ -188,13 +181,7 @@ public class GafPropagator {
 		}
 	}
 
-<<<<<<< HEAD
 	public static boolean importAnnotations(Family family, File family_dir) {
-=======
-	public static boolean importAnnotations(Family family) {
-		String gaf_dir = DirectoryUtil.inst().getGafDir();
-		File family_dir = new File(gaf_dir);
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.GAF_SUFFIX);
@@ -202,12 +189,8 @@ public class GafPropagator {
 			GafDocument gafdoc;
 			try {
 				log.info("building GAF document");
-<<<<<<< HEAD
 				String full_name = gaf_file.getAbsolutePath();
 				gafdoc = builder.buildDocument(full_name);
-=======
-				gafdoc = builder.buildDocument(gaf_file.getAbsolutePath());
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 				propagate(gafdoc, family);
 			} catch (IOException | URISyntaxException e) {
 				log.warn("URI Syntax exception for " + family.getFamily_name());

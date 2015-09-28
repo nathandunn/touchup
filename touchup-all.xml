@@ -32,7 +32,7 @@
 			<source>${project.build.outputDirectory}/speclist.txt</source>
 		</file>
 		<file>
-			<source>${project.build.outputDirectory}/ncbi_taxa_ids.txt</source>
+			<source>${project.build.outputDirectory}/ncbi_taxa_ids.txt.gz</source>
 		</file>
 	</files>
 </assembly>

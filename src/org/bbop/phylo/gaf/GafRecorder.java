@@ -12,16 +12,9 @@ import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.panther.ParsingHack;
-<<<<<<< HEAD
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.util.Constant;
-=======
-import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.tracking.LogAction;
-import org.bbop.phylo.tracking.LogEntry;
-import org.bbop.phylo.util.DirectoryUtil;
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -36,14 +29,8 @@ public class GafRecorder {
 	private GafRecorder() {
 	}
 
-<<<<<<< HEAD
 	public static void record(Family family, File family_dir, String comment) {
 		String family_name = family.getFamily_name();
-=======
-	public static void record(Family family, String comment) {
-		String family_name = family.getFamily_name();
-		File family_dir = new File(DirectoryUtil.inst().getGafDir(), family_name);
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
 			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);

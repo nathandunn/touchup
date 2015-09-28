@@ -25,13 +25,8 @@ import java.util.List;
 
 import org.bbop.phylo.annotate.PaintAction;
 import org.bbop.phylo.model.Family;
-<<<<<<< HEAD
 import org.bbop.phylo.tracking.LogEntry.LOG_ENTRY_TYPE;
 import org.bbop.phylo.util.Constant;
-=======
-import org.bbop.phylo.touchup.Constant;
-import org.bbop.phylo.tracking.LogEntry.LOG_ENTRY_TYPE;
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 import org.bbop.phylo.util.OWLutil;
 
 import owltools.gaf.Bioentity;

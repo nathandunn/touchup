@@ -52,9 +52,6 @@ import owltools.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
 import owltools.graph.OWLGraphWrapper;
 import owltools.io.ParserWrapper;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
@@ -195,14 +192,9 @@ public class OWLutil {
 			throw new RuntimeException(e);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
-<<<<<<< HEAD
 		} catch (Exception e) {
 			throw e;
 		}
-=======
-		}
-
->>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 	}
 
 	private static volatile OWLutil INSTANCE = null;
