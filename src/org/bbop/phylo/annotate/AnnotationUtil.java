@@ -16,7 +16,11 @@ import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.panther.ParsingHack;
+<<<<<<< HEAD
+import org.bbop.phylo.util.Constant;
+=======
 import org.bbop.phylo.touchup.Constant;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 import org.bbop.phylo.util.OWLutil;
 
 import owltools.gaf.Bioentity;
@@ -235,7 +239,11 @@ public class AnnotationUtil {
 			}
 			if (!golr_gene.getId().equals(leaf.getId()) && !golr_gene.getDb().equals("UniProtKB")) {
 				// default to the identifier used by the GO database
+<<<<<<< HEAD
+				String previous = leaf.getId();
+=======
 				String previous = leaf.getLocalId();
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 				leaf.setId(golr_gene.getId());
 				IDmap.inst().replace(leaf, previous);
 				addSynonym(leaf, previous);

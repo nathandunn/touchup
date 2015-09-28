@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<java version="1.7.0_07" class="java.beans.XMLDecoder">
- <object class="org.bbop.phylo.touchup.Preferences">
-  <void property="gafDir">
-   <string>/Users/suzi/workspace/paint/test_resources/submissions</string>
-  </void>
- </object>
-</java>

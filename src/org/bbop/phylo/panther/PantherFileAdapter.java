@@ -22,10 +22,17 @@ package org.bbop.phylo.panther;
 import java.io.File;
 import java.util.List;
 
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherFileAdapter.java
+import org.bbop.phylo.config.TouchupConfig;
+import org.bbop.phylo.model.Family;
+import org.bbop.phylo.model.Tree;
+import org.bbop.phylo.util.Constant;
+=======
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.util.DirectoryUtil;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherFileAdapter.java
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -58,7 +65,11 @@ public class PantherFileAdapter extends PantherAdapter {
 	public boolean fetchTree(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherFileAdapter.java
+		File family_dir = new File(TouchupConfig.inst().treedir, tree.getId());
+=======
 		File family_dir = new File(DirectoryUtil.inst().getTreeDir(), tree.getId());
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherFileAdapter.java
 
 		ok = FileUtil.validPath(family_dir);
 		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
@@ -92,7 +103,11 @@ public class PantherFileAdapter extends PantherAdapter {
 
 
 	private void fetchMSA(Family family) {
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherFileAdapter.java
+		File family_dir = new File(TouchupConfig.inst().treedir, family.getFamily_name());
+=======
 		File family_dir = new File(DirectoryUtil.inst().getTreeDir(), family.getFamily_name());
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherFileAdapter.java
 		FileUtil.validPath(family_dir);
 		File msaFileName = new File(family_dir, "cluster" + Constant.MSA_SUFFIX);
 		if (FileUtil.validFile(msaFileName)) {

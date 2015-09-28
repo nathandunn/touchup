@@ -195,8 +195,14 @@ public class OWLutil {
 			throw new RuntimeException(e);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+<<<<<<< HEAD
+		} catch (Exception e) {
+			throw e;
+		}
+=======
 		}
 
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 	}
 
 	private static volatile OWLutil INSTANCE = null;

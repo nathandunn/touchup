@@ -19,12 +19,18 @@
  */
 package org.bbop.phylo.model;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
 import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.panther.PantherAdapter;
+<<<<<<< HEAD:src/org/bbop/phylo/model/Family.java
+import org.bbop.phylo.tracking.Logger;
+import org.bbop.phylo.util.Constant;
+=======
 import org.bbop.phylo.touchup.Constant;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/model/Family.java
 
 public class Family implements Serializable {
 
@@ -77,6 +83,29 @@ public class Family implements Serializable {
 
 	public List<String> getAttrContent() {
 		return attr_content;
+<<<<<<< HEAD:src/org/bbop/phylo/model/Family.java
+	}
+
+	public void setAttrContent(List<String> attr_content) {
+		this.attr_content = attr_content;
+	}
+
+	public List<String> getMsaContent() {
+		return msa_content;
+	}
+
+	public void setMsaContent(List<String> msa_content) {
+		this.msa_content = msa_content;
+	}
+
+	public List<String> getWtsContent() {
+		return wts_content;
+	}
+
+	public void setWtsContent(List<String> wts_content) {
+		this.wts_content = wts_content;
+	}
+=======
 	}
 
 	public void setAttrContent(List<String> attr_content) {
@@ -103,7 +132,12 @@ public class Family implements Serializable {
 		boolean saved = adapter.saveFamily(this);
 
 		GafRecorder.record(this, comment);
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/model/Family.java
 
+	public boolean save(File family_dir, String comment) {
+		boolean saved = adapter.saveFamily(this, family_dir);
+		GafRecorder.record(this, family_dir, comment);
+		Logger.write(family_name, family_dir);
 		return saved;
 	}
 

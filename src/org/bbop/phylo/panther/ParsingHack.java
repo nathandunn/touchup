@@ -6,7 +6,11 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+<<<<<<< HEAD:src/org/bbop/phylo/panther/ParsingHack.java
+import org.bbop.phylo.util.Constant;
+=======
 import org.bbop.phylo.touchup.Constant;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/ParsingHack.java
 
 import owltools.gaf.Bioentity;
 import owltools.gaf.species.TaxonFinder;
@@ -154,6 +158,10 @@ public class ParsingHack {
 					node.setId(node.getDb() + ':' + db_id);
 					node.setSeqId(seq_source[0], seq_source[1]);
 					IDmap.inst().indexByDBID(node);
+<<<<<<< HEAD:src/org/bbop/phylo/panther/ParsingHack.java
+					IDmap.inst().indexBySeqID(node);
+=======
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/ParsingHack.java
 					if (node.getSeqId() != null && node.getSeqId().length() > 0) {
 						node.addSynonym(node.getSeqDb() +':' +  node.getSeqId());
 					}

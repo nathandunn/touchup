@@ -20,6 +20,12 @@
 
 package org.bbop.phylo.util;
 
+<<<<<<< HEAD
+import java.beans.XMLDecoder;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+=======
 import java.awt.Color;
 import java.awt.Font;
 import java.beans.DefaultPersistenceDelegate;
@@ -31,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 
 import org.apache.log4j.Logger;
 
@@ -47,8 +54,14 @@ public class DirectoryUtil {
 
 	private static DirectoryUtil directory;
 
+<<<<<<< HEAD
+	protected String gafdir = "/Users/yoyo/projects/go/gene-associations/submission/paint/";
+
+	protected String treedir = "/Users/yoyo/projects/go/data/trees/panther/";
+=======
 	private String gafdir = "/Users/suzi/projects/go/gene-associations/submission/paint/";
 	private String treedir = "/Users/suzi/projects/go/data/trees/panther/";
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 
 	/**
 	 * Constructor declaration
@@ -94,6 +107,8 @@ public class DirectoryUtil {
 		return f;
 	}
 
+<<<<<<< HEAD
+=======
 	public static void writePreferences(DirectoryUtil dir_util) {
 		try {
 			XMLEncoder encoder = new XMLEncoder(new BufferedOutputStream(
@@ -118,6 +133,7 @@ public class DirectoryUtil {
 		}
 	}
 
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 	protected static ClassLoader getExtensionLoader() {
 		return DirectoryUtil.class.getClassLoader();
 	}
@@ -126,6 +142,21 @@ public class DirectoryUtil {
 		throw new CloneNotSupportedException();
 	}
 
+<<<<<<< HEAD
+	public void setGafdir(String gafdir) {
+		this.gafdir = gafdir;
+	}
+
+	public void setTreedir(String treedir) {
+		this.treedir = treedir;
+	}
+
+	public String getGafdir() {
+		return gafdir;
+	}
+
+	public String getTreedir() {
+=======
 	public void setGafDir(String gafdir) {
 		this.gafdir = gafdir;
 	}
@@ -139,6 +170,7 @@ public class DirectoryUtil {
 	}
 
 	public String getTreeDir() {
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736
 		return treedir;
 	}
 

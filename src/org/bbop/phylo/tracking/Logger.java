@@ -5,6 +5,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+<<<<<<< HEAD:src/org/bbop/phylo/tracking/Logger.java
+import org.bbop.phylo.util.Constant;
+import org.bbop.phylo.util.FileUtil;
+
+import owltools.gaf.Bioentity;
+import owltools.gaf.io.ResourceLoader;
+import owltools.gaf.species.TaxonFinder;
+
+public class Logger {
+
+=======
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.util.DirectoryUtil;
 import org.bbop.phylo.util.FileUtil;
@@ -15,6 +26,7 @@ import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
 
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/tracking/Logger.java
 	private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(Logger.class);
 
 	public static final String MF_SECTION = "# molecular_function";
@@ -27,10 +39,14 @@ public class Logger {
 	private static final String REF_SECTION = "# Reference";
 
 	private static List<String> notes;
+<<<<<<< HEAD:src/org/bbop/phylo/tracking/Logger.java
+=======
 
 	public static void write(String family_name) {
 		File family_dir = new File(DirectoryUtil.inst().getGafDir(), family_name);
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/tracking/Logger.java
 
+	public static void write(String family_name, File family_dir) {
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
@@ -61,8 +77,12 @@ public class Logger {
 		return contents;
 	}
 
+<<<<<<< HEAD:src/org/bbop/phylo/tracking/Logger.java
+	public static void importPrior(String family_name, File family_dir) {
+=======
 	public static void importPrior(String gaf_dir, String family_name) {
 		File family_dir = new File(gaf_dir, family_name);
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/tracking/Logger.java
 		if (notes == null) {
 			notes = new ArrayList<>();
 		} else {

@@ -28,8 +28,12 @@ import java.util.StringTokenizer;
 import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherAdapter.java
+import org.bbop.phylo.util.Constant;
+=======
 import org.bbop.phylo.touchup.Constant;
 import org.bbop.phylo.util.DirectoryUtil;
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherAdapter.java
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
@@ -46,6 +50,14 @@ public abstract class PantherAdapter {
 
     public abstract boolean fetchTree(Family family, Tree tree);
 
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherAdapter.java
+    public boolean saveFamily(Family family, File family_dir) {
+        String family_name = family.getFamily_name();
+
+        boolean ok = FileUtil.validPath(family_dir);
+        File treeFileName = new File(family_dir, family_name + Constant.TREE_SUFFIX);
+        File attrFileName = new File(family_dir, family_name + Constant.ATTR_SUFFIX);
+=======
     public boolean saveFamily(Family family) {
         String id = family.getFamily_name();
         File family_dir = new File(DirectoryUtil.inst().getGafDir(), id);
@@ -53,16 +65,25 @@ public abstract class PantherAdapter {
         boolean ok = FileUtil.validPath(family_dir);
         File treeFileName = new File(family_dir, id + Constant.TREE_SUFFIX);
         File attrFileName = new File(family_dir, id + Constant.ATTR_SUFFIX);
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherAdapter.java
 
         ok &= writeData(treeFileName, family.getTreeContent());
         ok &= writeData(attrFileName, family.getAttrContent());
 
         if (family.getMsaContent() != null && ok) {
+<<<<<<< HEAD:src/org/bbop/phylo/panther/PantherAdapter.java
+            File msaFileName = new File(family_dir, family_name + Constant.MSA_SUFFIX);
+            ok &= writeData(msaFileName, family.getMsaContent());
+        }
+        if (family.getWtsContent() != null && ok) {
+            File wtsFileName = new File(family_dir, family_name + Constant.WTS_SUFFIX);
+=======
             File msaFileName = new File(family_dir, id + Constant.MSA_SUFFIX);
             ok &= writeData(msaFileName, family.getMsaContent());
         }
         if (family.getWtsContent() != null && ok) {
             File wtsFileName = new File(family_dir, id + Constant.WTS_SUFFIX);
+>>>>>>> ed41ed6b88e8398f6657ca7d99aad58dd10c7736:src/org/bbop/phylo/panther/PantherAdapter.java
             ok &= writeData(wtsFileName, family.getWtsContent());
         }
         return ok;
