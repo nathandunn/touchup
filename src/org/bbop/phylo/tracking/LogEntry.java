@@ -73,33 +73,8 @@ public class LogEntry {
 			this.date = dateNow();
 		}
 		this.removed = removed;
-//		this.date = assoc.getLastUpdateDate();
 		this.type = action;
 	}
-
-	/*
-	 * Used for NOT, negation of associations at a fixed node in the tree
-	 */
-//	public LogEntry(Bioentity node, GeneAnnotation assoc) {
-//		this.node = node;
-//		this.assoc = assoc;
-//		this.date = assoc.getLastUpdateDate();
-//		this.removed = null;
-//		this.type = LOG_ENTRY_TYPE.NOT;
-//	}
-//
-	/*
-	 * pruned list is long those with direction annotations to the pruned node
-	 * or directly 'not'ted.
-	 */
-//	public LogEntry(Bioentity node, String date, List<GeneAnnotation> pruned) {
-//		this.node = node;
-//		this.assoc = null;
-//		this.removed = pruned;
-//		this.date = date;
-//		this.type = LOG_ENTRY_TYPE.PRUNE;
-//	}
-//
 
 	public String getTerm() {
 		if (assoc != null && type != LOG_ENTRY_TYPE.PRUNE) {

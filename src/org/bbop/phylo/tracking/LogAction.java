@@ -89,14 +89,6 @@ public class LogAction {
 		done_log.add(entry);
 	}
 
-//	public static void logUnNot(Bioentity node, String go_id) {
-//		//		LogEntry remove = findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.NOT);
-//		//		if (remove != null) {
-//		//			done_log.remove(remove);
-//		//			undone_log.add(remove);
-//		//		}
-//	}
-
 	public static void logPruning(Bioentity node, String date, List<GeneAnnotation> purged) {
 		LogEntry branch = findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
 		if (branch != null) {
@@ -170,21 +162,21 @@ public class LogAction {
 
 	public static void reportMF(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
-			reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
+			reportAspect(entry, contents, aspect, " has function ", " has LOST/MODIFIED function ");
 		}
 		contents.add("");
 	}
 
 	public static void reportCC(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
-			reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
+			reportAspect(entry, contents, aspect, " is found in ", " is NOT found in ");
 		}
 		contents.add("");
 	}
 
 	public static void reportBP(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
-			reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
+			reportAspect(entry, contents, aspect, " participates in ", " does NOT participate in ");
 		}
 		contents.add("");
 	}
