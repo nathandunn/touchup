@@ -9,7 +9,6 @@ import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
-import owltools.gaf.io.ResourceLoader;
 import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
