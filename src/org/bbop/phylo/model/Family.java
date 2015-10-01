@@ -46,6 +46,7 @@ public class Family implements Serializable {
     private List<String> attr_content;
     private List<String> msa_content;
     private List<String> wts_content;
+    private List<String> gaf_comments;
 
 	public Family(String family_name) {
 		setFamily_name(family_name);
@@ -104,7 +105,7 @@ public class Family implements Serializable {
 	public boolean save(File family_dir, String comment) {
 		boolean saved = adapter.saveFamily(this, family_dir);
 		GafRecorder.record(this, family_dir, comment);
-		Logger.write(family_name, family_dir);
+		Logger.write(family_name, family_dir, comment);
 		return saved;
 	}
 
@@ -122,6 +123,14 @@ public class Family implements Serializable {
 
 	public String getReference() {
 		return Constant.PAINT_REF + ':' + family_name.substring("PTHR".length());
+	}
+
+	public void setGafComments(List<String> comments) {
+		gaf_comments = comments;
+	}
+	
+	public List<String> getGafComments() {
+		return gaf_comments;
 	}
 	
 }

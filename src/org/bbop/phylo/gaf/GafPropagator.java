@@ -191,6 +191,7 @@ public class GafPropagator {
 				log.info("building GAF document");
 				String full_name = gaf_file.getAbsolutePath();
 				gafdoc = builder.buildDocument(full_name);
+				family.setGafComments(gafdoc.getComments());
 				propagate(gafdoc, family);
 			} catch (IOException | URISyntaxException e) {
 				log.warn("URI Syntax exception for " + family.getFamily_name());

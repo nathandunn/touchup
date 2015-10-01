@@ -58,6 +58,8 @@ public class PantherFileAdapter extends PantherAdapter {
 	public boolean fetchTree(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
+		TouchupConfig.inst().gafdir = "/Users/suzi/workspace/paint/test_resources/pre-touchup/";
+		TouchupConfig.inst().treedir = "/Users/suzi/projects/go/data/trees/panther/";
 		File family_dir = new File(TouchupConfig.inst().treedir, tree.getId());
 
 		ok = FileUtil.validPath(family_dir);
@@ -94,7 +96,7 @@ public class PantherFileAdapter extends PantherAdapter {
 	private void fetchMSA(Family family) {
 		File family_dir = new File(TouchupConfig.inst().treedir, family.getFamily_name());
 		FileUtil.validPath(family_dir);
-		File msaFileName = new File(family_dir, "cluster" + Constant.MSA_SUFFIX);
+		File msaFileName = new File(family_dir, "tree" + Constant.MSA_SUFFIX);
 		if (FileUtil.validFile(msaFileName)) {
 			family.setMsaContent(FileUtil.readFile(msaFileName));
 		}

@@ -27,12 +27,11 @@ public class Logger {
 
 	private static List<String> notes;
 
-	public static void write(String family_name, File family_dir) {
+	public static void write(String family_name, File family_dir, String comment) {
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
-			String program_name = ResourceLoader.inst().loadVersion();
-			contents.add("# " + program_name + " Log Report for " + LogUtil.dateNow());
+			contents.add("#Log " + comment + " on " + LogUtil.dateNow());
 			LogAction.report(contents);
 			contents.add(Logger.WARNING_SECTION);
 			LogAlert.report(contents);

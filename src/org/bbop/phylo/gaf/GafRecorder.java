@@ -2,7 +2,10 @@ package org.bbop.phylo.gaf;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -14,6 +17,7 @@ import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.panther.ParsingHack;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogEntry;
+import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
 
@@ -36,19 +40,37 @@ public class GafRecorder {
 			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
 			Tree tree = family.getTree();
 			GafDocument gaf_doc = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
-			gaf_doc.addComment("Created by: " + comment);
-			addAnnotations(family, tree, tree.getRoot(), gaf_doc);
+			List<String> comments = family.getGafComments();
+			for (String comment_line : comments) {
+				gaf_doc.addComment(comment_line);
+			}
+			gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
+			Map<Bioentity, String> originalIDs = new HashMap<>();
+			addAnnotations(family, tree, tree.getRoot(), gaf_doc, originalIDs);
 			GafWriter gaf_writer = new GafWriter();
 			gaf_writer.setStream(gaf_file);
 			gaf_writer.write(gaf_doc);
 			IOUtils.closeQuietly(gaf_writer);
+			Set<Bioentity> modified = originalIDs.keySet();
+			for (Bioentity modified_node : modified) {
+				String originalID = originalIDs.get(modified_node);
+				// restore it
+				modified_node.setId(originalID);
+				modified_node.setDb(originalID.substring(0, originalID.indexOf(':')));
+				List<GeneAnnotation> annotations = modified_node.getAnnotations();
+				if (annotations != null) {
+					for (GeneAnnotation annotation : annotations) {
+						annotation.setBioentity(modified_node.getId());
+					}
+				}
+			}
 			log.info("Wrote updated GAF to " + gaf_file);
 		} else {
 			log.error("Unable to save GAF file for " + family_name + " in " + family_dir);
 		}
 	}
 
-	private static void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc) {
+	private static void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
 		if (node.isPruned()) {
 			/* Write out one row to record the pruned branch */
 			GeneAnnotation stump = createStump(family, node);
@@ -69,10 +91,10 @@ public class GafRecorder {
 							// This is logically not needed, but is a convenience for PanTree
 							addExpWith(tree, node, annotation);
 							if (use_seq) {
-								GeneAnnotation original = annotation;
-								annotation = new GeneAnnotation(original);
+								originalIDs.put(node, node.getId());
+								node.setId(node.getSeqDb() + ':' + node.getSeqId());
+								node.setDb(node.getSeqDb());
 								annotation.setBioentity(node.getSeqDb() + ':' + node.getSeqId());
-								annotation.setBioentityObject(null);
 							}
 						}
 						if (annotation.getWithInfos().size() == 0) {
@@ -90,7 +112,7 @@ public class GafRecorder {
 				List<Bioentity> children = node.getChildren();
 				if (children != null) {
 					for (Bioentity child : children) {
-						addAnnotations(family, tree, child, gaf_doc);
+						addAnnotations(family, tree, child, gaf_doc, originalIDs);
 					}
 				}
 			}

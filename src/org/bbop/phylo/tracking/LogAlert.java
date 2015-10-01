@@ -110,8 +110,8 @@ public class LogAlert {
 							" (" + annotation.getCls() + ") ");
 				}
 			}
-			contents.add("");
 		}
+		contents.add("");
 	}
 	
 	public static List<String> report() {

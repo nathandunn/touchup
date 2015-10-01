@@ -183,8 +183,9 @@ public class Touchup {
 					if (proceed) {
 						proceed &= resetAnnotations(family);
 						if (proceed) {
+							TouchupConfig.inst().gafdir = "/Users/suzi/workspace/paint/test_resources/submissions";
 							File family_dir = new File(TouchupConfig.inst().gafdir, family_name);
-							family.save(family_dir, ResourceLoader.inst().loadVersion());
+							family.save(family_dir, "Updated by: " + ResourceLoader.inst().loadVersion());
 							int alert_count = LogAlert.getAlertCount();
 							if (alert_count > 0)  {
 								run_summary.put(family_name, LogAlert.report());                            	
