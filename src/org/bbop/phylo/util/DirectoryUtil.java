@@ -40,9 +40,9 @@ public class DirectoryUtil {
 
 	private static DirectoryUtil directory;
 
-	protected String gafdir = "/Users/yoyo/projects/go/gene-associations/submission/paint/";
+	protected String gafdir = "";
 
-	protected String treedir = "/Users/yoyo/projects/go/data/trees/panther/";
+	protected String treedir = "";
 
 	/**
 	 * Constructor declaration

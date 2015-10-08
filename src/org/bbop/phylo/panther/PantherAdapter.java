@@ -50,13 +50,13 @@ public abstract class PantherAdapter {
 
         boolean ok = FileUtil.validPath(family_dir);
         File treeFileName = new File(family_dir, family_name + Constant.TREE_SUFFIX);
-        File attrFileName = new File(family_dir, family_name + Constant.ATTR_SUFFIX);
+        File attrFileName = new File(family_dir, family_name + Constant.TAB_SUFFIX);
 
         ok &= writeData(treeFileName, family.getTreeContent());
         ok &= writeData(attrFileName, family.getAttrContent());
 
         if (family.getMsaContent() != null && ok) {
-            File msaFileName = new File(family_dir, family_name + Constant.MSA_SUFFIX);
+            File msaFileName = new File(family_dir, family_name + Constant.MIA_SUFFIX);
             ok &= writeData(msaFileName, family.getMsaContent());
         }
         if (family.getWtsContent() != null && ok) {

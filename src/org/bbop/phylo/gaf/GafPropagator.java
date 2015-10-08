@@ -300,6 +300,8 @@ public class GafPropagator {
 										eco = Constant.DIVERGENT_EC;
 									}
 									PaintAction.inst().setNot(family, node, assoc, eco, true);
+								} else {
+									log.info("Didn't set NOT for " + notted_gaf_annot);
 								}
 							}
 						}

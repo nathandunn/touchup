@@ -21,7 +21,6 @@
 package org.bbop.phylo.touchup;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,8 +32,8 @@ import java.util.Set;
 import javax.swing.SwingUtilities;
 
 import org.bbop.phylo.annotate.AnnotationUtil;
-import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.config.TouchupConfig;
+import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.gaf.GafPropagator;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
@@ -101,25 +100,33 @@ public class Touchup {
 			List<String> families;
 			String start_with_family = null;
 			String family_file = null;
+			String family_dir = TouchupConfig.inst().gafdir;
+			String family_list = null;
 			for (int i = 0; i < args.length; i += 2) {
 				if (args[i].contains("t")) {
 					TouchupConfig.inst().treedir = args[i + 1];
 					log.info(TouchupConfig.inst().treedir);
 				} else if (args[i].contains("s")) {
 					start_with_family = args[i + 1];
-				} else if (args[i].contains("f") || args[i].contains("d") || args[i].contains("l")) {
+				} else if (args[i].contains("f")) {
 					family_file = args[i + 1];
+				} else if (args[i].contains("d")) {
+					File f = new File(args[i + 1]);
+					if (f.isDirectory()) {
+						TouchupConfig.inst().gafdir = args[i + 1];
+						family_dir = args[i + 1];
+					}
+				} else if (args[i].contains("l")) {
+					family_list = args[i + 1];
 				} else {
 					provideHelp();
 					System.exit(0);
 				}
 			}
 
-			File f = new File(family_file);
-
-			if (f.isDirectory()) {
-				TouchupConfig.inst().gafdir = family_file;
-				log.info(TouchupConfig.inst().gafdir);
+			if (family_file == null && family_list == null) {
+				log.info("Retrieving families from this directory: " + TouchupConfig.inst().gafdir);
+				File f = new File(family_dir);
 				String [] files = f.list();
 				Arrays.sort(files);
 				families = new ArrayList<>();
@@ -132,7 +139,7 @@ public class Touchup {
 						}
 					}
 				}
-			} else if (f.canRead()) {
+			} else if (family_list != null) {
 				families = FileUtil.readFile(new File(family_file));
 				for (int i = families.size() - 1; i >= 0; i--) {
 					// allow for commenting out lines in the input file
@@ -158,8 +165,6 @@ public class Touchup {
 		}
 	};
 
-
-
 	private int touchup(List<String> families) {
 		log.info(families.size() + " families to touch up");
 		Map<String, List<String>> run_summary = new HashMap<>();
@@ -183,7 +188,6 @@ public class Touchup {
 					if (proceed) {
 						proceed &= resetAnnotations(family);
 						if (proceed) {
-							TouchupConfig.inst().gafdir = "/Users/suzi/workspace/paint/test_resources/submissions";
 							File family_dir = new File(TouchupConfig.inst().gafdir, family_name);
 							family.save(family_dir, "Updated by: " + ResourceLoader.inst().loadVersion());
 							int alert_count = LogAlert.getAlertCount();

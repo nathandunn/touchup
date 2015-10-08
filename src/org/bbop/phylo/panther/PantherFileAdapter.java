@@ -35,7 +35,6 @@ public class PantherFileAdapter extends PantherAdapter {
 	/**
 	 *
 	 */
-//	private static final long serialVersionUID = 1L;
 
 //	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
 	/**
@@ -52,19 +51,25 @@ public class PantherFileAdapter extends PantherAdapter {
 	 *
 	 *
 	 * @return
-	 *
+	 * What the PANTHER server provides are files named thusly
+	 * attr.tab	cluster.wts	tree.mia	tree.tree
+	 * 
+	 * What needs to be recorded are files name
+	 * PTHRnnnnn.tab PTHRnnnnn.wts PTHRnnnnn.mia PTHRnnnnn.tree
+	 * 
+	 * Previously the convention was
+	 * .attr (not .tab) and *.msa (not .mia)
+	 * 
 	 * @see
 	 */
 	public boolean fetchTree(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
-		TouchupConfig.inst().gafdir = "/Users/suzi/workspace/paint/test_resources/pre-touchup/";
-		TouchupConfig.inst().treedir = "/Users/suzi/projects/go/data/trees/panther/";
 		File family_dir = new File(TouchupConfig.inst().treedir, tree.getId());
 
 		ok = FileUtil.validPath(family_dir);
 		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
-		File attrFileName = new File(family_dir, "attr" + Constant.ATTR_SUFFIX);
+		File attrFileName = new File(family_dir, "attr" + Constant.TAB_SUFFIX);
 
 		ok &= FileUtil.validFile(treeFileName);
 		ok &= FileUtil.validFile(attrFileName);
@@ -96,7 +101,7 @@ public class PantherFileAdapter extends PantherAdapter {
 	private void fetchMSA(Family family) {
 		File family_dir = new File(TouchupConfig.inst().treedir, family.getFamily_name());
 		FileUtil.validPath(family_dir);
-		File msaFileName = new File(family_dir, "tree" + Constant.MSA_SUFFIX);
+		File msaFileName = new File(family_dir, "tree" + Constant.MIA_SUFFIX);
 		if (FileUtil.validFile(msaFileName)) {
 			family.setMsaContent(FileUtil.readFile(msaFileName));
 		}

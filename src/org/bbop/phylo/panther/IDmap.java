@@ -143,7 +143,7 @@ public class IDmap {
             	DbIdtoGene.put(key, priors);
             } else {
             	String msg = ("Identical Gene ID (" + node.getId() + ") for " +
-            			priors.size() + 1) + " different sequence IDs: ";
+            			(priors.size() + 1) + " different sequence IDs: ");
             	for (Bioentity g : priors) {
             		msg = msg + " " + g.getSeqDb() + ':' + g.getSeqId();
             	}
