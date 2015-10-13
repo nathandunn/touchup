@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.OWLutil;
 
@@ -33,7 +32,7 @@ import owltools.gaf.GeneAnnotation;
 
 public class WithEvidence {
 
-	private static Logger log = Logger.getLogger(WithEvidence.class);
+//	private static Logger log = Logger.getLogger(WithEvidence.class);
 
 	private List<String> exp_withs;
 	private List<String> regulator_of;
@@ -81,7 +80,7 @@ public class WithEvidence {
 	}
 	
 	public boolean regulates() {
-		return regulator_of.size() > 0;
+		return exp_withs.size() == 0 && regulator_of.size() > 0;
 	}
 
 	public List<String> getRegulatorOfs() {

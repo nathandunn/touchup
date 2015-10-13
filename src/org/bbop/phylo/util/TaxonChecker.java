@@ -59,14 +59,18 @@ public class TaxonChecker {
         }
 
         List<String> taxa_to_check = getTaxIDs(tree, node);
+        String failed_taxa = "";
         for (String taxon : taxa_to_check) {
             StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id + "&taxid=NCBITaxon:" + taxon);
             String taxon_reply = askTaxonServer(taxon_query);
-            okay &= !server_is_down && !(taxon_reply.contains("false"));
+            boolean check = !server_is_down && !(taxon_reply.contains("false"));
+            okay &= check;
+            if (!check)
+            	failed_taxa += taxon + ",";
        }
         if (!okay) {
             if (!server_is_down)
-                log.info("Invalid taxon for term: " + go_id + " to " + node);
+                log.info("Invalid taxon for term: " + go_id + " to taxon " + failed_taxa + " of node" + node);
         }
         return okay;
     }

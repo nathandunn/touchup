@@ -225,7 +225,8 @@ public class PaintAction {
 		if (!curator_inference) {
 			evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
 		} else {
-			evidence_code = is_MRC ? Constant.CURATOR_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
+			evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE + "," +Constant.CURATOR_EVIDENCE_CODE : 
+				Constant.ANCESTRAL_EVIDENCE_CODE;
 		}
 		assoc.setEvidence(evidence_code, null);
 		assoc.setWithInfos(withs);
