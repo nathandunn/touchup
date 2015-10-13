@@ -362,13 +362,13 @@ public class OWLutil {
 				// since we've decided to always do positive annotations with NOTs being added afterwards, should make sure that
 				// the association is positive
 				if (!annotation.isNegated()) {
-					if (annotation.isMRC() || node.isLeaf()) {
+					String annot_id = annotation.getCls();
+					if ((annotation.isMRC() || node.isLeaf())) {
 						/*
 						 * First argument is the parent term, second term is the descendant
 						 * returns true if 2nd argument is a descendant of the 1st argument 
 						 */
-						OWLClass check_term = getTerm(annotation.getCls());
-						all_broader &= broader_terms.contains(check_term);
+						all_broader &= (!go_id.equals(annot_id)) && (broader_terms.contains(getTerm(annot_id)));
 					}
 				}
 			}
