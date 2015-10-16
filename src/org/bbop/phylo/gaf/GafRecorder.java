@@ -41,8 +41,10 @@ public class GafRecorder {
 			Tree tree = family.getTree();
 			GafDocument gaf_doc = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
 			List<String> comments = family.getGafComments();
-			for (String comment_line : comments) {
-				gaf_doc.addComment(comment_line);
+			if (comments != null) {
+				for (String comment_line : comments) {
+					gaf_doc.addComment(comment_line);
+				}
 			}
 			gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
 			Map<Bioentity, String> originalIDs = new HashMap<>();
