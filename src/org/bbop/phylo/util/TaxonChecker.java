@@ -52,19 +52,27 @@ public class TaxonChecker {
 
 	private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
+	private static final int MAX_TAXA_TO_CHECK = 60;
+
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
-		boolean okay = true;
-//		if (server_is_down) {
-//			return false;
-//		}
+		//		if (server_is_down) {
+		//			return false;
+		//		}
 
 		List<String> taxa_to_check = getTaxIDs(tree, node);
-		StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id );
-		for (String taxon : taxa_to_check) {
-			taxon_query.append("&taxid=NCBITaxon:" + taxon);
+		boolean okay = true;
+		int checked_off = 0;
+		String taxon_reply = "";
+		while (okay && checked_off < taxa_to_check.size()) {
+			StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id );
+			int max = Math.min(MAX_TAXA_TO_CHECK + checked_off, taxa_to_check.size());
+			for (; checked_off < max; checked_off++) {
+				String taxon = taxa_to_check.get(checked_off);
+				taxon_query.append("&taxid=NCBITaxon:" + taxon);
+			}
+			taxon_reply = askTaxonServer(taxon_query);
+			okay &= !server_is_down && !(taxon_reply.contains("false"));
 		}
-		String taxon_reply = askTaxonServer(taxon_query);
-		okay &= !server_is_down && !(taxon_reply.contains("false"));
 		if (!okay) {
 			if (!server_is_down) {
 				log.info("Invalid taxon for term: " + go_id + " of node" + node);
