@@ -179,6 +179,7 @@ public class Touchup {
 			if (!available) {
 				log.info("Missing GAF file for " + family_name);
 			} else {
+				gaf_count++;
 				Family family = new Family(family_name);
 				Tree tree = new Tree(family_name);
 				PantherAdapter adapter = new PantherFileAdapter();
@@ -197,7 +198,6 @@ public class Touchup {
 							} else {
 								run_summary.put(family_name, null);
 							}
-							gaf_count++;
 						} else {
 							log.error("Unable to load annotations for " + family_name);
 						}

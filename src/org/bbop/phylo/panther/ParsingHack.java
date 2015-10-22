@@ -135,8 +135,16 @@ public class ParsingHack {
 		else {
 			String[] parts = getParts(idstr);
 			if (parts != null && parts.length > 0) {
-				node.addSpeciesLabel(parts[0]);
-				String taxon = TaxonFinder.getTaxonID(parts[0]);
+				String species = parts[0];
+				/*
+				 * Extremely ugly hack to deal with upstream typo
+				 * Not red tile fish, but a proteobacteria
+				 * 
+				 */
+				if (species.equals("BRAJA"))
+					species = "BRAJP";
+				node.addSpeciesLabel(species);
+				String taxon = TaxonFinder.getTaxonID(species);
 				if (taxon != null) {
 					node.setNcbiTaxonId(taxon);
 				}

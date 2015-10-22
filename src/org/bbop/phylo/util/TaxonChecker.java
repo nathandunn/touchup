@@ -53,6 +53,8 @@ public class TaxonChecker {
 	private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
 	private static final int MAX_TAXA_TO_CHECK = 60;
+	
+	private static String error_message;
 
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
 		//		if (server_is_down) {
@@ -61,6 +63,7 @@ public class TaxonChecker {
 
 		List<String> taxa_to_check = getTaxIDs(tree, node);
 		boolean okay = true;
+		error_message = "";
 		int checked_off = 0;
 		String taxon_reply = "";
 		while (okay && checked_off < taxa_to_check.size()) {
@@ -75,8 +78,9 @@ public class TaxonChecker {
 		}
 		if (!okay) {
 			if (!server_is_down) {
-				log.info("Invalid taxon for term: " + go_id + " of node" + node);
+				log.info("Invalid taxon for term: " + go_id + " of node " + node);
 				log.info(taxon_reply);
+				formatErrorMessage(go_id, taxon_reply);
 			} else {
 				log.info("Taxon server is down");
 			}
@@ -84,6 +88,22 @@ public class TaxonChecker {
 		return okay;
 	}
 
+	private static void formatErrorMessage(String go_id, String taxon_reply) {
+		String [] results = taxon_reply.split("\\s+");
+		error_message = "illegal taxa for " + go_id + " - ";
+		String prefix = "";
+		for (int i = 0; i < results.length; i += 3) {
+			if (results[i+2].contains("false")) {
+				error_message += prefix + results[i+1].trim();
+				prefix = ", ";
+			}
+		}
+	}
+
+	public static String getTaxonError() {
+		return error_message;
+	}
+	
 	private static String askTaxonServer(StringBuffer taxon_query) {
 		URL servlet;
 		StringBuffer taxon_reply = new StringBuffer();
@@ -135,7 +155,7 @@ public class TaxonChecker {
 			List<Bioentity> leaves = tree.getLeafDescendants(node);
 			for (Bioentity leaf : leaves) {
 				String leaf_taxon = parseTaxonID(leaf);
-				if (leaf_taxon != null && !leaf_taxon.equals("1")) {
+				if (leaf_taxon != null && !leaf_taxon.equals("1") && !taxon_to_check.contains(leaf_taxon)) {
 					taxon_to_check.add(leaf_taxon);
 				}
 			}

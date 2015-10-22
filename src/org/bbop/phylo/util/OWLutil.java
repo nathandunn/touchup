@@ -74,21 +74,11 @@ public class OWLutil {
 	private static class AncestorTool implements Closeable {
 
 		private final Set<OWLObjectProperty> materializedProperties;
-		//		private final LoadingCache<OWLClass, Map<Set<OWLObjectProperty>,Set<OWLClass>>> cache;
 		private final ExpressionMaterializingReasoner reasoner;
 
 		public AncestorTool(OWLOntology source, Set<OWLObjectProperty> materializedProperties, int cacheSize) {
 			super();
 			this.materializedProperties = materializedProperties;
-			//			cache = CacheBuilder.newBuilder()
-			//					.maximumSize(cacheSize)
-			//					.build(new CacheLoader<OWLClass, Map<Set<OWLObjectProperty>,Set<OWLClass>>>() {
-			//
-			//						@Override
-			//						public Map<Set<OWLObjectProperty>,Set<OWLClass>> load(OWLClass key) {
-			//							return new HashMap<>();
-			//						}
-			//					});
 			reasoner = new ExpressionMaterializingReasoner(source, new ElkReasonerFactory());
 			reasoner.materializeExpressions(materializedProperties);
 		}
@@ -102,17 +92,7 @@ public class OWLutil {
 			reasoner.dispose();
 		}
 
-		private int term_count = 0;
 		public Set<OWLClass> getAncestorClosure(OWLClass c, final Set<OWLObjectProperty> relations){
-			// check cache
-			//			Map<Set<OWLObjectProperty>,Set<OWLClass>> mgrcm = cache.getUnchecked(c);
-			//			Set<OWLClass> retmap = mgrcm.get(relations);
-			//			if( retmap == null ){ 
-			//				// create
-			//				retmap = createAncestorClosure(c, relations);
-			//				mgrcm.put(relations, retmap);
-			//			}
-			//			return retmap;
 			return createAncestorClosure(c, relations);
 		}
 
