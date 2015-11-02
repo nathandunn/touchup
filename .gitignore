@@ -18,6 +18,8 @@ hibernate.xml
 version.jsp
 update_client.sh
 canned_comments.xml
+resources/ncbi-taxa_ids.txt
+resources/junk
 *.iml
 *.ipr
 *.iws
