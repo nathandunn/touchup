@@ -287,9 +287,6 @@ public abstract class PantherAdapter {
     private void parseAttributeRow(List<String> row, List<String> header) {
         String id = row.get(0);
         String ptn = row.get(row.size() - 1);
-//        if (id.contains("NPY2R")) {
-//        	log.debug("Make sure we get the right one");
-//        }
         Bioentity node = ParsingHack.findThatNode(id);
         if (node == null) {
         	/*

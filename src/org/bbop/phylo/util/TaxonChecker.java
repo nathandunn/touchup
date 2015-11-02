@@ -53,7 +53,7 @@ public class TaxonChecker {
 	private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
 	private static final int MAX_TAXA_TO_CHECK = 60;
-	
+
 	private static String error_message;
 
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
@@ -61,31 +61,33 @@ public class TaxonChecker {
 		//			return false;
 		//		}
 
-		List<String> taxa_to_check = getTaxIDs(tree, node);
-		boolean okay = true;
+		List<String> taxa_to_check = getTaxIDs(tree, node, true);
+		boolean descendents_okay = true;
 		error_message = "";
 		int checked_off = 0;
-		String taxon_reply = "";
-		while (okay && checked_off < taxa_to_check.size()) {
+		String taxa_reply = "";
+		while (descendents_okay && checked_off < taxa_to_check.size()) {
 			StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id );
 			int max = Math.min(MAX_TAXA_TO_CHECK + checked_off, taxa_to_check.size());
 			for (; checked_off < max; checked_off++) {
 				String taxon = taxa_to_check.get(checked_off);
 				taxon_query.append("&taxid=NCBITaxon:" + taxon);
 			}
-			taxon_reply = askTaxonServer(taxon_query);
-			okay &= !server_is_down && !(taxon_reply.contains("false"));
+			taxa_reply = askTaxonServer(taxon_query);
+			descendents_okay &= !server_is_down && !(taxa_reply.contains("false"));
 		}
-		if (!okay) {
+		if (!descendents_okay) {
 			if (!server_is_down) {
 				log.info("Invalid taxon for term: " + go_id + " of node " + node);
-				log.info(taxon_reply);
-				formatErrorMessage(go_id, taxon_reply);
+				formatErrorMessage(go_id, taxa_reply);
+				log.info(error_message);
 			} else {
 				log.info("Taxon server is down");
 			}
+			return false;
+		} else {
+			return true;
 		}
-		return okay;
 	}
 
 	private static void formatErrorMessage(String go_id, String taxon_reply) {
@@ -103,7 +105,7 @@ public class TaxonChecker {
 	public static String getTaxonError() {
 		return error_message;
 	}
-	
+
 	private static String askTaxonServer(StringBuffer taxon_query) {
 		URL servlet;
 		StringBuffer taxon_reply = new StringBuffer();
@@ -142,15 +144,14 @@ public class TaxonChecker {
 		return !server_is_down;
 	}
 
-	private static List<String> getTaxIDs(Tree tree, Bioentity node) {
+	private static List<String> getTaxIDs(Tree tree, Bioentity node, boolean ancestral) {
 		List<String> taxon_to_check = new ArrayList<>();
-
-		boolean check_leaves = false;
 		String taxon_id = parseTaxonID(node);
-		if (taxon_id == null || taxon_id.equals("1") || taxon_id.equals("2")) {
-			check_leaves = true;
-		}
-		if (check_leaves) {
+		if (ancestral) {
+			if (taxon_id != null) { // && !taxon_id.equals("1") && !taxon_id.equals("2")) {
+				taxon_to_check.add(taxon_id);
+			}
+		} else {
 			// too vague, look for children
 			List<Bioentity> leaves = tree.getLeafDescendants(node);
 			for (Bioentity leaf : leaves) {
@@ -159,8 +160,6 @@ public class TaxonChecker {
 					taxon_to_check.add(leaf_taxon);
 				}
 			}
-		} else {
-			taxon_to_check.add(taxon_id);
 		}
 		return taxon_to_check;
 	}

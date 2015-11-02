@@ -133,10 +133,32 @@ public class PaintAction {
 				exp_withs);
 
 		removeMoreGeneralTerms(node, go_id);
+		
+		filterOutLosses(family, node, assoc);
 
 		LogAction.logAssociation(node, assoc);
 
 		return assoc;
+	}
+
+	private void filterOutLosses(Family family, Bioentity node, GeneAnnotation assoc) {
+		if (TaxonChecker.checkTaxons(family.getTree(), node, assoc.getCls())) {
+			setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, false);
+		} else {
+			List<Bioentity> children = node.getChildren();
+			for (Bioentity child : children) {
+				List<GeneAnnotation> child_assocs = child.getAnnotations();
+				for (GeneAnnotation child_assoc : child_assocs) {
+					if (child_assoc.getClass().equals(assoc.getCls())) {
+						if (child_assoc.isNegated()) {
+							log.debug("WTF");
+						} else {
+							filterOutLosses(family, child, assoc);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	private GeneAnnotation _propagateAssociation(Bioentity node,

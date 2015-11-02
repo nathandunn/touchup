@@ -138,8 +138,6 @@ public class AnnotationUtil {
 				 * any case where PANTHER has used the name of DB that doesn't actually submit to GO
 				 */
 				String key = leaf.getId();
-				if (key.contains("HGNC") || leaf.getSeqId().contains("P41145"))
-					log.debug("See if uniprot is used");
 				if (ParsingHack.useUniProtID(leaf.getDb())) {
 					key = leaf.getSeqDb() + ':' + leaf.getSeqId();
 				}
@@ -217,7 +215,7 @@ public class AnnotationUtil {
 				}
 			}
 		} catch (Exception e) {
-			String message = "Problem collecting experimental annotations for \n" + e.getMessage();
+			String message = "Problem collecting experimental annotations because, \"" + e.getMessage() + "\"";
 			log.info(message);
 			System.exit(-1);
 		}
@@ -230,7 +228,8 @@ public class AnnotationUtil {
 		if (golr_gene != null) {
 			if (leaf.getNcbiTaxonId() == null ||
 					leaf.getNcbiTaxonId().length() == 0 ||
-					leaf.getNcbiTaxonId().endsWith(":1")) {
+					leaf.getNcbiTaxonId().endsWith(":1") ||
+					!leaf.getNcbiTaxonId().equals(golr_gene.getNcbiTaxonId())) {
 				leaf.setNcbiTaxonId(golr_gene.getNcbiTaxonId());
 			}
 			if (!golr_gene.getId().equals(leaf.getId()) && !golr_gene.getDb().equals("UniProtKB")) {

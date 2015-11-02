@@ -163,9 +163,6 @@ public class GafPropagator {
 						}
 						not_annots.add(gaf_annotation);
 					} else {
-						if (gaf_annotation.getBioentity().contains("PTN000630156")) {
-							log.debug("why is this chucked?");
-						}
 						if (AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id, gaf_annotation.getAspect()) == null) {
 							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node, family.getTree());
 							if (invalid == null) {

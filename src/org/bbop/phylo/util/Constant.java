@@ -35,6 +35,7 @@ public class Constant {
 	public final static String OLD_DESCENDANT_EVIDENCE_CODE = "IDS"; // replaced by IBD
 	public static final String ANCESTRAL_EVIDENCE_CODE = "IBA"; // was IAS
 	public static final String OLD_ANCESTRAL_EVIDENCE_CODE = "IAS"; // replaced by IBA
+	public static final String LOSS_OF_FUNCTION = "LOF";
 	public final static String PANTHER_DB = "PANTHER";
 	public final static String PAINT_REF = "PAINT_REF";
 	public final static String OLD_SOURCE = "RefGenome";

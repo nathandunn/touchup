@@ -149,7 +149,7 @@ public class Touchup {
 				}
 			} else {
 				families = new ArrayList<>();
-				if (family_file.startsWith("PTHR")) {
+				if (family_file.contains("PTHR")) {
 					families.add(family_file);
 				}
 			}

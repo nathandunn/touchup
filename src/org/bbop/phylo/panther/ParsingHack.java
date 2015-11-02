@@ -143,6 +143,7 @@ public class ParsingHack {
 				 */
 				if (species.equals("BRAJA"))
 					species = "BRADU";
+				
 				node.addSpeciesLabel(species);
 				String taxon = TaxonFinder.getTaxonID(species);
 				if (taxon != null) {
