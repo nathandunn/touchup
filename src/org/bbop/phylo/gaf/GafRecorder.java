@@ -101,9 +101,9 @@ public class GafRecorder {
 						}
 						if (annotation.getWithInfos().size() == 0) {
 							log.error("No with information for\n\t" + annotation);
-						} else {
+						} // else {
 							gaf_doc.addGeneAnnotation(annotation);
-						}
+					//	}
 					}
 				}
 			}

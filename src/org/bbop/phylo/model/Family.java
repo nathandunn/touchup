@@ -40,6 +40,7 @@ public class Family implements Serializable {
 	 * This is the raw data which is parsed
 	 */
 	private String family_name;
+	private String description;
 	private PantherAdapter adapter;
 	private Tree tree;
     private List<String> tree_content;
@@ -132,6 +133,13 @@ public class Family implements Serializable {
 	public List<String> getGafComments() {
 		return gaf_comments;
 	}
+
+	public void setDescription(String name) {
+		this.description = name;
+	}
 	
+	public String getDescription() {
+		return description;
+	}	
 }
 

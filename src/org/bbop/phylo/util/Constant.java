@@ -130,10 +130,10 @@ public class Constant {
 		+ "and unannotated descendants of these ancestral genes are inferred to have inherited these same GO annotations by descent. "
 		+ "The annotations are done using a tool called " + GO_REF_SW;
 
-	private final static String DEFAULT_ROOT = "/Users/suzi/projects/go/";
-	public final static String DEFAULT_PANTHER = DEFAULT_ROOT + "data/trees/panther";
-	public final static String DEFAULT_IN = DEFAULT_ROOT + "gene-associations/submission/paint/";
-	public final static String DEFAULT_OUT = DEFAULT_ROOT + "gene-associations/submission/splat";
 	public static final String PROTEIN = "protein";
+	
+//	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
+	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
+	public static final String PUB_GOLR = "http://golr.geneontology.org/solr";
 	
 }

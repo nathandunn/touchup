@@ -187,9 +187,18 @@ public class Touchup {
 				if (available) {
 					boolean proceed = TaxonChecker.isLive();
 					if (proceed) {
-						proceed &= resetAnnotations(family);
+						proceed &= AnnotationUtil.loadExperimental(family);
 						if (proceed) {
+							/*
+							 * The file may be null, in which case the following two methods
+							 * simply return
+							 */
 							File family_dir = new File(TouchupConfig.inst().gafdir, family_name);
+
+							Logger.importPrior(family_name, family_dir);
+
+							GafPropagator.importAnnotations(family, family_dir);
+							
 							family.save(family_dir, "Updated by: " + ResourceLoader.inst().loadVersion());
 							int alert_count = LogAlert.getAlertCount();
 							if (alert_count > 0)  {
@@ -226,29 +235,7 @@ public class Touchup {
 		OWLutil.inst().clearTerms();
 		System.gc();
 	}
-
-	private boolean resetAnnotations(Family family) {
-		boolean proceed = false;
-		try {
-			AnnotationUtil.collectExpAnnotationsBatched(family);
-			/*
-			 * The file may be null, in which case the following two methods
-			 * simply return
-			 */
-			String family_name = family.getFamily_name();
-			File family_dir = new File(TouchupConfig.inst().gafdir, family_name);
-
-			Logger.importPrior(family_name, family_dir);
-
-			GafPropagator.importAnnotations(family, family_dir);
-
-			proceed = true;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return proceed;
-	}
-
+	
 	private void logSummary(Map<String, List<String>> summaries, int total_fams, int family_count, int tree_count, int gaf_count, int review_count) {
 		String program_name = ResourceLoader.inst().loadVersion();
 		File log_dir = new File(TouchupConfig.inst().gafdir);

@@ -9,9 +9,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.bbop.golr.java.RetrieveGolrAnnotations;
 import org.bbop.golr.java.RetrieveGolrAnnotations.GolrAnnotationDocument;
+import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
@@ -98,13 +98,41 @@ public class AnnotationUtil {
 		"GO_REF:0000054",
 	};
 
-	private static final Logger log = Logger.getLogger("AnnotationUtil.class");
+	private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger("AnnotationUtil.class");
+
+	public static boolean loadExperimental(Family family) {
+		TouchupConfig config = TouchupConfig.inst();
+		config.GOlrURL = Constant.DEV_GOLR;
+
+		boolean proceed = loadExperimental(family, config.GOlrURL, true);
+		if (!proceed) {
+			config.GOlrURL = config.GOlrURL.equals(Constant.DEV_GOLR) ? Constant.PUB_GOLR : Constant.DEV_GOLR;
+			proceed = loadExperimental(family, config.GOlrURL, false);
+		}
+		return proceed;
+	}
+
+	private static boolean loadExperimental(Family family, String GOlrURL, boolean ignore) {
+		boolean proceed = false;
+		try {
+			AnnotationUtil.collectExpAnnotationsBatched(family);
+			proceed = true;
+		} catch (Exception e) {
+			if (!ignore) {
+				log.error("No response from GOlr server at " + TouchupConfig.inst().GOlrURL);
+				e.printStackTrace();
+			}
+		}
+		return proceed;
+	}
 
 	public static void collectExpAnnotationsBatched(Family family) throws Exception {
 		Tree tree = family.getTree();
 		List<Bioentity> leaves = tree.getLeaves();
-		RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
-//		RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.berkeleybop.org", 3, true) {
+		if (TouchupConfig.inst().GOlrURL.isEmpty()) {
+			TouchupConfig.inst().GOlrURL = Constant.DEV_GOLR;
+		}
+		RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations(TouchupConfig.inst().GOlrURL, 3, true) {
 			@Override
 			protected void logRequest(URI uri) {
 				super.logRequest(uri);
@@ -222,6 +250,8 @@ public class AnnotationUtil {
 	}
 
 	private static void processGolrAnnotations(Bioentity leaf, Bioentity golr_gene, List<GeneAnnotation> golr_annotations) {
+		if (leaf.getSeqId().contains("Q7Z3C6") || leaf.getSeqId().contains("O95996") || leaf.getSeqId().contains("Q9W5D4"))
+			log.debug("Examine the quals");
 		List<GeneAnnotation> exp_annotations = paintAnnotationsFilter(golr_annotations);
 		leaf.setAnnotations(exp_annotations);
 		// lets compare and fill in any missing fields

@@ -57,11 +57,15 @@ public class TaxonChecker {
 	private static String error_message;
 
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
+		return checkTaxons(tree, node, go_id, true);
+	}
+	
+	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
 		//		if (server_is_down) {
 		//			return false;
 		//		}
-
-		List<String> taxa_to_check = getTaxIDs(tree, node, true);
+		server_is_down = false;
+		List<String> taxa_to_check = getTaxIDs(tree, node, ancestral);
 		boolean descendents_okay = true;
 		error_message = "";
 		int checked_off = 0;

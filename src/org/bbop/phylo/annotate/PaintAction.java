@@ -134,26 +134,33 @@ public class PaintAction {
 
 		removeMoreGeneralTerms(node, go_id);
 		
-		filterOutLosses(family, node, assoc);
-
 		LogAction.logAssociation(node, assoc);
 
 		return assoc;
 	}
 
-	private void filterOutLosses(Family family, Bioentity node, GeneAnnotation assoc) {
-		if (TaxonChecker.checkTaxons(family.getTree(), node, assoc.getCls())) {
-			setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, false);
-		} else {
-			List<Bioentity> children = node.getChildren();
-			for (Bioentity child : children) {
-				List<GeneAnnotation> child_assocs = child.getAnnotations();
-				for (GeneAnnotation child_assoc : child_assocs) {
-					if (child_assoc.getClass().equals(assoc.getCls())) {
-						if (child_assoc.isNegated()) {
-							log.debug("WTF");
-						} else {
-							filterOutLosses(family, child, assoc);
+	public void filterOutLosses(Family family, Bioentity node, GeneAnnotation assoc) {
+		String go_id = assoc.getCls();
+		// Check that this GO term is valid for all descendants (false param indicates: not a check on ancestral IBD node)
+		boolean valid_for_all_descendents = TaxonChecker.checkTaxons(family.getTree(), node, go_id, false);
+		
+		if (!valid_for_all_descendents) {
+			// The GO term is not valid for all the leaves, perhaps it's all of them
+			boolean not_found_in_taxon = !TaxonChecker.checkTaxons(family.getTree(), node, go_id, true);
+			if (not_found_in_taxon) {
+				setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, true);
+			} else {
+				List<Bioentity> children = node.getChildren();
+				for (Bioentity child : children) {
+					List<GeneAnnotation> child_assocs = child.getAnnotations();
+					for (GeneAnnotation child_assoc : child_assocs) {
+						String child_go_id = child_assoc.getCls();
+						if (child_go_id.equals(go_id)) {
+							if (child_assoc.isNegated()) {
+								log.debug("WTF");
+							} else {
+								filterOutLosses(family, child, child_assoc);
+							}
 						}
 					}
 				}
@@ -627,7 +634,7 @@ public class PaintAction {
 				}
 
 			}
-			if (with_str.isEmpty()) {
+			if (with_str.isEmpty() && node.getParent() != null) {
 				with_str.add(node.getParent().getId());
 			}
 			assoc.setWithInfos(with_str);

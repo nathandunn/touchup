@@ -62,6 +62,7 @@ public class GafPropagator {
 
 		Map<Bioentity, String> prune_dates = new HashMap<>();
 		Map<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
+		List<GeneAnnotation> clade_checklist = new ArrayList<>();
 
 		IDmap mapper = IDmap.inst();
 
@@ -119,7 +120,7 @@ public class GafPropagator {
 					}
 					gaf_annotation.setBioentityObject(seq_node);
 					gaf_annotation.setBioentity(seq_node.getId());
-					parseAnnotations(family, seq_node, gaf_annotation, prune_dates, negate_list);
+					parseAnnotations(family, seq_node, gaf_annotation, prune_dates, negate_list, clade_checklist);
 					seq_count++;
 				}
 			} // end for loop going through gaf file contents
@@ -133,13 +134,17 @@ public class GafPropagator {
 		if (!negate_list.isEmpty()) {
 			applyNots(family, negate_list);
 		}
+		if (!clade_checklist.isEmpty()) {
+	 		cladeCheck(family, clade_checklist);
+		}
 	}
 
 	private static void parseAnnotations(Family family,
 			Bioentity node,
 			GeneAnnotation gaf_annotation,
 			Map<Bioentity, String> prune_dates,
-			Map<Bioentity, List<GeneAnnotation>> negate_list) {
+			Map<Bioentity, List<GeneAnnotation>> negate_list,
+			List<GeneAnnotation> clade_checklist) {
 
 		if (gaf_annotation.isCut()) {
 			prune_dates.put(node, gaf_annotation.getLastUpdateDate());
@@ -167,7 +172,8 @@ public class GafPropagator {
 							LogEntry.LOG_ENTRY_TYPE invalid = PaintAction.inst().isValidTerm(go_id, node, family.getTree());
 							if (invalid == null) {
 								WithEvidence withs = new WithEvidence(family.getTree(), node, go_id);
-								PaintAction.inst().propagateAssociation(family, node, go_id, withs, gaf_annotation.getLastUpdateDate(), gaf_annotation.getQualifiers());
+								GeneAnnotation assoc = PaintAction.inst().propagateAssociation(family, node, go_id, withs, gaf_annotation.getLastUpdateDate(), gaf_annotation.getQualifiers());
+								clade_checklist.add(assoc);
 							} else {
 								LogAlert.logInvalid(node, gaf_annotation, invalid);
 							}
@@ -307,6 +313,13 @@ public class GafPropagator {
 			}
 		}
 	}
+	
+	private static void cladeCheck(Family family, List<GeneAnnotation> clade_checklist) {
+		for (GeneAnnotation assoc : clade_checklist) {
+			Bioentity node = assoc.getBioentityObject();
+			if (!assoc.isNegated()) {
+				PaintAction.inst().filterOutLosses(family, node, assoc);
+			}
+		}
+	}
 }
-
-
