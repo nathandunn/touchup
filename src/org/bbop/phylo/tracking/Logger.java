@@ -9,6 +9,7 @@ import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
+import owltools.gaf.GeneAnnotation;
 import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
@@ -18,19 +19,22 @@ public class Logger {
 	public static final String MF_SECTION = "# molecular_function";
 	public static final String CC_SECTION = "# cellular_component";
 	public static final String BP_SECTION = "# biological_process";
-	public static final String PRUNED_SECTION = "# Pruned";
+	public static final String PRUNED_SECTION = "# PRUNED";
 	public static final String WARNING_SECTION = "# WARNINGS - THE FOLLOWING HAVE BEEN REMOVED FOR THE REASONS NOTED";
-	private static final String DATE_PREFIX = "201";
-	private static final String NOTES_SECTION = "# Notes";
-	private static final String REF_SECTION = "# Reference";
+	private static final String NOTES_SECTION = "# NOTES";
+	private static final String REF_SECTION = "# REFERENCE";
+	private static final String HISTORY_SECTION = "# HISTORY";
+	protected static final String NONE = "- None -";
 
 	private static List<String> notes;
+	private static List<String> history;
 
-	public static void write(String family_name, File family_dir, String comment) {
+	public static void write(String family_name, File family_dir, String comment, String date) {
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
-			contents.add("#Log " + comment + " on " + LogUtil.dateNow());
+			contents.add(HISTORY_SECTION);
+			logHistory(contents, comment, date);
 			LogAction.report(contents);
 			contents.add(Logger.WARNING_SECTION);
 			LogAlert.report(contents);
@@ -45,16 +49,6 @@ public class Logger {
 			}
 		}
 	}
-	
-	public static List<String> getLog() {
-		List<String> contents = new ArrayList<>();
-		LogAction.report(contents);
-		contents.add(Logger.WARNING_SECTION);
-		LogAlert.report(contents);
-		contents.add(NOTES_SECTION);
-		logNotes(contents);
-		return contents;
-	}
 
 	public static void importPrior(String family_name, File family_dir) {
 		if (notes == null) {
@@ -62,44 +56,70 @@ public class Logger {
 		} else {
 			notes.clear();
 		}
+		if (history == null) {
+			history = new ArrayList<>();
+		} else {
+			history.clear();
+		}
 		if (FileUtil.validPath(family_dir)) {
 			File log_file = new File(family_dir, family_name + Constant.OLDLOG_SUFFIX);
 			if (!FileUtil.validFile(log_file)) {
 				log_file = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			}
 			if (FileUtil.validFile(log_file)) {
-                List<String> log_content = FileUtil.readFile(log_file);
-                if (log_content != null) {
-                    clearBoilerPlate(log_content);
-                    clearEditLog(log_content);
-                    for (int i = 0; i < log_content.size(); i++) {
-                        String line = log_content.get(i).trim();
-                        notes.add(line);
-                    }
-                } else {
-                    logger.error("Couldn't read" + log_file);
-                }
-            } else {
-                logger.warn("No log file yet exists for " + log_file);
-            }
+				List<String> log_content = FileUtil.readFile(log_file);
+				if (log_content != null) {
+					clearBoilerPlate(log_content);
+					captureHistory(log_content);
+					clearLogHeaders(log_content);
+					for (int i = 0; i < log_content.size(); i++) {
+						String line = log_content.get(i).trim();
+						if (line.length() > 0) {
+							notes.add(line);							
+						}
+					}
+				} else {
+					logger.error("Couldn't read" + log_file);
+				}
+			} else {
+				logger.warn("No log file yet exists for " + log_file);
+			}
 		} else {
 			logger.warn("Family directory doesn't exist yet for: " + family_dir);
 		}
 	}
-	
+
 	public static void updateNotes(String text) {
 		String [] lines = text.split("\n");
 		notes.clear();
 		for (int i = 0; i < lines.length; i++) {
-			notes.add(lines[i]);
+			if (lines[i].trim().length() > 0) {
+				notes.add(lines[i]);
+			}
 		}
+	}
+
+	public static void setNotes(List<String> text) {
+		notes = text;
 	}
 
 	public static void logNotes(List<String> contents) {
 		if (notes == null) {
 			notes = new ArrayList<>();
 		}
-		contents.addAll(notes);
+		if (!notes.isEmpty()) {
+			contents.addAll(notes);
+		}
+		contents.add("");
+	}
+
+	private static void logHistory(List<String> contents, String comment, String date) {
+		contents.add(date + ": " + comment);
+		if (history != null) {
+			for (int i = history.size() - 1; i >= 0; i--) {
+				contents.add(history.get(i));
+			}
+		}
 		contents.add("");
 	}
 
@@ -122,24 +142,58 @@ public class Logger {
 		}
 	}
 
-	private static void clearEditLog(List<String> log_content) {
+	private static void captureHistory(List<String> log_content) {
+		boolean captured_history = false;
+		boolean capturing = false;
+		for (int i = 0; i < log_content.size() && !captured_history;) {
+			String content_line = log_content.get(i).trim();
+			String line = content_line.toLowerCase();
+			if (line.startsWith(HISTORY_SECTION.toLowerCase())) {
+				capturing = true;
+				i++;
+			} else if (capturing) {
+				if (line.startsWith(NOTES_SECTION.toLowerCase()) ||
+						line.startsWith(MF_SECTION.toLowerCase()) ||
+						line.startsWith(CC_SECTION.toLowerCase()) ||
+						line.startsWith(BP_SECTION.toLowerCase()) ||
+						line.startsWith(PRUNED_SECTION.toLowerCase()) ||
+						line.startsWith(WARNING_SECTION.toLowerCase()) ||
+						line.matches("^\\d{8}:.*$") ||
+						line.startsWith("##")) {
+					captured_history = true;
+				} else {
+					if (content_line.length() > 0) {
+						history.add(content_line);
+					}
+					log_content.remove(i);
+				}
+			} else {
+				i++;
+			}
+		}
+	}
+
+	private static void clearLogHeaders(List<String> log_content) {
 		for (int i = log_content.size() - 1; i >= 0; i--) {
-			String line = log_content.get(i).trim();
-			if (line.contains(NOTES_SECTION) && !line.startsWith(NOTES_SECTION)) {
-				line = line.substring(line.indexOf(NOTES_SECTION));
+			String line = log_content.get(i).trim().toLowerCase();
+			String note_cue = NOTES_SECTION.toLowerCase();
+			if (line.contains(note_cue) && !line.startsWith(note_cue)) {
+				line = line.substring(line.indexOf(note_cue));
 				log_content.set(i, line);
 			}
-			if (line.startsWith(NOTES_SECTION) && line.length() > NOTES_SECTION.length()) {
-				line = line.substring(NOTES_SECTION.length());
+			if (line.startsWith(note_cue) && line.length() > note_cue.length()) {
+				line = line.substring(note_cue.length());
 				log_content.set(i, line);
-			}
-			if (line.startsWith(NOTES_SECTION) ||
-					line.startsWith(DATE_PREFIX) ||
-					line.startsWith(MF_SECTION) ||
-					line.startsWith(CC_SECTION) ||
-					line.startsWith(BP_SECTION) ||
-					line.startsWith(PRUNED_SECTION) ||
-					line.startsWith(WARNING_SECTION) ||
+			}			
+			if (line.startsWith(note_cue) ||
+					line.startsWith(HISTORY_SECTION.toLowerCase()) ||
+					line.matches("^\\d{8}:.*$") ||
+					line.startsWith(NONE.toLowerCase()) ||
+					line.startsWith(MF_SECTION.toLowerCase()) ||
+					line.startsWith(CC_SECTION.toLowerCase()) ||
+					line.startsWith(BP_SECTION.toLowerCase()) ||
+					line.startsWith(PRUNED_SECTION.toLowerCase()) ||
+					line.startsWith(WARNING_SECTION.toLowerCase()) ||
 					line.startsWith("##")) {
 				log_content.remove(i);
 			}
@@ -158,5 +212,6 @@ public class Logger {
 		String prefix = species != null ? (species + '_') : "";
 		return (prefix + node.getDBID());
 	}
+	
 }
 

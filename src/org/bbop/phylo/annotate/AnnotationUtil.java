@@ -102,11 +102,10 @@ public class AnnotationUtil {
 
 	public static boolean loadExperimental(Family family) {
 		TouchupConfig config = TouchupConfig.inst();
-		config.GOlrURL = Constant.DEV_GOLR;
 
 		boolean proceed = loadExperimental(family, config.GOlrURL, true);
 		if (!proceed) {
-			config.GOlrURL = config.GOlrURL.equals(Constant.DEV_GOLR) ? Constant.PUB_GOLR : Constant.DEV_GOLR;
+			config.GOlrURL = config.GOlrURL.equals(Constant.PUB_GOLR) ? Constant.DEV_GOLR : Constant.PUB_GOLR;
 			proceed = loadExperimental(family, config.GOlrURL, false);
 		}
 		return proceed;
@@ -216,7 +215,7 @@ public class AnnotationUtil {
 
 	private static void askGolr(RetrieveGolrAnnotations retriever, List<String> gene_names, Map<String, Bioentity> id2gene) {
 		try {
-			List<GolrAnnotationDocument> golrDocuments = retriever.getGolrAnnotationsForGenes(gene_names);
+			List<GolrAnnotationDocument> golrDocuments = retriever.getGolrAnnotationsForGenes(gene_names, true);
 			if (golrDocuments.size() > 0) {
 				GafDocument annots = retriever.convert(golrDocuments);
 				Collection<Bioentity> bioentities = annots.getBioentities();
@@ -250,9 +249,10 @@ public class AnnotationUtil {
 	}
 
 	private static void processGolrAnnotations(Bioentity leaf, Bioentity golr_gene, List<GeneAnnotation> golr_annotations) {
-		if (leaf.getSeqId().contains("Q7Z3C6") || leaf.getSeqId().contains("O95996") || leaf.getSeqId().contains("Q9W5D4"))
-			log.debug("Examine the quals");
-		List<GeneAnnotation> exp_annotations = paintAnnotationsFilter(golr_annotations);
+		List<GeneAnnotation> exp_annotations = getExperimentalAnnotations(golr_annotations);
+		for (GeneAnnotation golr_annot : exp_annotations) {
+			golr_annot.setBioentityObject(leaf);
+		}
 		leaf.setAnnotations(exp_annotations);
 		// lets compare and fill in any missing fields
 		if (golr_gene != null) {
@@ -300,7 +300,7 @@ public class AnnotationUtil {
 		}
 	}
 
-	private static List<GeneAnnotation> paintAnnotationsFilter(List<GeneAnnotation> all_annotations) {
+	private static List<GeneAnnotation> getExperimentalAnnotations(List<GeneAnnotation> all_annotations) {
 		List<GeneAnnotation> exp_annotations = new ArrayList<>();
 		if (all_annotations != null) {
 			for (GeneAnnotation annotation : all_annotations) {
@@ -337,12 +337,12 @@ public class AnnotationUtil {
 		return keep;
 	}
 
-	public static List<GeneAnnotation> getExpAssociations(Bioentity leaf) {
-		return paintAnnotationsFilter(leaf.getAnnotations());
+	public static List<GeneAnnotation> getExperimentalAssociations(Bioentity leaf) {
+		return getExperimentalAnnotations(leaf.getAnnotations());
 	}
 
 	public static List<GeneAnnotation> getAspectExpAssociations(Bioentity leaf, String aspect) {
-		List<GeneAnnotation> filtered_associations = getExpAssociations(leaf);
+		List<GeneAnnotation> filtered_associations = getExperimentalAssociations(leaf);
 		for (int i = filtered_associations.size(); i > 0; i--) {
 			GeneAnnotation annotation = filtered_associations.get(i - 1);
 			if (!annotation.getAspect().equals(aspect)) {

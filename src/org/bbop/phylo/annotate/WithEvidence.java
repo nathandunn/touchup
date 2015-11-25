@@ -35,7 +35,7 @@ public class WithEvidence {
 //	private static Logger log = Logger.getLogger(WithEvidence.class);
 
 	private List<String> exp_withs;
-	private List<String> regulator_of;
+	private List<GeneAnnotation> regulator_of;
 	private List<String> notted_withs;
 	private int qualifiers;
 
@@ -50,14 +50,15 @@ public class WithEvidence {
 	public List<String> getExpWiths() {
 		List<String> all_evidence = new ArrayList<>();
 		if (exp_withs.size() > 0 || regulator_of.size() > 0) {
-			all_evidence.addAll(exp_withs);
-			if (exp_withs.size() == 0) {
-				all_evidence.addAll(regulator_of);
+			if (exp_withs.size() > 0) {
+				all_evidence.addAll(exp_withs);
+			} else {
+				for (GeneAnnotation annot : regulator_of) {
+					all_evidence.add(annot.getCls());
+				}
 			}
 		} else if (notted_withs.size() > 0) {
 			all_evidence.addAll(notted_withs);
-		} else {
-			return regulator_of;
 		}
 		return all_evidence;
 	}
@@ -70,21 +71,16 @@ public class WithEvidence {
 		return exp_withs.size() == 0 && notted_withs.size() == 0 && regulator_of.size() == 0;
 	}
 
-	//	public boolean isContradictory() {
-	//		return exp_withs.size() > 0 && notted_withs.size() > 0;
-	//	}
-	//
-
 	public List <String> getNottedWiths () {
 		return notted_withs;
 	}
 	
-	public boolean regulates() {
-		return exp_withs.size() == 0 && regulator_of.size() > 0;
-	}
-
-	public List<String> getRegulatorOfs() {
-		return regulator_of;
+	public List<GeneAnnotation> regulates() {
+		if (exp_withs.size() == 0) {
+			return regulator_of;
+		} else {
+			return new ArrayList<>();
+		}
 	}
 
 	private void initWiths(Tree tree, Bioentity node, String go_id) {
@@ -98,7 +94,7 @@ public class WithEvidence {
 
 		qualifiers = 0;
 		for (Bioentity leaf : leaf_list) {
-			List<GeneAnnotation> exp_annotations = AnnotationUtil.getExpAssociations(leaf);
+			List<GeneAnnotation> exp_annotations = AnnotationUtil.getExperimentalAssociations(leaf);
 			if (exp_annotations != null && !exp_annotations.isEmpty()) {
 				for (Iterator<GeneAnnotation> it_assoc = exp_annotations.iterator(); it_assoc.hasNext() && !exp_withs.contains(leaf.getId());) {
 					GeneAnnotation exp_assoc = it_assoc.next();
@@ -141,11 +137,11 @@ public class WithEvidence {
 					} else {
 						if (OWLutil.inst().moreSpecific(exp_term, go_id, true)) {
 							boolean add_it = true;
-							for (String reg_term : regulator_of) {
-								add_it &= !reg_term.equals(exp_term);
+							for (GeneAnnotation annot : regulator_of) {
+								add_it &= !annot.getCls().equals(exp_term);
 							}
 							if (add_it) {
-								regulator_of.add(exp_term);
+								regulator_of.add(exp_assoc);
 							}
 						}
 					}

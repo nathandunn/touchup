@@ -25,7 +25,11 @@ public class Constant {
 	public static final String GAF_SUFFIX = ".gaf";
 	public static final String LOG_SUFFIX = ".log";
 	public static final String OLDLOG_SUFFIX = ".txt";
-	
+	public static final String EXP_SUFFIX = ".exp";
+	public static final String CHALLENGE_SUFFIX = ".challenge_gaf";
+	public static final String NEGATE_SUFFIX = ".negate_gaf";
+
+
 	private final static String NOT_KEY_RESIDUES = "NOT due to change in key residue(s)";
 	public final static String KEY_RESIDUES_EC = "IKR";
 	private final static String NOT_DIVERGENT = "NOT due to rapid divergence";
@@ -132,8 +136,8 @@ public class Constant {
 
 	public static final String PROTEIN = "protein";
 	
-//	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
-	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
+	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
+//	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
 	public static final String PUB_GOLR = "http://golr.geneontology.org/solr";
 	
 }

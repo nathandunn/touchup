@@ -5,15 +5,12 @@ import java.io.StringWriter;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.bbop.golr.java.RetrieveGolrAnnotations;
 import org.yaml.snakeyaml.Yaml;
 
 public class TouchupConfig {
 
 	public String gafdir;
 	public String treedir;
-
-//	RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations("http://golr.geneontology.org/solr", 3, true) {
 	public String GOlrURL;
 
 	private static Logger LOG = Logger.getLogger(TouchupYaml.class);

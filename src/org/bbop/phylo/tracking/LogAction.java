@@ -151,9 +151,9 @@ public class LogAction {
 			reportCC(contents, Constant.CC);
 			contents.add(Logger.BP_SECTION);
 			reportBP(contents, Constant.BP);
-			pruned = reportPruned(contents);
 			if (pruned > 0) {
 				contents.add(contents.size() - pruned, Logger.PRUNED_SECTION);
+				pruned = reportPruned(contents);
 			}
 
 		}

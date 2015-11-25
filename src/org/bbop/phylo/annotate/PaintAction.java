@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAction;
@@ -125,6 +126,7 @@ public class PaintAction {
 		GeneAnnotation assoc = _propagateAssociation(node,
 				go_id,
 				go_qualifiers,
+				family,
 				family.getReference(),
 				date,
 				negate,
@@ -148,17 +150,17 @@ public class PaintAction {
 			// The GO term is not valid for all the leaves, perhaps it's all of them
 			boolean not_found_in_taxon = !TaxonChecker.checkTaxons(family.getTree(), node, go_id, true);
 			if (not_found_in_taxon) {
+				log.debug("Negating annot to " + go_id + " in " + node.getSpeciesLabel());
 				setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, true);
 			} else {
 				List<Bioentity> children = node.getChildren();
 				for (Bioentity child : children) {
-					List<GeneAnnotation> child_assocs = child.getAnnotations();
+					List<GeneAnnotation> child_assocs = new ArrayList<>();
+					child_assocs.addAll(child.getAnnotations());
 					for (GeneAnnotation child_assoc : child_assocs) {
 						String child_go_id = child_assoc.getCls();
 						if (child_go_id.equals(go_id)) {
-							if (child_assoc.isNegated()) {
-								log.debug("WTF");
-							} else {
+							if (!child_assoc.isNegated()) {
 								filterOutLosses(family, child, child_assoc);
 							}
 						}
@@ -171,10 +173,11 @@ public class PaintAction {
 	private GeneAnnotation _propagateAssociation(Bioentity node,
 			String go_id,
 			int qualifiers,
+			Family family,
 			String reference,
 			String date,
 			boolean negate,
-			boolean curator_inference,
+			List<GeneAnnotation> curator_inference,
 			List<String> top_with,
 			List<String> exp_withs) {
 		GeneAnnotation top_assoc = null;
@@ -185,12 +188,12 @@ public class PaintAction {
 		if (!exp_withs.contains(node.getId()) && AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
 			if (top_with.contains(node.getId())) {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, curator_inference, exp_withs);
+				assoc = createAnnotation(node, go_id, qualifiers, family, reference, date, true, negate, curator_inference, exp_withs);
 				// not dirty if this is restoring annotations from a saved file
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, curator_inference, top_with);
+				assoc = createAnnotation(node, go_id, qualifiers, family, reference, date, false, negate, curator_inference, top_with);
 			}
 
 			/*
@@ -213,6 +216,7 @@ public class PaintAction {
 						_propagateAssociation(child,
 								go_id,
 								qualifiers,
+								family,
 								reference,
 								date,
 								negate,
@@ -229,11 +233,12 @@ public class PaintAction {
 	private GeneAnnotation createAnnotation(Bioentity node,
 			String go_id,
 			int qualifiers,
+			Family family,
 			String reference,
 			String date,
 			boolean is_MRC,
 			boolean is_directNot,
-			boolean curator_inference,
+			List<GeneAnnotation> curator_inference,
 			List<String> withs) {
 		GeneAnnotation assoc = new GeneAnnotation();
 		assoc.setBioentity(node.getId());
@@ -251,11 +256,9 @@ public class PaintAction {
 		assoc.setDirectMRC(is_MRC);
 		assoc.setDirectNot(is_directNot);
 		String evidence_code;
-		if (!curator_inference) {
-			evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
-		} else {
-			evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE + "," +Constant.CURATOR_EVIDENCE_CODE : 
-				Constant.ANCESTRAL_EVIDENCE_CODE;
+		evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
+		if (curator_inference.size() > 0) {
+			GafRecorder.challengedRegulator(curator_inference, family);
 		}
 		assoc.setEvidence(evidence_code, null);
 		assoc.setWithInfos(withs);
@@ -293,6 +296,7 @@ public class PaintAction {
 					_propagateAssociation(child,
 							association.getCls(),
 							association.getQualifiers(),
+							family,
 							association.getReferenceIds().get(0),
 							association.getLastUpdateDate(),
 							negate,
@@ -419,6 +423,7 @@ public class PaintAction {
 					_restoreAssociation(top,
 							term,
 							qualifiers,
+							family,
 							family.getReference(),
 							archived_annot.getLastUpdateDate(),
 							negate,
@@ -455,6 +460,7 @@ public class PaintAction {
 			_restoreAssociation(node,
 					term,
 					qualifiers,
+					family,
 					family.getReference(),
 					ancestral_assoc.getLastUpdateDate(),
 					negate,
@@ -479,10 +485,11 @@ public class PaintAction {
 	private GeneAnnotation _restoreAssociation(Bioentity node,
 			String go_id,
 			int qualifiers,
+			Family family,
 			String reference,
 			String date,
 			boolean negate,
-			boolean curator_inference,
+			List<GeneAnnotation> curator_inference,
 			List<String> top_with,
 			List<String> exp_withs) {
 		GeneAnnotation top_assoc = null;
@@ -493,12 +500,12 @@ public class PaintAction {
 		if (!exp_withs.contains(node.getId()) && AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
 			if (top_with.contains(node.getId())) {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, true, negate, curator_inference, exp_withs);
+				assoc = createAnnotation(node, go_id, qualifiers, family, reference, date, true, negate, curator_inference, exp_withs);
 				// not dirty if this is restoring annotations from a saved file
 				//			DirtyIndicator.inst().dirtyGenes(date == null);
 				top_assoc = assoc;
 			} else {
-				assoc = createAnnotation(node, go_id, qualifiers, reference, date, false, negate, curator_inference, top_with);
+				assoc = createAnnotation(node, go_id, qualifiers, family, reference, date, false, negate, curator_inference, top_with);
 			}
 
 			/*
@@ -521,6 +528,7 @@ public class PaintAction {
 						_restoreAssociation(child,
 								go_id,
 								qualifiers,
+								family,
 								reference,
 								date,
 								negate,

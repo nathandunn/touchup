@@ -11,6 +11,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.WithEvidence;
+import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
@@ -30,9 +31,17 @@ public class GafRecorder {
 
 	private static final Logger log = Logger.getLogger(GafRecorder.class);
 
+	private static GafDocument challenged_annots;
+	private static GafDocument overriden_annots;
+
 	private GafRecorder() {
 	}
 
+	public static void clearChallenges() {
+		challenged_annots = null;
+		overriden_annots = null;
+	}
+	
 	public static void record(Family family, File family_dir, String comment) {
 		String family_name = family.getFamily_name();
 		boolean ok = FileUtil.validPath(family_dir);
@@ -40,13 +49,7 @@ public class GafRecorder {
 			File gaf_file = new File(family_dir, family_name + Constant.GAF_SUFFIX);
 			Tree tree = family.getTree();
 			GafDocument gaf_doc = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
-			List<String> comments = family.getGafComments();
-			if (comments != null) {
-				for (String comment_line : comments) {
-					gaf_doc.addComment(comment_line);
-				}
-			}
-			gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
+			addComments(family, comment, gaf_doc);
 			Map<Bioentity, String> originalIDs = new HashMap<>();
 			addAnnotations(family, tree, tree.getRoot(), gaf_doc, originalIDs);
 			GafWriter gaf_writer = new GafWriter();
@@ -66,10 +69,46 @@ public class GafRecorder {
 					}
 				}
 			}
-			log.info("Wrote updated GAF to " + gaf_file);
+			log.info("Wrote updated paint GAF to " + gaf_file);
+			
+			if (challenged_annots != null && !challenged_annots.getGeneAnnotations().isEmpty()) {
+				File challenge_file = new File(family_dir, family_name + Constant.CHALLENGE_SUFFIX);
+				GafWriter challenge_writer = new GafWriter();
+				gaf_writer.setStream(challenge_file);
+				gaf_writer.write(challenged_annots);
+				IOUtils.closeQuietly(challenge_writer);
+
+			}
+			if (overriden_annots != null && !overriden_annots.getGeneAnnotations().isEmpty()) {
+				File challenge_file = new File(family_dir, family_name + Constant.NEGATE_SUFFIX);
+				GafWriter challenge_writer = new GafWriter();
+				gaf_writer.setStream(challenge_file);
+				gaf_writer.write(overriden_annots);
+				IOUtils.closeQuietly(challenge_writer);
+
+			}
 		} else {
-			log.error("Unable to save GAF file for " + family_name + " in " + family_dir);
+			log.error("Unable to save paint GAF for " + family_name + " in " + family_dir);
 		}
+	}
+
+	public static void experimental(Family family, File family_dir, String comment) {
+		String family_name = family.getFamily_name();
+		boolean ok = FileUtil.validPath(family_dir);
+		if (ok) {
+			File gaf_file = new File(family_dir, family_name + Constant.EXP_SUFFIX);
+			Tree tree = family.getTree();
+			GafDocument gaf_doc = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
+			addComments(family, comment, gaf_doc);
+			addExpAnnotations(family, tree.getLeaves(), gaf_doc);
+			GafWriter gaf_writer = new GafWriter();
+			gaf_writer.setStream(gaf_file);
+			gaf_writer.write(gaf_doc);
+			IOUtils.closeQuietly(gaf_writer);
+			log.info("Wrote experimental evidence GAF to " + gaf_file);
+		} else {
+			log.error("Unable to save experimental evidence GAF for " + family_name + " in " + family_dir);
+		}		
 	}
 
 	private static void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
@@ -102,8 +141,8 @@ public class GafRecorder {
 						if (annotation.getWithInfos().size() == 0) {
 							log.error("No with information for\n\t" + annotation);
 						} // else {
-							gaf_doc.addGeneAnnotation(annotation);
-					//	}
+						gaf_doc.addGeneAnnotation(annotation);
+						//	}
 					}
 				}
 			}
@@ -163,4 +202,69 @@ public class GafRecorder {
 		stump.setLastUpdateDate(date);
 		return stump;
 	}
+
+	private static void addComments(Family family, String comment, GafDocument gaf_doc) {
+		List<String> comments = family.getGafComments();
+		if (comments != null) {
+			for (String comment_line : comments) {
+				gaf_doc.addComment(comment_line);
+			}
+		}
+		gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
+	}
+
+	private static void addExpAnnotations(Family family, List<Bioentity> nodes, GafDocument gaf_doc) {
+		for (Bioentity node : nodes) {
+			List<GeneAnnotation> annotations = AnnotationUtil.getExperimentalAssociations(node);
+			if (annotations != null && !annotations.isEmpty()) {
+				for (GeneAnnotation annotation : annotations) {
+					/**
+					 * Only save those associations made within the context of PAINT
+					 */
+					gaf_doc.addGeneAnnotation(annotation);
+				}
+			}
+		}
+	}
+
+	public static void challengedRegulator(List<GeneAnnotation> regulates, Family family) {
+		if (challenged_annots == null) {
+			File family_dir = new File(TouchupConfig.inst().gafdir);
+			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.CHALLENGE_SUFFIX);
+			challenged_annots = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
+			String username = System.getProperty("user.name");
+			String comment = "Regulation annotation(s) challenged by: " + username;			
+			addComments(family, comment, challenged_annots);
+		}
+		for (GeneAnnotation reg_annot : regulates) {
+			boolean add_it = true;
+			for (GeneAnnotation logged_annot : challenged_annots.getGeneAnnotations()) {
+				add_it &= logged_annot != reg_annot;
+			}
+			if (add_it) {
+				challenged_annots.addGeneAnnotation(reg_annot);
+			}
+		}
+	}
+	
+	public static void challengedPositive(List<GeneAnnotation> regulates, Family family) {
+		if (overriden_annots == null) {
+			File family_dir = new File(TouchupConfig.inst().gafdir);
+			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.NEGATE_SUFFIX);
+			overriden_annots = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
+			String username = System.getProperty("user.name");
+			String comment = "Positive annotation(s) challenged by: " + username;			
+			addComments(family, comment, overriden_annots);
+		}
+		for (GeneAnnotation reg_annot : regulates) {
+			boolean add_it = true;
+			for (GeneAnnotation logged_annot : overriden_annots.getGeneAnnotations()) {
+				add_it &= logged_annot != reg_annot;
+			}
+			if (add_it) {
+				overriden_annots.addGeneAnnotation(reg_annot);
+			}
+		}
+	}
+	
 }

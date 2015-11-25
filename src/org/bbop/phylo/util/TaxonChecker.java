@@ -82,9 +82,8 @@ public class TaxonChecker {
 		}
 		if (!descendents_okay) {
 			if (!server_is_down) {
-				log.info("Invalid taxon for term: " + go_id + " of node " + node);
 				formatErrorMessage(go_id, taxa_reply);
-				log.info(error_message);
+//				log.info(error_message);
 			} else {
 				log.info("Taxon server is down");
 			}

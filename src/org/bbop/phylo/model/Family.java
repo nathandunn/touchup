@@ -24,9 +24,14 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.bbop.phylo.gaf.GafRecorder;
+import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.panther.PantherAdapter;
+import org.bbop.phylo.tracking.LogAction;
+import org.bbop.phylo.tracking.LogAlert;
+import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
 import org.bbop.phylo.util.Constant;
+import org.bbop.phylo.util.OWLutil;
 
 public class Family implements Serializable {
 
@@ -51,6 +56,7 @@ public class Family implements Serializable {
 
 	public Family(String family_name) {
 		setFamily_name(family_name);
+		clear();
 	}
 
 	public boolean fetch(Tree seed, PantherAdapter adapter) {
@@ -106,7 +112,8 @@ public class Family implements Serializable {
 	public boolean save(File family_dir, String comment) {
 		boolean saved = adapter.saveFamily(this, family_dir);
 		GafRecorder.record(this, family_dir, comment);
-		Logger.write(family_name, family_dir, comment);
+		GafRecorder.experimental(this, family_dir, comment);
+		Logger.write(family_name, family_dir, comment, LogUtil.dateNow());
 		return saved;
 	}
 
@@ -140,6 +147,15 @@ public class Family implements Serializable {
 	
 	public String getDescription() {
 		return description;
-	}	
+	}
+	
+	private void clear() {
+		IDmap.inst().clearGeneIDs();
+		LogAction.clearLog();
+		LogAlert.clearLog();
+		OWLutil.inst().clearTerms();
+		GafRecorder.clearChallenges();
+		System.gc();
+	}
 }
 

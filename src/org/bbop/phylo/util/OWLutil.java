@@ -335,7 +335,7 @@ public class OWLutil {
 	}
 
 	public  boolean descendantsAllBroader(Bioentity node, String go_id, boolean all_broader) {
-		List<GeneAnnotation> associations = AnnotationUtil.getExpAssociations(node);
+		List<GeneAnnotation> associations = AnnotationUtil.getExperimentalAssociations(node);
 		OWLClass annot_term = getTerm(go_id);
 		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(annot_term, Collections.<OWLObjectProperty>emptySet());
 		if (associations != null) {

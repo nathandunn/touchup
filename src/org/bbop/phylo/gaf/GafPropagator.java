@@ -298,7 +298,8 @@ public class GafPropagator {
 								if (all_evidence.size() == 1) {
 									String eco = notted_gaf_annot.getShortEvidence();
 									if (!eco.equals(Constant.KEY_RESIDUES_EC) &&
-											!eco.equals(Constant.DIVERGENT_EC)) {
+											!eco.equals(Constant.DIVERGENT_EC) &&
+											!eco.equals(Constant.LOSS_OF_FUNCTION)) {
 										log.error("Bad ECO in " + notted_gaf_annot);
 										eco = Constant.DIVERGENT_EC;
 									}

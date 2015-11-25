@@ -72,7 +72,9 @@ public class LogAlert {
 	}
 
 	public static void report(List<String> contents) {
-		if (!invalids.isEmpty() || !missing.isEmpty() || !obsoletes.isEmpty()) {
+		if ((invalids != null && !invalids.isEmpty()) 
+				|| (missing != null && !missing.isEmpty()) 
+				|| (obsoletes != null && !obsoletes.isEmpty())) {
 			if (!invalids.isEmpty()) {
 				contents.add("## Annotations that have been removed.");
 				for (LogEntry entry : invalids) {
@@ -110,6 +112,8 @@ public class LogAlert {
 							" (" + annotation.getCls() + ") ");
 				}
 			}
+		} else {
+			contents.add(Logger.NONE);
 		}
 		contents.add("");
 	}

@@ -35,6 +35,7 @@ import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.gaf.GafPropagator;
+import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
@@ -174,7 +175,6 @@ public class Touchup {
 		int tree_count = 0;
 		for (String family_name : families) {
 			log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
-			clear();
 			boolean available = gafFileExists(family_name);
 			if (!available) {
 				log.info("Missing GAF file for " + family_name);
@@ -228,14 +228,6 @@ public class Touchup {
 		return run_summary.size();
 	}
 
-	private void clear() {
-		IDmap.inst().clearGeneIDs();
-		LogAction.clearLog();
-		LogAlert.clearLog();
-		OWLutil.inst().clearTerms();
-		System.gc();
-	}
-	
 	private void logSummary(Map<String, List<String>> summaries, int total_fams, int family_count, int tree_count, int gaf_count, int review_count) {
 		String program_name = ResourceLoader.inst().loadVersion();
 		File log_dir = new File(TouchupConfig.inst().gafdir);
