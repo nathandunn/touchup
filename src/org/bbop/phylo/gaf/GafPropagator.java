@@ -35,6 +35,7 @@ import org.bbop.phylo.annotate.PaintAction;
 import org.bbop.phylo.annotate.WithEvidence;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.panther.IDmap;
+import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.util.Constant;
@@ -44,6 +45,8 @@ import org.bbop.phylo.util.OWLutil;
 import owltools.gaf.Bioentity;
 import owltools.gaf.GafDocument;
 import owltools.gaf.GeneAnnotation;
+import owltools.gaf.parser.CommentListener;
+import owltools.gaf.parser.GAFParser;
 import owltools.gaf.parser.GafObjectsBuilder;
 
 public class GafPropagator {
@@ -135,7 +138,7 @@ public class GafPropagator {
 			applyNots(family, negate_list);
 		}
 		if (!clade_checklist.isEmpty()) {
-	 		cladeCheck(family, clade_checklist);
+			cladeCheck(family, clade_checklist);
 		}
 	}
 
@@ -303,7 +306,7 @@ public class GafPropagator {
 										log.error("Bad ECO in " + notted_gaf_annot);
 										eco = Constant.DIVERGENT_EC;
 									}
-									PaintAction.inst().setNot(family, node, assoc, eco, true);
+									PaintAction.inst().setNot(family, node, assoc, eco, true, null);
 								} else {
 									log.info("Didn't set NOT for " + notted_gaf_annot);
 								}
@@ -314,7 +317,7 @@ public class GafPropagator {
 			}
 		}
 	}
-	
+
 	private static void cladeCheck(Family family, List<GeneAnnotation> clade_checklist) {
 		for (GeneAnnotation assoc : clade_checklist) {
 			Bioentity node = assoc.getBioentityObject();
@@ -323,4 +326,82 @@ public class GafPropagator {
 			}
 		}
 	}
+
+	public static boolean importChallenges(Family family, File family_dir) {
+		boolean ok = FileUtil.validPath(family_dir);
+		boolean challenges_found = false;
+		if (ok) {
+			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.CHALLENGED_SUFFIX);
+			if (gaf_file.exists() && gaf_file.canRead()) {
+				GafObjectsBuilder builder = new GafObjectsBuilder();
+				GAFParser parser = builder.getParser();
+				final List<String> rationales = new ArrayList<>();
+				try {
+					log.info("building disputed GAF document");
+					String full_name = gaf_file.getAbsolutePath();
+
+					parser.addCommentListener(new CommentListener() {
+
+						@Override
+						public void readingComment(String comment, String line, int lineNumber) {
+							if (comment.contains("Disputed")) {
+								rationales.add(comment);
+							}
+						}
+					});
+
+					GafDocument gafdoc = builder.buildDocument(full_name);
+					//					family.setGafComments(gafdoc.getComments());
+					challenges_found = eliminate(gafdoc, family, rationales);
+				} catch (IOException | URISyntaxException e) {
+					ok = false;
+				}
+			}
+		} else {
+			log.error("GAF directory is invalid: " + family_dir);
+		}
+		return challenges_found;
+	}
+
+	private static boolean eliminate(GafDocument gafdoc, Family family, List<String> rationales) throws IOException {
+		List<GeneAnnotation> challenged_annotations = gafdoc.getGeneAnnotations();
+
+		int index = 0;
+		IDmap mapper = IDmap.inst();
+		for (GeneAnnotation positive_annot : challenged_annotations) {
+			List<GeneAnnotation> positive = new ArrayList<>();
+			/*
+			 * Next step is to find the corresponding annotation that was previously loaded 
+			 * (not just this malloc, but the active one in use)
+			 */
+			List<Bioentity> seqs;
+			Bioentity gaf_node = positive_annot.getBioentityObject();
+			seqs = mapper.getGeneByDbId(gaf_node.getId());
+			if (seqs == null) {
+				seqs = mapper.getGenesBySeqId(gaf_node.getSeqDb(), gaf_node.getSeqId());
+				if (seqs == null || seqs.size() == 0) {
+					seqs = mapper.getGenesBySeqId("UniProtKB", gaf_node.getLocalId());
+				}
+			} 
+			for (Bioentity node : seqs) {
+				List<GeneAnnotation> node_annots = node.getAnnotations();
+				boolean found = false;
+				for (int i = 0; i < node_annots.size() && !found; i++) {
+					GeneAnnotation node_annot = node_annots.get(i);
+					if (node_annot.getCls().equals(positive_annot.getCls()) &&
+							node_annot.getShortEvidence().equals(positive_annot.getShortEvidence()) &&
+									node_annot.getReferenceIds().get(0).equals(positive_annot.getReferenceIds().get(0))) {
+						// sure as hell hope this is it
+						found = true;
+						positive.add(node_annot);
+						String full_rationale = rationales.get(index);
+						List<GeneAnnotation> removed = 	PaintAction.inst().challengeExpAnnotation(family, positive, full_rationale, false);
+						LogAction.inst().logChallenge(node_annot, removed, full_rationale);
+					}
+				}
+			}
+		}
+		return !challenged_annotations.isEmpty();
+	}
+
 }

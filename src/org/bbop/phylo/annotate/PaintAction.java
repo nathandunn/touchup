@@ -135,8 +135,8 @@ public class PaintAction {
 				exp_withs);
 
 		removeMoreGeneralTerms(node, go_id);
-		
-		LogAction.logAssociation(node, assoc);
+
+		LogAction.inst().logAssociation(node, assoc);
 
 		return assoc;
 	}
@@ -145,13 +145,13 @@ public class PaintAction {
 		String go_id = assoc.getCls();
 		// Check that this GO term is valid for all descendants (false param indicates: not a check on ancestral IBD node)
 		boolean valid_for_all_descendents = TaxonChecker.checkTaxons(family.getTree(), node, go_id, false);
-		
+
 		if (!valid_for_all_descendents) {
 			// The GO term is not valid for all the leaves, perhaps it's all of them
 			boolean not_found_in_taxon = !TaxonChecker.checkTaxons(family.getTree(), node, go_id, true);
 			if (not_found_in_taxon) {
 				log.debug("Negating annot to " + go_id + " in " + node.getSpeciesLabel());
-				setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, true);
+				setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, true, null);
 			} else {
 				List<Bioentity> children = node.getChildren();
 				for (Bioentity child : children) {
@@ -258,7 +258,7 @@ public class PaintAction {
 		String evidence_code;
 		evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
 		if (curator_inference.size() > 0) {
-			GafRecorder.challengedRegulator(curator_inference, family);
+			GafRecorder.inst().recordQuestionedAnnotationInGAF(curator_inference, family);
 		}
 		assoc.setEvidence(evidence_code, null);
 		assoc.setWithInfos(withs);
@@ -307,6 +307,15 @@ public class PaintAction {
 			}
 		}
 		removeMoreGeneralTerms(node, association.getCls());
+	}
+
+	public void restoreExpAssociation(Family family, GeneAnnotation assoc) {
+		Bioentity node = assoc.getBioentityObject();
+		if (node.isLeaf()) {
+			node.addAnnotation(assoc);
+		} else {
+			propagateAssociation(family, assoc);
+		}
 	}
 
 	private void removeMoreGeneralTerms(Bioentity node, String go_id) {
@@ -364,7 +373,7 @@ public class PaintAction {
 			}
 		}
 		if (log_it)
-			LogAction.logPruning(node, date, purged_basket);
+			LogAction.inst().logPruning(node, date, purged_basket);
 	}
 
 	private void harvestPrunedBranch(Bioentity node, List<GeneAnnotation> purged_basket) {
@@ -410,7 +419,7 @@ public class PaintAction {
 						}
 					}
 					if (negate_assoc != null) {
-						setNot(family, archived_annot.getBioentityObject(), negate_assoc, archived_annot.getShortEvidence(), false);
+						setNot(family, archived_annot.getBioentityObject(), negate_assoc, archived_annot.getShortEvidence(), false, null);
 					}
 				} else {
 					Bioentity top = archived_annot.getBioentityObject();
@@ -582,15 +591,6 @@ public class PaintAction {
 		}
 	}
 
-	/**
-	 * This is called when the remove term button is clicked
-	 */
-	public void undoAssociation(Family family, Bioentity node, String term) {
-		//		_removeAssociation(node, term);
-		//		restoreInheritedAssociations(family, node);
-		//		LogAction.logDisassociation(node, term);
-	}
-
 	public void undoAssociation(Family family, GeneAnnotation annot) {
 		_removeAssociation(annot.getBioentityObject(), annot.getCls());
 		restoreInheritedAssociations(family, annot.getBioentityObject(), annot.getAspect(), null);
@@ -602,8 +602,13 @@ public class PaintAction {
 		List<GeneAnnotation> current = node.getAnnotations();
 		for (int i = 0; i < current.size() && removed == null; i++) {
 			GeneAnnotation a = current.get(i);
-			if ((a.getCls().equals(go_id) && AnnotationUtil.isPAINTAnnotation(a))) {
-				removed = a;
+			if (a.getCls().equals(go_id)) {
+				if (AnnotationUtil.isPAINTAnnotation(a)) {
+					removed = a;
+				}
+				else if (node.isLeaf()) {
+					GafRecorder.inst().unquestioned(a);
+				}
 			}
 		}
 		current.remove(removed);
@@ -614,10 +619,11 @@ public class PaintAction {
 				_removeAssociation(child, go_id);
 			}
 		}
+
 		return removed;
 	}
 
-	public void setNot(Family family, Bioentity node, GeneAnnotation assoc, String evi_code, boolean log_op) {
+	public void setNot(Family family, Bioentity node, GeneAnnotation assoc, String evi_code, boolean log_op, List<GeneAnnotation> removed) {
 		if (!assoc.isNegated()) {
 			assoc.setIsNegated(true);
 			assoc.setDirectNot(true);
@@ -655,7 +661,7 @@ public class PaintAction {
 			restoreInheritedAssociations(family, assoc.getBioentityObject(), assoc.getAspect(), assoc.getCls());
 
 			if (log_op)
-				LogAction.logNot(assoc);
+				LogAction.inst().logNot(assoc, removed);
 		}
 	}
 
@@ -714,6 +720,82 @@ public class PaintAction {
 			}
 			propagateNegationDown(child, assoc, is_not);
 		}
+	}
+
+	public boolean contradictoryNegation(Family family, GeneAnnotation assoc, List<GeneAnnotation> extant_assocs) {
+		List<GeneAnnotation> dependent_ancestral_annots = new ArrayList<>();
+		if (!extant_assocs.isEmpty()) {
+			if (assoc.getWithInfos().size() == 1) {
+				/*
+				 * Find the ancestral annotation that this was inherited from
+				 */
+				String ancestral_node_id = assoc.getWithInfos().iterator().next();
+				List<LogEntry> done_log = LogAction.inst().getDoneLog();
+				for (LogEntry entry : done_log) {
+					if (entry.getAction().equals(LOG_ENTRY_TYPE.ASSOC)) {
+						GeneAnnotation logged_annot = entry.getLoggedAssociation();
+						if (logged_annot.getBioentityObject().getId().equals(ancestral_node_id) &&
+								logged_annot.getCls().equals(assoc.getCls())) {
+							/* 
+							 * Now see if the experimental evidence this ancestral annotation
+							 * is based upon is found among the evidence that is being challenged.
+							 */
+							List<String> exp_withs = new ArrayList<>();
+							exp_withs.addAll(logged_annot.getWithInfos());
+							for (int i = exp_withs.size() - 1; i >= 0; i--) {
+								String exp_id = exp_withs.get(i);
+								for (GeneAnnotation leaf_annot : extant_assocs) {
+									if (exp_id.equals(leaf_annot.getBioentityObject().getId())) {
+										exp_withs.remove(leaf_annot.getBioentityObject().getId());
+									}
+								}
+							}
+							if (exp_withs.isEmpty()) {
+								dependent_ancestral_annots.add(logged_annot);
+								if (family != null) {
+									LogAction.inst().undo(family, entry);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return !dependent_ancestral_annots.isEmpty();
+	}
+
+	public void undoChallenge(Family family, GeneAnnotation exp_annot, List<GeneAnnotation> removed) {
+		GafRecorder.inst().acceptExperimental(exp_annot);
+		AnnotationUtil.acceptExpAnnotation(exp_annot);
+
+		for (GeneAnnotation restore_annot : removed) {
+			LogAction.inst().redo(family, restore_annot);
+		}
+	}
+
+	public List<GeneAnnotation> challengeExpAnnotation(Family family, List<GeneAnnotation> challenged_assocs, String rationale) {
+		return 	challengeExpAnnotation(family,challenged_assocs, rationale, true);
+	}
+
+	public List<GeneAnnotation> challengeExpAnnotation(Family family, List<GeneAnnotation> challenged_assocs, String rationale, boolean is_new) {
+		List<GeneAnnotation> dependent_annots = new ArrayList<>();
+		GafRecorder.inst().recordChallengeInGAF(challenged_assocs, family, rationale, is_new);
+		for (GeneAnnotation positive_annot : challenged_assocs) {
+			Bioentity leaf = positive_annot.getBioentityObject();
+			/*
+			 * This is the most basic operation of the challenge
+			 * simply removing this leaf node's annotation from 
+			 * its list of experimental evidence 
+			 * Thus, it can no longer be used for making phylogenetic inferences
+			 */
+			AnnotationUtil.removeExpAnnotation(leaf, positive_annot);
+			/*
+			 * May need to remove any annotations that were solely dependent on
+			 * this annotation as evidence
+			 */
+			contradictoryNegation(family, positive_annot, dependent_annots);
+		}
+		return dependent_annots;
 	}
 }
 

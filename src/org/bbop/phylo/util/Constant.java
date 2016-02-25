@@ -26,8 +26,8 @@ public class Constant {
 	public static final String LOG_SUFFIX = ".log";
 	public static final String OLDLOG_SUFFIX = ".txt";
 	public static final String EXP_SUFFIX = ".exp";
-	public static final String CHALLENGE_SUFFIX = ".challenge_gaf";
-	public static final String NEGATE_SUFFIX = ".negate_gaf";
+	public static final String QUESTIONED_SUFFIX = "-questioned.gaf";
+	public static final String CHALLENGED_SUFFIX = "-disputed.gaf";
 
 
 	private final static String NOT_KEY_RESIDUES = "NOT due to change in key residue(s)";

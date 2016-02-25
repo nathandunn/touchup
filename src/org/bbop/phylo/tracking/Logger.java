@@ -9,7 +9,6 @@ import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
 
 import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
 import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
@@ -20,6 +19,7 @@ public class Logger {
 	public static final String CC_SECTION = "# cellular_component";
 	public static final String BP_SECTION = "# biological_process";
 	public static final String PRUNED_SECTION = "# PRUNED";
+	public static final String CHALLENGED_SECTION = "# CHALLENGED";
 	public static final String WARNING_SECTION = "# WARNINGS - THE FOLLOWING HAVE BEEN REMOVED FOR THE REASONS NOTED";
 	private static final String NOTES_SECTION = "# NOTES";
 	private static final String REF_SECTION = "# REFERENCE";
@@ -35,8 +35,10 @@ public class Logger {
 			List<String> contents = new ArrayList<>();
 			contents.add(HISTORY_SECTION);
 			logHistory(contents, comment, date);
-			LogAction.report(contents);
+			LogAction.inst().report(contents);
 			contents.add(Logger.WARNING_SECTION);
+			LogAlert.report(contents);
+			contents.add(Logger.CHALLENGED_SECTION);
 			LogAlert.report(contents);
 			contents.add(NOTES_SECTION);
 			logNotes(contents);
@@ -158,6 +160,7 @@ public class Logger {
 						line.startsWith(BP_SECTION.toLowerCase()) ||
 						line.startsWith(PRUNED_SECTION.toLowerCase()) ||
 						line.startsWith(WARNING_SECTION.toLowerCase()) ||
+						line.startsWith(CHALLENGED_SECTION.toLowerCase()) ||
 						line.matches("^\\d{8}:.*$") ||
 						line.startsWith("##")) {
 					captured_history = true;
@@ -194,6 +197,7 @@ public class Logger {
 					line.startsWith(BP_SECTION.toLowerCase()) ||
 					line.startsWith(PRUNED_SECTION.toLowerCase()) ||
 					line.startsWith(WARNING_SECTION.toLowerCase()) ||
+					line.startsWith(CHALLENGED_SECTION.toLowerCase()) ||
 					line.startsWith("##")) {
 				log_content.remove(i);
 			}

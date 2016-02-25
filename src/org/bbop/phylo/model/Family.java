@@ -111,8 +111,8 @@ public class Family implements Serializable {
 
 	public boolean save(File family_dir, String comment) {
 		boolean saved = adapter.saveFamily(this, family_dir);
-		GafRecorder.record(this, family_dir, comment);
-		GafRecorder.experimental(this, family_dir, comment);
+		GafRecorder.inst().record(this, family_dir, comment);
+		GafRecorder.inst().experimental(this, family_dir, comment);
 		Logger.write(family_name, family_dir, comment, LogUtil.dateNow());
 		return saved;
 	}
@@ -151,10 +151,10 @@ public class Family implements Serializable {
 	
 	private void clear() {
 		IDmap.inst().clearGeneIDs();
-		LogAction.clearLog();
+		LogAction.inst().clearLog();
 		LogAlert.clearLog();
 		OWLutil.inst().clearTerms();
-		GafRecorder.clearChallenges();
+		GafRecorder.inst().clearChallenges();
 		System.gc();
 	}
 }

@@ -112,8 +112,6 @@ public class LogAlert {
 							" (" + annotation.getCls() + ") ");
 				}
 			}
-		} else {
-			contents.add(Logger.NONE);
 		}
 		contents.add("");
 	}

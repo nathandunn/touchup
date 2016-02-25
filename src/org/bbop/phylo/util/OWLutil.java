@@ -303,7 +303,7 @@ public class OWLutil {
 
 	public  List<String> getAncestors(String term) {
 		OWLClass check = getTerm(term);
-		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(check, isaPartOf);
+		Set<OWLClass> broader_terms = ancestor_tool.getAncestorClosure(check, isaPartOfRegulates);
 		List<String> ancestors = new ArrayList<>();
 		List<OWLClass> sortedClasses = new ArrayList<OWLClass>(broader_terms);
 		Collections.sort(sortedClasses, new Comparator<OWLClass>() {

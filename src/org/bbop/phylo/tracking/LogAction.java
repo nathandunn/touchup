@@ -35,10 +35,22 @@ import owltools.gaf.GeneAnnotation;
 
 public class LogAction {
 
-	private static List<LogEntry> done_log;
-	private static List<LogEntry> undone_log;
-
 	private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(LogAction.class);
+
+	private List<LogEntry> done_log;
+	private List<LogEntry> undone_log;
+
+	private static LogAction INSTANCE;
+
+	private LogAction() {
+	}
+
+	public static LogAction inst() {
+		if (INSTANCE == null) {
+			INSTANCE = new LogAction();
+		}
+		return INSTANCE;
+	}
 
 	/*
 	 * Separated into sections by aspect ?
@@ -58,7 +70,7 @@ public class LogAction {
 	 * Challenge mechanism
 	 * 	
 	 */
-	public static void clearLog() {
+	public void clearLog() {
 		if (done_log == null) {
 			done_log = new ArrayList<>();
 		} else {
@@ -71,25 +83,17 @@ public class LogAction {
 		}
 	}
 
-	public static void logAssociation(Bioentity node, GeneAnnotation assoc) {
+	public void logAssociation(Bioentity node, GeneAnnotation assoc) {
 		LogEntry entry = new LogEntry(node, assoc, LOG_ENTRY_TYPE.ASSOC, null);
 		done_log.add(entry);
 	}
 
-//	public static void logDisassociation(Bioentity node, String go_id) {
-//		//		LogEntry remove = LogAction.findEntry(node, go_id, LogEntry.LOG_ENTRY_TYPE.ASSOC);
-//		//		if (remove != null) {
-//		//			done_log.remove(remove);
-//		//			undone_log.add(remove);
-//		//		}
-//	}
-//
-	public static void logNot(GeneAnnotation annotation) {
-		LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation, LOG_ENTRY_TYPE.NOT, null);
+	public void logNot(GeneAnnotation annotation, List<GeneAnnotation> removed) {
+		LogEntry entry = new LogEntry(annotation.getBioentityObject(), annotation, LOG_ENTRY_TYPE.NOT, removed);
 		done_log.add(entry);
 	}
 
-	public static void logPruning(Bioentity node, String date, List<GeneAnnotation> purged) {
+	public void logPruning(Bioentity node, String date, List<GeneAnnotation> purged) {
 		LogEntry branch = findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
 		if (branch != null) {
 			done_log.remove(branch);
@@ -100,7 +104,7 @@ public class LogAction {
 		}
 	}
 
-	public static void logGrafting(Family family, Bioentity node) {
+	public void logGrafting(Family family, Bioentity node) {
 		LogEntry branch = findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
 		if (branch != null) {
 			done_log.remove(branch);
@@ -109,7 +113,7 @@ public class LogAction {
 		}
 	}
 
-	public static LogEntry undo(Family family, GeneAnnotation assoc) {
+	public LogEntry undo(Family family, GeneAnnotation assoc) {
 		LogEntry entry = null;
 		for (int i = 0; i < done_log.size() && entry  == null; i++) {
 			LogEntry check = done_log.get(i);
@@ -120,29 +124,52 @@ public class LogAction {
 		return undo(family, entry);
 	}
 
-	public static LogEntry undo(Family family) {
+	public LogEntry undo(Family family) {
+		LogEntry entry = null;
 		int index = done_log.size() - 1;
-		LogEntry entry = done_log.get(index);
-		return undo(family, entry);
+		if (index >= 0) {
+			entry = undo(family, done_log.get(index));
+		}
+		return entry;
 	}
 
-	private static LogEntry undo (Family family, LogEntry entry) {
+	public LogEntry undo (Family family, LogEntry entry) {
 		done_log.remove(entry);
 		takeAction(family, entry, true);
 		undone_log.add(entry);
 		return entry;
 	}
 
-	public static LogEntry redo(Family family) {
+	public LogEntry redo(Family family, GeneAnnotation assoc) {
+		LogEntry entry = null;
+		for (int i = 0; i < undone_log.size() && entry  == null; i++) {
+			LogEntry check = undone_log.get(i);
+			if (check.getNode().equals(assoc.getBioentityObject()) &&
+					check.getTerm().equals(assoc.getCls()))
+				entry = check;
+		}
+		return redo(family, entry);
+	}
+
+	public LogEntry redo(Family family) {
+		LogEntry entry = null;
 		int index = undone_log.size() - 1;
-		LogEntry entry = undone_log.remove(index);
+		if (index >= 0) {
+			entry = redo(family, undone_log.get(index));
+		}
+		return entry;
+	}
+
+	public LogEntry redo(Family family, LogEntry entry) {
+		undone_log.remove(entry);
 		takeAction(family, entry, false);
 		done_log.add(entry);
 		return entry;
 	}
 
-	public static int report(List<String> contents) {
-		int pruned = 0;
+	public void report(List<String> contents) {
+		int pruned = logCount(LOG_ENTRY_TYPE.PRUNE);
+		int challenged = logCount(LOG_ENTRY_TYPE.CHALLENGE);
 
 		if (done_log != null) {
 			contents.add(Logger.MF_SECTION);
@@ -153,54 +180,81 @@ public class LogAction {
 			reportBP(contents, Constant.BP);
 			if (pruned > 0) {
 				contents.add(contents.size() - pruned, Logger.PRUNED_SECTION);
-				pruned = reportPruned(contents);
+				reportEntries(done_log, contents, LOG_ENTRY_TYPE.PRUNE);
+			}
+			if (challenged > 0) {
+				contents.add(contents.size() - challenged, Logger.CHALLENGED_SECTION);
+				reportEntries(done_log, contents, LOG_ENTRY_TYPE.CHALLENGE);
 			}
 
 		}
-		return pruned;
 	}
 
-	public static void reportMF(List<String> contents, String aspect) {
+	public void reportMF(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " has function ", " has LOST/MODIFIED function ");
 		}
 		contents.add("");
 	}
 
-	public static void reportCC(List<String> contents, String aspect) {
+	public void reportCC(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " is found in ", " is NOT found in ");
 		}
 		contents.add("");
 	}
 
-	public static void reportBP(List<String> contents, String aspect) {
+	public void reportBP(List<String> contents, String aspect) {
 		for (LogEntry entry : done_log) {
 			reportAspect(entry, contents, aspect, " participates in ", " does NOT participate in ");
 		}
 		contents.add("");
 	}
 
-	public static int reportPruned(List<String> contents) {
-		int pruned = 0;
-		for (LogEntry entry : done_log) {
-			if (entry.getAction() == LogEntry.LOG_ENTRY_TYPE.PRUNE) {
-				pruned++;
-				reportPruned(entry, contents);
-			}
-		}
-		if (pruned > 0)
-			contents.add("");
-		return pruned;
-	}
-	
-	private static void reportPruned(LogEntry entry, List<String> contents) {
-		contents.add(entry.getDate() + ": " +
-				Logger.makeLabel(entry.getNode()) +
-				" cut from the tree");		
+	public void reportEntries(List<String> contents, LOG_ENTRY_TYPE entry_type) {
+		reportEntries(done_log, contents, entry_type);
 	}
 
-	private static void reportAspect(LogEntry entry,
+	public void reportEntries(List<LogEntry> log, List<String> contents, LOG_ENTRY_TYPE entry_type) {
+		int entry_count = 0;
+		for (LogEntry entry : log) {
+			if (entry.getAction() == entry_type) {
+				entry_count++;
+				reportEntry(entry, contents);
+			}
+		}
+		if (entry_count > 0)
+			contents.add("");
+	}
+
+	private static void reportEntry(LogEntry entry, List<String> contents) {
+		String comment = "";
+		if (entry.getAction().equals(LOG_ENTRY_TYPE.CHALLENGE)) {
+			GeneAnnotation assoc = entry.getLoggedAssociation();
+			comment = " annotation to " +
+					OWLutil.inst().getTermLabel(assoc.getCls()) +
+					" (" + assoc.getCls() + ") from " + 
+					assoc.getReferenceIds().toString() +
+					" was challenged";
+		} else {
+			comment = " has been pruned from tree";
+		}
+		contents.add(entry.getDate() + ": " +
+				Logger.makeLabel(entry.getNode())
+		+ comment);		
+	}
+
+	private int logCount(LOG_ENTRY_TYPE entry_type) {
+		int count = 0;
+		for (LogEntry entry : done_log) {
+			if (entry.getAction() == entry_type) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private void reportAspect(LogEntry entry,
 			List<String> contents,
 			String aspect,
 			String syntax_candy_4has,
@@ -233,6 +287,14 @@ public class LogAction {
 						" (" + annotation.getCls() + ") ");
 				break;
 			}
+			case CHALLENGE: {
+				contents.add(annotation.getLastUpdateDate() + ": " +
+						Logger.makeLabel(entry.getNode()) + " to " +
+						OWLutil.inst().getTermLabel(annotation.getCls()) +
+						" (" + annotation.getCls() + ") " +
+						" was challenged because " + entry.getRationale());
+				break;
+			}
 			default:
 				logger.info("Not logging " + entry.getNode());
 				break;
@@ -240,7 +302,7 @@ public class LogAction {
 		}
 	}
 
-	private static void takeAction(Family family, LogEntry entry, boolean undo) {
+	private void takeAction(Family family, LogEntry entry, boolean undo) {
 		PaintAction dab = PaintAction.inst();
 		switch (entry.getAction()) {
 		case ASSOC: {
@@ -253,9 +315,24 @@ public class LogAction {
 		}
 		case NOT: {
 			if (undo) {
+				List<GeneAnnotation> restore_list = entry.getRemovedAssociations();
+				if (restore_list != null) {
+					for (GeneAnnotation restore : restore_list) {
+						dab.restoreExpAssociation(family, restore);
+					}
+				}
 				dab.unNot(entry.getLoggedAssociation());
 			} else {
-				dab.setNot(family, entry.getNode(), entry.getLoggedAssociation(), entry.getLoggedAssociation().getShortEvidence(), false);
+				List<GeneAnnotation> restore_list = entry.getRemovedAssociations();
+				if (restore_list != null && !restore_list.isEmpty()) {
+					dab.challengeExpAnnotation(family, restore_list, entry.getRationale());
+				}
+				dab.setNot(family, 
+						entry.getNode(), 
+						entry.getLoggedAssociation(), 
+						entry.getLoggedAssociation().getShortEvidence(), 
+						false, 
+						restore_list);
 			}
 			break;
 		}
@@ -268,12 +345,22 @@ public class LogAction {
 			}
 			break;
 		}
+		case CHALLENGE: {
+			if (undo) {
+				dab.undoChallenge(family, entry.getLoggedAssociation(), entry.getRemovedAssociations());
+			} else {
+				List<GeneAnnotation> challenges = new ArrayList<>();
+				challenges.add(entry.getLoggedAssociation());
+				dab.challengeExpAnnotation(family, challenges, entry.getRationale());
+			}
+			break;
+		}
 		default:
 			break;
 		}
 	}
 
-	public static LogEntry findEntry(Bioentity node, String go_id, LogEntry.LOG_ENTRY_TYPE action) {
+	public LogEntry findEntry(Bioentity node, String go_id, LogEntry.LOG_ENTRY_TYPE action) {
 		LogEntry found = null;
 		for (LogEntry entry : done_log) {
 			if (found == null) {
@@ -285,34 +372,63 @@ public class LogAction {
 		return found;
 	}
 
-	public static String doneString() {
+	public String doneString() {
 		return actionString(done_log);
 	}
 
-	public static String undoneString() {
+	public String undoneString() {
 		return actionString(undone_log);
 	}
 
-	private static String actionString(List<LogEntry> log) {
+	private String actionString(List<LogEntry> log) {
 		if (log.size() > 0) {
 			List<String> contents = new ArrayList<String>();
 			int index = log.size() - 1;
 			LogEntry entry = log.get(index);
 			GeneAnnotation assoc = entry.getLoggedAssociation();
 			if (assoc != null) {
-				String aspect = assoc.getAspect();
-				if (aspect.equals(Constant.MF)) {
-					reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
-				} else if (aspect.equals(Constant.CC)) {
-					reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
-				} if (aspect.equals(Constant.BP)) {
-					reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
+				if (entry.getAction().equals(LOG_ENTRY_TYPE.ASSOC) ||
+						entry.getAction().equals(LOG_ENTRY_TYPE.NOT)) {
+					String aspect = assoc.getAspect();
+					if (aspect.equals(Constant.MF)) {
+						reportAspect(entry, contents, aspect, " has function ", " has lost/modified function ");
+					} else if (aspect.equals(Constant.CC)) {
+						reportAspect(entry, contents, aspect, " is found in ", " is not found in ");
+					} if (aspect.equals(Constant.BP)) {
+						reportAspect(entry, contents, aspect, " participates in ", " does not participate in ");
+					}
+				} else if (entry.getAction().equals(LOG_ENTRY_TYPE.CHALLENGE)) {
+					reportEntries(log, contents, LOG_ENTRY_TYPE.CHALLENGE);
 				}
 			} else { // Pruning/grafting
-				reportPruned(entry, contents);
+				reportEntries(log, contents, LOG_ENTRY_TYPE.PRUNE);
 			}
 			return contents.get(0);
 		} else
 			return "";
 	}
+
+	public void logChallenge(GeneAnnotation annot, List<GeneAnnotation> removed, String rationale) {
+		LogEntry entry = new LogEntry(annot.getBioentityObject(), annot, LOG_ENTRY_TYPE.CHALLENGE, removed);
+		entry.setDate(LogUtil.dateNow());
+		entry.setRationale(rationale);
+		done_log.add(entry);
+		for (GeneAnnotation removed_annot : removed) {
+			boolean cleared = false;
+			for (int i = done_log.size() - 1; i >= 0 && !cleared; i--) {
+				LogEntry assoc_entry = done_log.get(i);
+				if (assoc_entry.getLoggedAssociation() == removed_annot) {
+					done_log.remove(assoc_entry);
+					cleared = true;
+				}
+			}
+		}
+	}
+
+	public List<LogEntry> getDoneLog() {
+		List<LogEntry> copy = new ArrayList<>();
+		copy.addAll(done_log);
+		return copy;
+	}
+
 }

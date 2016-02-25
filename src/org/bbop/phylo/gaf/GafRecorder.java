@@ -31,18 +31,27 @@ public class GafRecorder {
 
 	private static final Logger log = Logger.getLogger(GafRecorder.class);
 
-	private static GafDocument challenged_annots;
-	private static GafDocument overriden_annots;
+	private static GafRecorder INSTANCE;
+
+	private GafDocument questioned_annots;
+	private Map<GeneAnnotation, String> challenged_annots;
 
 	private GafRecorder() {
 	}
 
-	public static void clearChallenges() {
-		challenged_annots = null;
-		overriden_annots = null;
+	public static GafRecorder inst() {
+		if (INSTANCE == null) {
+			INSTANCE = new GafRecorder();
+		}
+		return INSTANCE;
 	}
-	
-	public static void record(Family family, File family_dir, String comment) {
+
+	public void clearChallenges() {
+		questioned_annots = null;
+		challenged_annots = null;
+	}
+
+	public void record(Family family, File family_dir, String comment) {
 		String family_name = family.getFamily_name();
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
@@ -70,29 +79,33 @@ public class GafRecorder {
 				}
 			}
 			log.info("Wrote updated paint GAF to " + gaf_file);
-			
-			if (challenged_annots != null && !challenged_annots.getGeneAnnotations().isEmpty()) {
-				File challenge_file = new File(family_dir, family_name + Constant.CHALLENGE_SUFFIX);
+
+			if (questioned_annots != null && !questioned_annots.getGeneAnnotations().isEmpty()) {
+				File challenge_file = new File(family_dir, family_name + Constant.QUESTIONED_SUFFIX);
 				GafWriter challenge_writer = new GafWriter();
 				gaf_writer.setStream(challenge_file);
-				gaf_writer.write(challenged_annots);
+				gaf_writer.write(questioned_annots);
 				IOUtils.closeQuietly(challenge_writer);
-
 			}
-			if (overriden_annots != null && !overriden_annots.getGeneAnnotations().isEmpty()) {
-				File challenge_file = new File(family_dir, family_name + Constant.NEGATE_SUFFIX);
+			if (challenged_annots != null && !challenged_annots.isEmpty()) {
+				File challenge_file = new File(family_dir, family_name + Constant.CHALLENGED_SUFFIX);
+				GafDocument gaf = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
 				GafWriter challenge_writer = new GafWriter();
+				Set<GeneAnnotation> disputed = challenged_annots.keySet();
+				for (GeneAnnotation dispute : disputed) {
+					gaf.addComment(challenged_annots.get(dispute));
+					gaf.addGeneAnnotation(dispute);
+				}
 				gaf_writer.setStream(challenge_file);
-				gaf_writer.write(overriden_annots);
+				gaf_writer.write(gaf);
 				IOUtils.closeQuietly(challenge_writer);
-
 			}
 		} else {
 			log.error("Unable to save paint GAF for " + family_name + " in " + family_dir);
 		}
 	}
 
-	public static void experimental(Family family, File family_dir, String comment) {
+	public void experimental(Family family, File family_dir, String comment) {
 		String family_name = family.getFamily_name();
 		boolean ok = FileUtil.validPath(family_dir);
 		if (ok) {
@@ -111,7 +124,7 @@ public class GafRecorder {
 		}		
 	}
 
-	private static void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
+	private void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
 		if (node.isPruned()) {
 			/* Write out one row to record the pruned branch */
 			GeneAnnotation stump = createStump(family, node);
@@ -160,7 +173,7 @@ public class GafRecorder {
 		}
 	}
 
-	private static void addExpWith(Tree tree, Bioentity node, GeneAnnotation annotation) {
+	private void addExpWith(Tree tree, Bioentity node, GeneAnnotation annotation) {
 		List<String> withs = new ArrayList<>();
 		String ancestor_id = annotation.getWithInfos().iterator().next();
 		withs.add(ancestor_id);
@@ -190,20 +203,20 @@ public class GafRecorder {
 		annotation.setWithInfos(withs);
 	}
 
-	private static GeneAnnotation createStump(Family family, Bioentity node) {
+	private GeneAnnotation createStump(Family family, Bioentity node) {
 		GeneAnnotation stump = new GeneAnnotation();
 		stump.setBioentity(node.getId());
 		stump.setBioentityObject(node);
 		stump.setIsCut(true);
 		stump.addReferenceId(family.getReference());
 		stump.setAssignedBy(Constant.PAINT_AS_SOURCE);
-		LogEntry log_entry = LogAction.findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
+		LogEntry log_entry = LogAction.inst().findEntry(node, null, LogEntry.LOG_ENTRY_TYPE.PRUNE);
 		String date = log_entry.getDate();
 		stump.setLastUpdateDate(date);
 		return stump;
 	}
 
-	private static void addComments(Family family, String comment, GafDocument gaf_doc) {
+	private void addComments(Family family, String comment, GafDocument gaf_doc) {
 		List<String> comments = family.getGafComments();
 		if (comments != null) {
 			for (String comment_line : comments) {
@@ -213,7 +226,7 @@ public class GafRecorder {
 		gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
 	}
 
-	private static void addExpAnnotations(Family family, List<Bioentity> nodes, GafDocument gaf_doc) {
+	private void addExpAnnotations(Family family, List<Bioentity> nodes, GafDocument gaf_doc) {
 		for (Bioentity node : nodes) {
 			List<GeneAnnotation> annotations = AnnotationUtil.getExperimentalAssociations(node);
 			if (annotations != null && !annotations.isEmpty()) {
@@ -227,44 +240,60 @@ public class GafRecorder {
 		}
 	}
 
-	public static void challengedRegulator(List<GeneAnnotation> regulates, Family family) {
+	public void recordQuestionedAnnotationInGAF(List<GeneAnnotation> questioned, Family family) {
+		String suffix = Constant.QUESTIONED_SUFFIX;
+		String comment = "Regulation of annotation(s) questioned by: ";
+		questioned_annots = questioned(questioned_annots, questioned, family, suffix, comment, null);
+	}
+
+	public void recordChallengeInGAF(List<GeneAnnotation> challenges, Family family, String rationale, boolean is_new) {
 		if (challenged_annots == null) {
-			File family_dir = new File(TouchupConfig.inst().gafdir);
-			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.CHALLENGE_SUFFIX);
-			challenged_annots = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
-			String username = System.getProperty("user.name");
-			String comment = "Regulation annotation(s) challenged by: " + username;			
-			addComments(family, comment, challenged_annots);
+			challenged_annots = new HashMap<>();
 		}
-		for (GeneAnnotation reg_annot : regulates) {
-			boolean add_it = true;
-			for (GeneAnnotation logged_annot : challenged_annots.getGeneAnnotations()) {
-				add_it &= logged_annot != reg_annot;
-			}
-			if (add_it) {
-				challenged_annots.addGeneAnnotation(reg_annot);
+		for (GeneAnnotation dispute : challenges) {
+			if (challenged_annots.get(dispute) == null) {
+				String full_rationale = is_new ?
+						"Disputed by " + System.getProperty("user.name") + " on " + LogUtil.dateNow() + 
+						" -- " + dispute.getBioentityObject().getId() + " should not be annotated to " + dispute.getCls() + 
+						" because " + rationale :
+							rationale;
+				challenged_annots.put(dispute, full_rationale);
 			}
 		}
 	}
-	
-	public static void challengedPositive(List<GeneAnnotation> regulates, Family family) {
-		if (overriden_annots == null) {
+
+	private GafDocument questioned(GafDocument gaf, List<GeneAnnotation> challenges, Family family, 
+			String suffix, String comment, String rationale) {
+		boolean not_redundant = true;
+		if (gaf == null) {
 			File family_dir = new File(TouchupConfig.inst().gafdir);
-			File gaf_file = new File(family_dir, family.getFamily_name() + Constant.NEGATE_SUFFIX);
-			overriden_annots = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
-			String username = System.getProperty("user.name");
-			String comment = "Positive annotation(s) challenged by: " + username;			
-			addComments(family, comment, overriden_annots);
+			File gaf_file = new File(family_dir, family.getFamily_name() + suffix);
+			gaf = new GafDocument(gaf_file.getAbsolutePath(), family_dir.getAbsolutePath());
 		}
-		for (GeneAnnotation reg_annot : regulates) {
-			boolean add_it = true;
-			for (GeneAnnotation logged_annot : overriden_annots.getGeneAnnotations()) {
-				add_it &= logged_annot != reg_annot;
+		for (GeneAnnotation challenge : challenges) {
+			for (GeneAnnotation annot : gaf.getGeneAnnotations()) {
+				not_redundant &= annot != challenge;
 			}
-			if (add_it) {
-				overriden_annots.addGeneAnnotation(reg_annot);
+			if (not_redundant) {
+				gaf.addGeneAnnotation(challenge);
+				gaf.addComment(comment + System.getProperty("user.name") + " on " + LogUtil.dateNow());
+				if (rationale != null) {
+					gaf.addComment(rationale);
+				}
 			}
+		}
+		return gaf;		
+	}
+
+	public void unquestioned(GeneAnnotation annot) {
+		if (questioned_annots != null) {
+			questioned_annots.getGeneAnnotations().remove(annot);
 		}
 	}
 	
+	public void acceptExperimental(GeneAnnotation annot) {
+		if (challenged_annots != null) {
+			challenged_annots.remove(annot);
+		}
+	}
 }

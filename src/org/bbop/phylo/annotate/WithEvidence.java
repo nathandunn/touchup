@@ -54,7 +54,7 @@ public class WithEvidence {
 				all_evidence.addAll(exp_withs);
 			} else {
 				for (GeneAnnotation annot : regulator_of) {
-					all_evidence.add(annot.getCls());
+					all_evidence.add(annot.getBioentityObject().getId());
 				}
 			}
 		} else if (notted_withs.size() > 0) {

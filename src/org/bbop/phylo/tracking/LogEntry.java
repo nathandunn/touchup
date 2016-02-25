@@ -20,10 +20,7 @@
 
 package org.bbop.phylo.tracking;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 
@@ -44,6 +41,7 @@ public class LogEntry {
 	private final GeneAnnotation assoc;
 	private List<GeneAnnotation> removed;
 	private String date;
+	private String rationale;
 
 	public enum LOG_ENTRY_TYPE {
 		ASSOC,
@@ -56,7 +54,8 @@ public class LogEntry {
 		UNSUPPORTED,
 		WRONG_TAXA,
 		TOO_SPECIFIC,
-		EXCLUDED;
+		EXCLUDED, 
+		CHALLENGE;
 
 		public String toString() {
 			return super.toString().toLowerCase();
@@ -70,7 +69,7 @@ public class LogEntry {
 		this.node = node;
 		this.assoc = assoc;
 		if (assoc == null) {
-			this.date = dateNow();
+			this.date = LogUtil.dateNow();
 		}
 		this.removed = removed;
 		this.type = action;
@@ -92,6 +91,10 @@ public class LogEntry {
 		return this.date;
 	}
 
+	public void setDate(String date) {
+		this.date = date;
+	}
+	
 	public GeneAnnotation getLoggedAssociation() {
 		if (type != LOG_ENTRY_TYPE.PRUNE) {
 			return assoc;
@@ -150,12 +153,12 @@ public class LogEntry {
 		return note;
 	}
 
-	private String dateNow() {
-		long timestamp = System.currentTimeMillis();
-		/* Date appears to be fixed?? */
-		Date when = new Date(timestamp);
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		sdf.setTimeZone(TimeZone.getDefault()); // local time
-		return sdf.format(when);
+	public String getRationale() {
+		return rationale;
 	}
+
+	public void setRationale(String rationale) {
+		this.rationale = rationale;
+	}
+
 }

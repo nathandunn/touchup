@@ -394,7 +394,7 @@ public class AnnotationUtil {
 					if (term_id.equals(go_id)) {
 						annotated_with_term = check;
 					}
-					else if (OWLutil.inst().moreSpecific(go_id, term_id)) {
+					else if (OWLutil.inst().moreSpecific(go_id, term_id, true)) {
 						if (!check.isNegated()) {
 							annotated_with_term = check;
 						} else {
@@ -420,6 +420,15 @@ public class AnnotationUtil {
 		return excluded;
 	}
 
+	public static void removeExpAnnotation(Bioentity node, GeneAnnotation annot) {
+		node.getAnnotations().remove(annot);	
+	}
+	
+	public static void acceptExpAnnotation(GeneAnnotation annot) {
+		Bioentity node = annot.getBioentityObject();
+		node.getAnnotations().add(annot);
+	}
+	
 	public static boolean isAncestralNode(Bioentity node) {
 		return node.getDb().equals(Constant.PANTHER_DB);
 	}
