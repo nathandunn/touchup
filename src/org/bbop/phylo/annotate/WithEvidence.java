@@ -109,18 +109,15 @@ public class WithEvidence {
                     * Don't add this node if it is already included.
                      */
 					if (add) {
-                        for (String with_id : exp_withs) {
-                            add &= !with_id.equals(leaf.getId());
-                        }
+						add = addUnique(exp_withs, leaf.getId(), add);
                     }
                     if (add) {
-						exp_withs.add(leaf.getId());
 						/*
 						 * The code below is carrying out an unrelated function
 						 * Namely to see if any of the experimental nodes that provide the supporting evidence are qualified
 						 * Doing this here, rather than as a separate function to avoid recursing down the tree twice
 						 */
-						if (exp_assoc.hasQualifiers()) {
+						if (exp_assoc.hasQualifiers() && exp_term.equals(go_id)) {
 							if (exp_assoc.isColocatesWith())
 								qualifiers |= GeneAnnotation.COLOCALIZES_MASK;
 							if (exp_assoc.isContributesTo())
@@ -129,7 +126,7 @@ public class WithEvidence {
 								qualifiers |= GeneAnnotation.INTEGRAL_TO_MASK;
 						}
 						if (exp_assoc.isNegated()) {
-							notted_withs.add(leaf.getId());
+							addUnique(notted_withs, leaf.getId(), true);
 							if (exp_term.equals(go_id)) {
 								exp_withs.remove(leaf.getId());
 							}
@@ -148,6 +145,16 @@ public class WithEvidence {
 				}
 			}
 		}
+	}
+	
+	private boolean addUnique(List<String> withs, String id, boolean add) {
+        for (String with_id : withs) {
+            add &= !with_id.equals(id);
+        }
+        if (add) {
+        	withs.add(id);
+        }
+        return add;
 	}
 }
 

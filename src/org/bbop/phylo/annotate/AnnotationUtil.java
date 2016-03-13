@@ -270,7 +270,10 @@ public class AnnotationUtil {
 				addSynonym(leaf, previous);
 			}
 			if (leaf.getFullName() == null || leaf.getFullName().length() == 0) {
-				leaf.setFullName(golr_gene.getFullName());
+				// HACK
+				if (!golr_gene.getFullName().startsWith("Term=calpaindb_xref")) {
+					leaf.setFullName(golr_gene.getFullName());
+				}
 			}
 			if (golr_gene.getSymbol() != null) {
 				leaf.setSymbol(golr_gene.getSymbol());

@@ -119,7 +119,6 @@ public class PaintAction {
 		boolean negate = withs.isExperimentalNot();
 
 		int go_qualifiers = getGOqualifiers(qualifiers);
-		// todo: add dialog box back
 		List<String> top_with = new ArrayList<> ();
 		top_with.add(node.getId());
 
@@ -134,8 +133,12 @@ public class PaintAction {
 				top_with,
 				exp_withs);
 
-		removeMoreGeneralTerms(node, go_id);
-
+		if (!negate) {
+			removeMoreGeneralTerms(node, go_id);
+		} else {
+			// remove more specific terms TODO
+		}
+		
 		LogAction.inst().logAssociation(node, assoc);
 
 		return assoc;
@@ -202,11 +205,6 @@ public class PaintAction {
 			node.addAnnotation(assoc);
 
 			/*
-			 * propagate negation...
-			 */
-			assoc.setIsNegated(negate);
-
-			/*
 			 * Make the top ancestral gene in this branch of the gene family the source of information
 			 */
 			List<Bioentity> children = node.getChildren();
@@ -237,7 +235,7 @@ public class PaintAction {
 			String reference,
 			String date,
 			boolean is_MRC,
-			boolean is_directNot,
+			boolean negate,
 			List<GeneAnnotation> curator_inference,
 			List<String> withs) {
 		GeneAnnotation assoc = new GeneAnnotation();
@@ -254,7 +252,11 @@ public class PaintAction {
 		assoc.setLastUpdateDate(date);
 
 		assoc.setDirectMRC(is_MRC);
-		assoc.setDirectNot(is_directNot);
+		assoc.setDirectNot(is_MRC && negate);
+		/*
+		 * propagate negation...
+		 */
+		assoc.setIsNegated(negate);
 		String evidence_code;
 		evidence_code = is_MRC ? Constant.DESCENDANT_EVIDENCE_CODE : Constant.ANCESTRAL_EVIDENCE_CODE;
 		if (curator_inference.size() > 0) {

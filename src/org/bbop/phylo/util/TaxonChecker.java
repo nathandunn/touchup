@@ -29,6 +29,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Tree;
@@ -48,23 +49,28 @@ public class TaxonChecker {
 
 	private static final String TAXON_SERVER_TEST = "&id=GO:0007400&taxid=NCBITaxon:3702";
 
-	private static boolean server_is_down = false;
+	private static boolean io_error = false;
 
 	private static final Logger log = Logger.getLogger(TaxonChecker.class);
 
 	private static final int MAX_TAXA_TO_CHECK = 60;
 
 	private static String error_message;
-
+	
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
-		return checkTaxons(tree, node, go_id, true);
+		int attempts = 0;
+		boolean valid_taxon = false;
+		io_error = false;
+		while (!io_error && attempts++ < 3) {
+			valid_taxon = checkTaxons(tree, node, go_id, true);
+		}
+		if (io_error) {
+			log.info("Taxon server is down");
+		}
+		return valid_taxon;
 	}
 	
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
-		//		if (server_is_down) {
-		//			return false;
-		//		}
-		server_is_down = false;
 		List<String> taxa_to_check = getTaxIDs(tree, node, ancestral);
 		boolean descendents_okay = true;
 		error_message = "";
@@ -78,18 +84,27 @@ public class TaxonChecker {
 				taxon_query.append("&taxid=NCBITaxon:" + taxon);
 			}
 			taxa_reply = askTaxonServer(taxon_query);
-			descendents_okay &= !server_is_down && !(taxa_reply.contains("false"));
+			descendents_okay &= !io_error && !(taxa_reply.contains("false"));
 		}
 		if (!descendents_okay) {
-			if (!server_is_down) {
+			if (!io_error) {
 				formatErrorMessage(go_id, taxa_reply);
-//				log.info(error_message);
 			} else {
-				log.info("Taxon server is down");
+				randomWait(5000, 10000);
 			}
 			return false;
 		} else {
 			return true;
+		}
+	}
+
+	private static void randomWait(int min, int max) {
+		Random random = new Random(System.currentTimeMillis());
+		long wait = min + random.nextInt((max - min));
+		try {
+			Thread.sleep(wait);
+		} catch (InterruptedException exception) {
+			// ignore
 		}
 	}
 
@@ -116,7 +131,6 @@ public class TaxonChecker {
 			servlet = new URL(taxon_query.toString());
 		} catch (MalformedURLException muex) {
 			log.error("Attempted to create URL: " + muex.getLocalizedMessage() + " " + taxon_query);
-			server_is_down = true;
 			return taxon_reply.toString();
 		}
 		BufferedReader in;
@@ -130,21 +144,21 @@ public class TaxonChecker {
 			}
 			in.close();
 		} catch (IOException e1) {
-			if (!server_is_down) {
+			if (!io_error) {
 				log.error("Attempted to open URL: " + e1.getLocalizedMessage() + " " + taxon_query);
-				server_is_down = true;
+				io_error = true;
 			}
 		}
 		return taxon_reply.toString();
 	}
 
 	public static boolean isLive() {
-		if (!server_is_down) {
+		if (!io_error) {
 			// check it
 			StringBuffer test_query = new StringBuffer(TAXON_SERVER_URL + TAXON_SERVER_TEST);
 			askTaxonServer(test_query);
 		}
-		return !server_is_down;
+		return !io_error;
 	}
 
 	private static List<String> getTaxIDs(Tree tree, Bioentity node, boolean ancestral) {

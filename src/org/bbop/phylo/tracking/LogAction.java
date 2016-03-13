@@ -274,7 +274,7 @@ public class LogAction {
 				}
 				contents.add(annotation.getLastUpdateDate() + ": " +
 						Logger.makeLabel(entry.getNode()) +
-						syntax_candy_4has +
+						(annotation.isDirectNot() ? syntax_candy_4not : syntax_candy_4has) +
 						OWLutil.inst().getTermLabel(annotation.getCls()) +
 						" (" + annotation.getCls() + ") ");
 				break;
