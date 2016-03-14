@@ -23,7 +23,7 @@ public class Constant {
 	public static final String MIA_SUFFIX = ".mia";
 	public static final String WTS_SUFFIX = ".wts";
 	public static final String GAF_SUFFIX = ".gaf";
-	public static final String LOG_SUFFIX = ".log";
+	public static final String LOG_SUFFIX = ".txt";
 	public static final String OLDLOG_SUFFIX = ".txt";
 	public static final String EXP_SUFFIX = ".exp";
 	public static final String QUESTIONED_SUFFIX = "-questioned.gaf";

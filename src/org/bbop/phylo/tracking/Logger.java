@@ -38,8 +38,6 @@ public class Logger {
 			LogAction.inst().report(contents);
 			contents.add(Logger.WARNING_SECTION);
 			LogAlert.report(contents);
-			contents.add(Logger.CHALLENGED_SECTION);
-			LogAlert.report(contents);
 			contents.add(NOTES_SECTION);
 			logNotes(contents);
 			logBoilerplate(contents);
