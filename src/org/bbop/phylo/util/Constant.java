@@ -21,6 +21,7 @@ public class Constant {
 	public static final String TREE_SUFFIX = ".tree";
 	public static final String TAB_SUFFIX = ".tab";
 	public static final String MIA_SUFFIX = ".mia";
+	public static final String MSA_SUFFIX = ".msa";
 	public static final String WTS_SUFFIX = ".wts";
 	public static final String GAF_SUFFIX = ".gaf";
 	public static final String LOG_SUFFIX = ".txt";
