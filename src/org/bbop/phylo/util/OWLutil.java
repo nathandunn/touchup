@@ -243,8 +243,8 @@ public class OWLutil {
 		List<String> subsets = go_graph.getSubsets(term);
 		boolean isExcluded = false;
 		for(String subset : subsets) {
-//			if ("gocheck_do_not_manually_annotate".equals(subset) || "gocheck_do_not_annotate".equals(subset)) {
-			if ("gocheck_do_not_annotate".equals(subset)) {
+			if ("gocheck_do_not_manually_annotate".equals(subset) || "gocheck_do_not_annotate".equals(subset)) {
+//			if ("gocheck_do_not_annotate".equals(subset)) {
 				isExcluded = true;
 				break;
 			}
