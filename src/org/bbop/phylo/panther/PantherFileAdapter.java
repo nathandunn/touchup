@@ -55,10 +55,7 @@ public class PantherFileAdapter extends PantherAdapter {
 	 * attr.tab	cluster.wts	tree.mia	tree.tree
 	 * 
 	 * What needs to be recorded are files name
-	 * PTHRnnnnn.tab PTHRnnnnn.wts PTHRnnnnn.mia PTHRnnnnn.tree
-	 * 
-	 * Previously the convention was
-	 * .attr (not .tab) and *.msa (not .mia)
+	 * PTHRnnnnn.attr PTHRnnnnn.wts PTHRnnnnn.msa PTHRnnnnn.tree
 	 * 
 	 * @see
 	 */

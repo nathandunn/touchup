@@ -1,4 +1,4 @@
 !!org.bbop.phylo.config.TouchupConfig
 GOlrURL: http://golr.geneontology.org/solr
-gafdir: /Users/suzi/projects/go/gene-associations/submission/paint/
-treedir: /Users/suzi/projects/go/data/trees/panther/
+gafdir: /Users/suzi/projects/go/gene-associations/submission/paint
+treedir: /Users/suzi/projects/go/data/trees/panther

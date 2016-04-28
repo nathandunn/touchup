@@ -150,6 +150,8 @@ public class GafRecorder {
 								node.setDb(node.getSeqDb());
 								annotation.setBioentity(node.getSeqDb() + ':' + node.getSeqId());
 							}
+							if (node.getLocalId().contains("DDB_G0282343"))
+								log.debug("the synonyms are: " + node.getSynonyms());
 						}
 						if (annotation.getWithInfos().size() == 0) {
 							log.error("No with information for\n\t" + annotation);
@@ -223,7 +225,7 @@ public class GafRecorder {
 				gaf_doc.addComment(comment_line);
 			}
 		}
-		gaf_doc.addComment(comment + " on " + LogUtil.dateNow());
+		gaf_doc.addComment(comment + " on " + LogUtil.dateNow() + " using " + Constant.PANTHER_VERSION);
 	}
 
 	private void addExpAnnotations(Family family, List<Bioentity> nodes, GafDocument gaf_doc) {

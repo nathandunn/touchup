@@ -98,7 +98,7 @@ public class LogAlert {
 								entry.getNode().getDBID() +
 								" can not support previous annotation to " +
 								OWLutil.inst().getTermLabel(annotation.getCls()) +
-								" (" + annotation.getCls() + ") ");
+								" (" + annotation.getCls() + ") supported by " + annotation.getWithInfos());
 				}
 			}
 			if (!obsoletes.isEmpty()) {

@@ -19,6 +19,7 @@ public class Constant {
 	public static final String CUT = "CUT";
 
 	public static final String TREE_SUFFIX = ".tree";
+	public static final String ATTR_SUFFIX = ".attr";
 	public static final String TAB_SUFFIX = ".tab";
 	public static final String MIA_SUFFIX = ".mia";
 	public static final String MSA_SUFFIX = ".msa";
@@ -140,5 +141,6 @@ public class Constant {
 	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
 //	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
 	public static final String PUB_GOLR = "http://golr.geneontology.org/solr";
+	public static final String PANTHER_VERSION = "PANTHER 10.0 built on the 2014_4 GCRP release";
 	
 }

@@ -174,7 +174,7 @@ public class AnnotationUtil {
 				 * while we're at it, include the sequence ID as a synonym, 
 				 * nothing to do with the primary goal, merely a convenient time
 				 */
-				addSynonym(leaf, leaf.getSeqDb() + ':' + leaf.getSeqId());
+				leaf.addSynonym(leaf.getSeqDb() + ':' + leaf.getSeqId());
 			}
 			askGolr(retriever, gene_names, id2gene);
 
@@ -267,7 +267,7 @@ public class AnnotationUtil {
 				String previous = leaf.getId();
 				leaf.setId(golr_gene.getId());
 				IDmap.inst().replace(leaf, previous);
-				addSynonym(leaf, previous);
+				leaf.addSynonym(previous);
 			}
 			if (leaf.getFullName() == null || leaf.getFullName().length() == 0) {
 				// HACK
@@ -283,23 +283,9 @@ public class AnnotationUtil {
 			}
 			if (golr_gene.getSynonyms() != null) {
 				for (String synonym : golr_gene.getSynonyms()) {
-					addSynonym(leaf, synonym);
+					leaf.addSynonym(synonym);
 				}
 			}
-		}
-	}
-
-	private static void addSynonym(Bioentity leaf, String synonym) {
-		boolean add_it = synonym.length() > 0;
-		List<String> existing_synonyms = leaf.getSynonyms();
-		for (int i = 0; i < existing_synonyms.size() && add_it; i++) {
-			add_it = !synonym.equalsIgnoreCase(existing_synonyms.get(i));
-		}
-		add_it &= leaf.getLocalId() == null || !synonym.equalsIgnoreCase(leaf.getLocalId());
-		add_it &= leaf.getSymbol() == null || !synonym.equalsIgnoreCase(leaf.getSymbol());
-
-		if (add_it) {
-			leaf.addSynonym(synonym);
 		}
 	}
 

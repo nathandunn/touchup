@@ -48,10 +48,15 @@ public abstract class PantherAdapter {
     public boolean saveFamily(Family family, File family_dir) {
         String family_name = family.getFamily_name();
 
+        if (!family_dir.getName().equals(family_name)) {
+        	family_dir = new File(family_dir, family_name);
+        	family_dir.mkdir();
+        }
         boolean ok = FileUtil.validPath(family_dir);
+        
         File treeFileName = new File(family_dir, family_name + Constant.TREE_SUFFIX);
-        File attrFileName = new File(family_dir, family_name + Constant.TAB_SUFFIX);
-
+        File attrFileName = new File(family_dir, family_name + Constant.ATTR_SUFFIX);
+        
         ok &= writeData(treeFileName, family.getTreeContent());
         ok &= writeData(attrFileName, family.getAttrContent());
 
