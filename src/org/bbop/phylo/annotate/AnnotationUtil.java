@@ -383,11 +383,15 @@ public class AnnotationUtil {
 					if (term_id.equals(go_id)) {
 						annotated_with_term = check;
 					}
-					else if (OWLutil.inst().moreSpecific(go_id, term_id, true)) {
+					else {
 						if (!check.isNegated()) {
-							annotated_with_term = check;
+							if (OWLutil.inst().moreSpecific(go_id, term_id, true)) {
+								annotated_with_term = check;
+							}
 						} else {
-							log.debug("Ignoring more specific annotation to " + go_id + " because it's negated");
+							if (OWLutil.inst().moreSpecific(term_id, go_id, true)) {
+								annotated_with_term = check;
+							}
 						}
 					}
 				}

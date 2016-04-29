@@ -127,9 +127,7 @@ public class WithEvidence {
 						}
 						if (exp_assoc.isNegated()) {
 							addUnique(notted_withs, leaf.getId(), true);
-							if (exp_term.equals(go_id)) {
-								exp_withs.remove(leaf.getId());
-							}
+							exp_withs.remove(leaf.getId());
 						}
 					} else {
 						if (OWLutil.inst().moreSpecific(exp_term, go_id, true)) {

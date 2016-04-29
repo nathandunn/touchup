@@ -141,6 +141,6 @@ public class Constant {
 	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
 //	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
 	public static final String PUB_GOLR = "http://golr.geneontology.org/solr";
-	public static final String PANTHER_VERSION = "PANTHER 10.0 built on the 2014_4 GCRP release";
+	public static final String PANTHER_VERSION = "PANTHER 10.0 built on the 2014 GCRP release";
 	
 }

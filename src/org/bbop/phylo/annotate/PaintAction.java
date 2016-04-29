@@ -188,7 +188,11 @@ public class PaintAction {
 		 * Only proceed if this is not one of the original sources of information for this association
 		 * and this node is not yet annotated to either this term
 		 */
-		if (!exp_withs.contains(node.getId()) && AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
+//		if (node.getDBID().contains("FBgn0039004")) {
+//			log.debug("Look and see");
+//		}
+		if (!exp_withs.contains(node.getId()) && 
+				AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id) == null) {
 			GeneAnnotation assoc;
 			if (top_with.contains(node.getId())) {
 				assoc = createAnnotation(node, go_id, qualifiers, family, reference, date, true, negate, curator_inference, exp_withs);
