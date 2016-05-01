@@ -29,7 +29,7 @@ public class Logger {
 	private static List<String> notes;
 	private static List<String> history;
 
-	public static void write(String family_name, File family_dir, String comment, String date) {
+	public static void write(String family_name, File family_dir, String comment, String date) {		
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
@@ -50,17 +50,8 @@ public class Logger {
 		}
 	}
 
-	public static void importPrior(String family_name, File family_dir) {
-		if (notes == null) {
-			notes = new ArrayList<>();
-		} else {
-			notes.clear();
-		}
-		if (history == null) {
-			history = new ArrayList<>();
-		} else {
-			history.clear();
-		}
+	public static void importUserLog(String family_name, File family_dir) {
+		clearUserLog();
 		if (FileUtil.validPath(family_dir)) {
 			File log_file = new File(family_dir, family_name + Constant.OLDLOG_SUFFIX);
 			if (!FileUtil.validFile(log_file)) {
@@ -69,9 +60,9 @@ public class Logger {
 			if (FileUtil.validFile(log_file)) {
 				List<String> log_content = FileUtil.readFile(log_file);
 				if (log_content != null) {
-					clearBoilerPlate(log_content);
+					eraseBoilerPlate(log_content);
 					captureHistory(log_content);
-					clearLogHeaders(log_content);
+					eraseLogHeaders(log_content);
 					for (int i = 0; i < log_content.size(); i++) {
 						String line = log_content.get(i).trim();
 						if (line.length() > 0) {
@@ -89,6 +80,19 @@ public class Logger {
 		}
 	}
 
+	public static void clearUserLog() {
+		if (notes == null) {
+			notes = new ArrayList<>();
+		} else {
+			notes.clear();
+		}
+		if (history == null) {
+			history = new ArrayList<>();
+		} else {
+			history.clear();
+		}		
+	}
+	
 	public static void updateNotes(String text) {
 		String [] lines = text.split("\n");
 		notes.clear();
@@ -129,7 +133,7 @@ public class Logger {
 		contents.add("");
 	}
 
-	private static void clearBoilerPlate(List<String> log_content) {
+	private static void eraseBoilerPlate(List<String> log_content) {
 		for (int i = log_content.size() - 1; i >= 0; i--) {
 			String line = log_content.get(i).trim();
 			if (line.length() == 0) {
@@ -174,7 +178,7 @@ public class Logger {
 		}
 	}
 
-	private static void clearLogHeaders(List<String> log_content) {
+	private static void eraseLogHeaders(List<String> log_content) {
 		for (int i = log_content.size() - 1; i >= 0; i--) {
 			String line = log_content.get(i).trim().toLowerCase();
 			String note_cue = NOTES_SECTION.toLowerCase();

@@ -195,7 +195,7 @@ public class Touchup {
 							 */
 							File family_dir = new File(TouchupConfig.inst().gafdir, family_name);
 
-							Logger.importPrior(family_name, family_dir);
+							Logger.importUserLog(family_name, family_dir);
 
 							GafPropagator.importAnnotations(family, family_dir);
 							
