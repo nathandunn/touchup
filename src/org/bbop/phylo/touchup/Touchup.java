@@ -141,7 +141,7 @@ public class Touchup {
 					}
 				}
 			} else if (family_list != null) {
-				families = FileUtil.readFile(new File(family_file));
+				families = FileUtil.readFile(new File(family_list));
 				for (int i = families.size() - 1; i >= 0; i--) {
 					// allow for commenting out lines in the input file
 					if (families.get(i).length() == 0 || families.get(i).startsWith("//")) {

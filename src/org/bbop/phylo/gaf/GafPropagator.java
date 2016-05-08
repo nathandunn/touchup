@@ -161,7 +161,7 @@ public class GafPropagator {
 			String evi_code = gaf_annotation.getShortEvidence();
 
 			if (!evi_code.equals(Constant.ANCESTRAL_EVIDENCE_CODE)) {
-				List<String> go_ids = getLatestGOID(node, gaf_annotation);
+				List<String> go_ids = AnnotationUtil.getLatestGOID(node, gaf_annotation);
 				for (String go_id : go_ids) {
 					if (gaf_annotation.isNegated()) {
 						List<GeneAnnotation> not_annots = negate_list.get(node);
@@ -207,24 +207,6 @@ public class GafPropagator {
 			log.error("GAF directory is invalid: " + family_dir);
 		}
 		return ok;
-	}
-
-	private static List<String> getLatestGOID(Bioentity node, GeneAnnotation gaf_annotation) {
-		List<String> go_ids = new ArrayList<>();
-		if (OWLutil.inst().isObsolete(gaf_annotation.getCls())) {
-			go_ids = OWLutil.inst().replacedBy(gaf_annotation.getCls());
-			if (go_ids.size() == 0) {
-				LogAlert.logObsolete(node, gaf_annotation);
-			}
-			if (go_ids.size() > 1) {
-				log.info("Got " + go_ids.size() + " replacement IDs for " + gaf_annotation.getCls());
-				LogAlert.logObsolete(node, gaf_annotation);
-				go_ids.clear();
-			}
-		} else {
-			go_ids.add(gaf_annotation.getCls());
-		}
-		return go_ids;
 	}
 
 	private static void applyNots(Family family, Map<Bioentity, List<GeneAnnotation>> negate_list) {

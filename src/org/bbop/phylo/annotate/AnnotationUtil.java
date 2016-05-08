@@ -16,6 +16,7 @@ import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.panther.IDmap;
 import org.bbop.phylo.panther.ParsingHack;
+import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.OWLutil;
 
@@ -322,6 +323,21 @@ public class AnnotationUtil {
 					keep |= !isExcluded(pub_id);
 				}
 			}
+			if (keep) {
+				// sanity check the GO id
+				// there is at least one case where the exp. annotation was made to an obsolete term
+				String check = annotation.getCls();
+				if (OWLutil.inst().getTerm(check) == null) {
+					// try as a synonym, may be obsolete
+					List<String> alt = OWLutil.inst().replacedBy(check);
+					if (!alt.isEmpty() && alt.size() == 1) {
+						String go_id = alt.get(0);
+						annotation.setCls(go_id);
+					} else {
+						keep = false;
+					}
+				}
+			}
 		}
 		return keep;
 	}
@@ -425,4 +441,24 @@ public class AnnotationUtil {
 	public static boolean isAncestralNode(Bioentity node) {
 		return node.getDb().equals(Constant.PANTHER_DB);
 	}
+	
+	public static List<String> getLatestGOID(Bioentity node, GeneAnnotation gaf_annotation) {
+		List<String> go_ids = new ArrayList<>();
+		if (OWLutil.inst().isObsolete(gaf_annotation.getCls())) {
+			go_ids = OWLutil.inst().replacedBy(gaf_annotation.getCls());
+			if (go_ids.size() == 0) {
+				LogAlert.logObsolete(node, gaf_annotation);
+			}
+			if (go_ids.size() > 1) {
+				log.info("Got " + go_ids.size() + " replacement IDs for " + gaf_annotation.getCls());
+				LogAlert.logObsolete(node, gaf_annotation);
+				go_ids.clear();
+			}
+		} else {
+			go_ids.add(gaf_annotation.getCls());
+		}
+		return go_ids;
+	}
+
+
 }

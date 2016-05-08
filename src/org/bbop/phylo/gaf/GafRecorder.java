@@ -150,8 +150,10 @@ public class GafRecorder {
 								node.setDb(node.getSeqDb());
 								annotation.setBioentity(node.getSeqDb() + ':' + node.getSeqId());
 							}
-							if (node.getLocalId().contains("DDB_G0282343"))
-								log.debug("the synonyms are: " + node.getSynonyms());
+							if (node.getSymbol() == null || node.getSymbol().trim().length() == 0) {
+								log.info("Missing a symbol for " + node.getId());
+								node.setSymbol(node.getSeqId());
+							}
 						}
 						if (annotation.getWithInfos().size() == 0) {
 							log.error("No with information for\n\t" + annotation);
