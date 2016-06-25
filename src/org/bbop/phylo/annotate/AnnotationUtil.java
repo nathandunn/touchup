@@ -132,6 +132,7 @@ public class AnnotationUtil {
 		if (TouchupConfig.inst().GOlrURL.isEmpty()) {
 			TouchupConfig.inst().GOlrURL = Constant.DEV_GOLR;
 		}
+		log.info("Retrieving experimental annotations from: " + TouchupConfig.inst().GOlrURL);
 		RetrieveGolrAnnotations retriever = new RetrieveGolrAnnotations(TouchupConfig.inst().GOlrURL, 3, true) {
 			@Override
 			protected void logRequest(URI uri) {

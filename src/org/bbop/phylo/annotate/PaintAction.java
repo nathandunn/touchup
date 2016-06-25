@@ -139,6 +139,14 @@ public class PaintAction {
 			// remove more specific terms TODO
 		}
 		
+		/* bit of a cheat, the null date indicates this was an interactive, 
+		 * live annotation through the UI as opposed to an annotation that
+		 * happens when reloading
+		 */
+		if (date == null) {
+			filterOutLosses(family, node, assoc);
+		}
+		
 		LogAction.inst().logAssociation(node, assoc);
 
 		return assoc;
