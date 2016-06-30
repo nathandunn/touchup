@@ -282,6 +282,9 @@ public class GafPropagator {
 								 */
 								if (all_evidence.size() == 1) {
 									String eco = notted_gaf_annot.getShortEvidence();
+									if (eco.equals("LOF")) {
+										eco = Constant.LOSS_OF_FUNCTION;
+									}
 									if (!eco.equals(Constant.KEY_RESIDUES_EC) &&
 											!eco.equals(Constant.DIVERGENT_EC) &&
 											!eco.equals(Constant.LOSS_OF_FUNCTION)) {

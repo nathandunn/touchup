@@ -39,6 +39,7 @@ import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
@@ -82,7 +83,7 @@ public class OWLutil {
 			reasoner = new ExpressionMaterializingReasoner(source, new ElkReasonerFactory());
 			reasoner.materializeExpressions(materializedProperties);
 		}
-
+		
 		public OWLReasoner getReasoner() {
 			return reasoner;
 		}
@@ -114,7 +115,7 @@ public class OWLutil {
 			}
 			Set<OWLClassExpression> classExpressions = reasoner.getSuperClassExpressions(c, false);
 			for (OWLClassExpression ce : classExpressions) {
-				ce.accept(new OWLClassExpressionVisitorAdapter(){
+				OWLClassExpressionVisitorAdapter visitor = new OWLClassExpressionVisitorAdapter() {
 
 					@Override
 					public void visit(OWLClass cls) {
@@ -125,16 +126,18 @@ public class OWLutil {
 
 					@Override
 					public void visit(OWLObjectSomeValuesFrom svf) {
-						if (props.contains(svf.getProperty())) {
-							OWLClassExpression filler = svf.getFiller();
-							if (!filler.isAnonymous() && props.contains(svf.getProperty())) {
+						OWLClassExpression filler = svf.getFiller();
+						OWLObjectPropertyExpression p = svf.getProperty();
+						if (props.contains(p)) {
+							if (!filler.isAnonymous()) {
 								OWLClass cls = filler.asOWLClass();
 								ancestors.add(cls);
 							}
 						}
 					}
 
-				});
+				};
+				ce.accept(visitor);
 			}
 		}
 	}
@@ -362,7 +365,7 @@ public class OWLutil {
 		return all_broader;
 	}
 
-	public  OWLClass getTerm(String go_id) {
+	public OWLClass getTerm(String go_id) {
 		OWLClass term = OWLclasses.get(go_id);
 		if (term == null) {
 			term = go_graph.getOWLClassByIdentifier(go_id);

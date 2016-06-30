@@ -29,4 +29,5 @@ resources/junk
 /.settings
 /bin/
 **/.DS_Store
+src/org/bbop/phylo/util/GetAncestorsTest.java
 
