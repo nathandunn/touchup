@@ -5,7 +5,7 @@ Touchup is used both as a standalone application (for periodic updates), and it 
 
 Over time any number of changes will be made to the information originally used to annotate the set of proteins in a family
 
-1. The reference proteomes are updated annually and these proteomes are used to build new protein family trees by PANTHER. Consequently ancestral proteins may have added or removed descendants and subsequent changes must be made to any propagated by descent descriptions. Ancestral proteins may also move between and within trees, or be lost completely. All of which influence the original annotations.
+1. The reference proteomes are updated annually and these proteomes are used to build new protein family trees by PANTHER. Consequently ancestral proteins may have added/removed descendants and thus subsequent changes must be made to any propagated descriptions. Ancestral proteins may also move between and within trees, or be lost completely. All of which influence the original annotations.
 
 2. The ontology changes. Terms become deprecated or replaced and thus annotations using those terms must reflect these changes.
 
