@@ -1,7 +1,7 @@
 # touchup
 for keeping the PAINT GAF files up to date
 
-Touchup is used both as a standalone application (for periodic updates), and it is also the backend API for PAINT the curator interface.
+Touchup is used both as a standalone application (for periodic updates), and it is also the backend API for PAINT, which is the curator interface.
 
 Over time any number of changes will be made to the information originally used annotate the set of proteins in a family
 
