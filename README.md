@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/geneontology/touchup.svg?branch=master)](https://travis-ci.org/geneontology/touchup)
+
 # touchup
 for keeping the PAINT GAF files up to date
 
