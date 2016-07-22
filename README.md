@@ -3,7 +3,7 @@ for keeping the PAINT GAF files up to date
 
 Touchup is used both as a standalone application (for periodic updates), and it is also the backend API for PAINT, which is the curator interface.
 
-Over time any number of changes will be made to the information originally used annotate the set of proteins in a family
+Over time any number of changes will be made to the information originally used to annotate the set of proteins in a family
 
 1. The reference proteomes are updated annually and these proteomes are used to build new protein family trees by PANTHER. Consequently ancestral proteins may have added or removed descendants and subsequent changes must be made to any propagated by descent descriptions. Ancestral proteins may also move between and within trees, or be lost completely. All of which influence the original annotations.
 
