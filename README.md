@@ -15,4 +15,12 @@ Over time any number of changes will be made to the information originally used 
 
 Touchup requires owltools for i) navigating the ontologies, ii) GOlr for retrieving the experimental annotations, and iii) taxon checking see: https://github.com/owlcollab/owltools for details
 
+Touchup uses maven as a build tool.
+
+These instructions assume that a valid maven installation is available. The recommended maven version is 3.0.x, whereby x denotes the latest release for this branch.
+
+Update: Touchup also requires git. Only a proper clone via git, will allow the build to complete.
+
+During the build process, we extract the git version and branch information. These details (and the build date) will be added to the manifest of the jar. If the .git folder is not available the build process will fail.
+
 To build touchup use "mvn clean install"
