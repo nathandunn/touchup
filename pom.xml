@@ -62,13 +62,6 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-		<repository>
-			<id>BerkeleyBOPSnapshot</id>
-			<url>http://code.berkeleybop.org/maven/snapshot-repository/</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
 	</repositories>
 	<dependencies>
 		<dependency>

@@ -104,7 +104,7 @@ public class PaintAction {
 			return (LogEntry.LOG_ENTRY_TYPE.TOO_SPECIFIC);
 		}
 		// applicable term for this taxon?
-		if (!TaxonChecker.checkTaxons(tree, node, go_id)) {
+		if (!TaxonChecker.checkTaxons(tree, node, go_id, true)) {
 			return (LogEntry.LOG_ENTRY_TYPE.WRONG_TAXA);
 		}
 		return null;

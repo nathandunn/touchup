@@ -223,9 +223,6 @@ public class AnnotationUtil {
 				Collection<Bioentity> bioentities = annots.getBioentities();
 				for (Bioentity golr_gene : bioentities) {
 					Bioentity leaf = id2gene.get(golr_gene.getId());
-					if (leaf.getId().contains("S000004119")) {
-						log.info("Watch this");
-					}
 					if (leaf != null) {
 						/* HACK ALERT!!
 						 * Have to use synonym search to get the multiple copies of this from GoLR

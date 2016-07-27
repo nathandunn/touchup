@@ -57,12 +57,12 @@ public class TaxonChecker {
 
 	private static String error_message;
 	
-	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id) {
+	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
 		int attempts = 0;
 		boolean valid_taxon = false;
-		io_error = false;
-		while (!io_error && attempts++ < 3) {
-			valid_taxon = checkTaxons(tree, node, go_id, true);
+		io_error = true;
+		while (io_error && attempts++ < 3) {
+			valid_taxon = queryTaxons(tree, node, go_id, ancestral);
 		}
 		if (io_error) {
 			log.info("Taxon server is down");
@@ -70,12 +70,13 @@ public class TaxonChecker {
 		return valid_taxon;
 	}
 	
-	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
+	private static boolean queryTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
 		List<String> taxa_to_check = getTaxIDs(tree, node, ancestral);
 		boolean descendents_okay = true;
 		error_message = "";
 		int checked_off = 0;
 		String taxa_reply = "";
+		io_error = false;
 		while (descendents_okay && checked_off < taxa_to_check.size()) {
 			StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id );
 			int max = Math.min(MAX_TAXA_TO_CHECK + checked_off, taxa_to_check.size());
