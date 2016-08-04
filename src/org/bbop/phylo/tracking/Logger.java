@@ -73,7 +73,7 @@ public class Logger {
 					logger.error("Couldn't read" + log_file);
 				}
 			} else {
-				logger.warn("No log file yet exists for " + log_file);
+				logger.warn("No file yet exists for " + log_file);
 			}
 		} else {
 			logger.warn("Family directory doesn't exist yet for: " + family_dir);

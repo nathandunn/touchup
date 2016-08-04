@@ -165,7 +165,7 @@ public class TaxonChecker {
 	private static List<String> getTaxIDs(Tree tree, Bioentity node, boolean ancestral) {
 		List<String> taxon_to_check = new ArrayList<>();
 		String taxon_id = parseTaxonID(node);
-		if (ancestral) {
+		if (ancestral || node.getChildren() == null || (node.getChildren().size() == 0)) {
 			if (taxon_id != null) { // && !taxon_id.equals("1") && !taxon_id.equals("2")) {
 				taxon_to_check.add(taxon_id);
 			}
