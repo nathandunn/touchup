@@ -56,7 +56,7 @@ public class TaxonChecker {
 	private static final int MAX_TAXA_TO_CHECK = 60;
 
 	private static String error_message;
-	
+
 	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
 		int attempts = 0;
 		boolean valid_taxon = false;
@@ -69,7 +69,7 @@ public class TaxonChecker {
 		}
 		return valid_taxon;
 	}
-	
+
 	private static boolean queryTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
 		List<String> taxa_to_check = getTaxIDs(tree, node, ancestral);
 		boolean descendents_okay = true;
@@ -96,6 +96,38 @@ public class TaxonChecker {
 			return false;
 		} else {
 			return true;
+		}
+	}
+
+	public static List<String> getInvalidTaxa(Bioentity node, String go_id) {
+		List<String> invalid_taxa = new ArrayList<>();
+		List<Bioentity> nodes_to_validate = new ArrayList<>();
+		nodes_to_validate.addAll(node.getChildren());
+		getInvalidTaxa(nodes_to_validate, go_id, invalid_taxa);
+		return invalid_taxa;
+	}
+
+	private static void getInvalidTaxa(List<Bioentity> nodes_to_validate, String go_id, List<String> invalid_taxa) {
+		for (int i = nodes_to_validate.size() - 1; i >= 0; i--) {
+			Bioentity node = nodes_to_validate.get(i);
+			String taxon = parseTaxonID(node);
+			if (taxon != null && !taxon.equals("1")) {
+				String taxa_reply = "";
+				io_error = false;
+				StringBuffer taxon_query = new StringBuffer(TAXON_SERVER_URL + "&id=" + go_id + "&taxid=NCBITaxon:" + taxon);
+				taxa_reply = askTaxonServer(taxon_query);
+				if (!io_error && (taxa_reply.contains("false")) && !invalid_taxa.contains(taxon)) {
+					invalid_taxa.add(taxon);
+				}
+				nodes_to_validate.remove(node);
+			}	
+		}
+		if (!nodes_to_validate.isEmpty()) {
+			for (Bioentity okay_node : nodes_to_validate) {
+				List<Bioentity> child_nodes_to_validate = new ArrayList<>();
+				child_nodes_to_validate.addAll(okay_node.getChildren());
+				getInvalidTaxa(nodes_to_validate, go_id, invalid_taxa);				
+			}
 		}
 	}
 
