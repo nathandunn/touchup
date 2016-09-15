@@ -83,7 +83,7 @@ public class OWLutil {
 			reasoner = new ExpressionMaterializingReasoner(source, new ElkReasonerFactory());
 			reasoner.materializeExpressions(materializedProperties);
 		}
-		
+
 		public OWLReasoner getReasoner() {
 			return reasoner;
 		}
@@ -326,12 +326,18 @@ public class OWLutil {
 		});
 
 		String aspect = getAspect(term);
-		for (OWLClass owlClass : sortedClasses) {
-			String cls = go_graph.getIdentifier(owlClass);
-			String cls_aspect = getAspect(cls);
-			if (aspect.equals(cls_aspect) && !isExcluded(owlClass)) {
-				ancestors.add(cls);
+		if (aspect != null) {
+			for (OWLClass owlClass : sortedClasses) {
+				String cls = go_graph.getIdentifier(owlClass);
+				String cls_aspect = getAspect(cls);
+				if (aspect.equals(cls_aspect) && !isExcluded(owlClass)) {
+					ancestors.add(cls);
+				}
 			}
+		} else {
+			// add it anyway, not log it
+			ancestors.add(term);
+			log.info(term + " does not have an aspect defined");
 		}
 		return ancestors;
 	}

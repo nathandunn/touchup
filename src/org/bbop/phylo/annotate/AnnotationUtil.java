@@ -27,76 +27,76 @@ import owltools.gaf.GeneAnnotation;
 public class AnnotationUtil {
 
 	private static final String high_throughput[] = {
-		"PMID:10341420",
-		"PMID:10662773",
-		"PMID:11027285",
-		"PMID:11452010",
-		"PMID:11914276",
-		"PMID:12077337",
-		"PMID:12089449",
-		"PMID:12134085",
-		"PMID:12150911",
-		"PMID:12192589",
-		"PMID:12482937",
-		"PMID:12524434",
-		"PMID:12586695",
-		"PMID:14562095",
-		"PMID:14576278",
-		"PMID:14645503",
-		"PMID:14690591",
-		"PMID:14690608",
-		"PMID:15024427",
-		"PMID:15343339",
-		"PMID:15575969",
-		"PMID:15632165",
-		"PMID:15738404",
-		"PMID:16121259",
-		"PMID:16269340",
-		"PMID:16319894",
-		"PMID:16407407",
-		"PMID:16467407",
-		"PMID:16622836",
-		"PMID:16702403",
-		"PMID:16823372",
-		"PMID:16823961",
-		"PMID:17176761",
-		"PMID:17443350",
-		"PMID:1848238",
-		"PMID:18627600",
-		"PMID:19001347",
-		"PMID:19040720",
-		"PMID:19053807",
-		"PMID:19056867",
-		"PMID:19061648",
-		"PMID:19111667",
-		"PMID:19158363",
-		"PMID:20424846",
-		"PMID:2153142",
-		"PMID:22842922",
-		"PMID:23212245",
-		"PMID:23222640",
-		"PMID:23376485",
-		"PMID:23533145",
-		"PMID:24390141",
-		"PMID:2445736",
-		"PMID:3031032",
-		"PMID:3065625",
-		"PMID:8660468",
-		"PMID:9020838",
-		"PMID:9182565",
-		"PMID:16926386",
-		"PMID:18433157",
-		"PMID:19482547",
-		"PMID:19946888",
-		"PMID:21423176",
-		"PMID:22020285",
-		"PMID:22658674",
-		"PMID:22681889",
-		"PMID:23580065",
-		"PMID:24270810",
-		"PMID:25416956",
-		"GO_REF:0000052",
-		"GO_REF:0000054",
+			"PMID:10341420",
+			"PMID:10662773",
+			"PMID:11027285",
+			"PMID:11452010",
+			"PMID:11914276",
+			"PMID:12077337",
+			"PMID:12089449",
+			"PMID:12134085",
+			"PMID:12150911",
+			"PMID:12192589",
+			"PMID:12482937",
+			"PMID:12524434",
+			"PMID:12586695",
+			"PMID:14562095",
+			"PMID:14576278",
+			"PMID:14645503",
+			"PMID:14690591",
+			"PMID:14690608",
+			"PMID:15024427",
+			"PMID:15343339",
+			"PMID:15575969",
+			"PMID:15632165",
+			"PMID:15738404",
+			"PMID:16121259",
+			"PMID:16269340",
+			"PMID:16319894",
+			"PMID:16407407",
+			"PMID:16467407",
+			"PMID:16622836",
+			"PMID:16702403",
+			"PMID:16823372",
+			"PMID:16823961",
+			"PMID:17176761",
+			"PMID:17443350",
+			"PMID:1848238",
+			"PMID:18627600",
+			"PMID:19001347",
+			"PMID:19040720",
+			"PMID:19053807",
+			"PMID:19056867",
+			"PMID:19061648",
+			"PMID:19111667",
+			"PMID:19158363",
+			"PMID:20424846",
+			"PMID:2153142",
+			"PMID:22842922",
+			"PMID:23212245",
+			"PMID:23222640",
+			"PMID:23376485",
+			"PMID:23533145",
+			"PMID:24390141",
+			"PMID:2445736",
+			"PMID:3031032",
+			"PMID:3065625",
+			"PMID:8660468",
+			"PMID:9020838",
+			"PMID:9182565",
+			"PMID:16926386",
+			"PMID:18433157",
+			"PMID:19482547",
+			"PMID:19946888",
+			"PMID:21423176",
+			"PMID:22020285",
+			"PMID:22658674",
+			"PMID:22681889",
+			"PMID:23580065",
+			"PMID:24270810",
+			"PMID:25416956",
+			"GO_REF:0000052",
+			"GO_REF:0000054",
 	};
 
 	private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger("AnnotationUtil.class");
@@ -328,12 +328,20 @@ public class AnnotationUtil {
 				// sanity check the GO id
 				// there is at least one case where the exp. annotation was made to an obsolete term
 				String check = annotation.getCls();
-				if (OWLutil.inst().getTerm(check) == null) {
+				List<String> alt = null;
+				if (OWLutil.inst().isObsolete(check)) {
+					alt = OWLutil.inst().replacedBy(check);
+				} else if (OWLutil.inst().getTerm(check) == null) {
 					// try as a synonym, may be obsolete
-					List<String> alt = OWLutil.inst().replacedBy(check);
+					alt = OWLutil.inst().replacedBy(check);
+				}
+				if (alt != null) {
 					if (!alt.isEmpty() && alt.size() == 1) {
 						String go_id = alt.get(0);
 						annotation.setCls(go_id);
+						log.info("Annotation of " + annotation.getBioentityObject().getSymbol() + " is to obsolete term " + check);
+						log.info("\treplacing with " + go_id);
+						
 					} else {
 						keep = false;
 					}
@@ -433,16 +441,16 @@ public class AnnotationUtil {
 	public static void removeExpAnnotation(Bioentity node, GeneAnnotation annot) {
 		node.getAnnotations().remove(annot);	
 	}
-	
+
 	public static void acceptExpAnnotation(GeneAnnotation annot) {
 		Bioentity node = annot.getBioentityObject();
 		node.getAnnotations().add(annot);
 	}
-	
+
 	public static boolean isAncestralNode(Bioentity node) {
 		return node.getDb().equals(Constant.PANTHER_DB);
 	}
-	
+
 	public static List<String> getLatestGOID(Bioentity node, GeneAnnotation gaf_annotation) {
 		List<String> go_ids = new ArrayList<>();
 		if (OWLutil.inst().isObsolete(gaf_annotation.getCls())) {
