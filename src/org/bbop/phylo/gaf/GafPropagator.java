@@ -33,8 +33,9 @@ import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.PaintAction;
 import org.bbop.phylo.annotate.WithEvidence;
+import org.bbop.phylo.io.panther.IDmap;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.panther.IDmap;
+import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogEntry;
@@ -63,8 +64,8 @@ public class GafPropagator {
 	private static void propagate(GafDocument gafdoc, Family family) throws IOException {
 		List<GeneAnnotation> gaf_annotations = gafdoc.getGeneAnnotations();
 
-		Map<Bioentity, String> prune_dates = new HashMap<>();
-		Map<Bioentity, List<GeneAnnotation>> negate_list = new HashMap<>();
+		Map<Protein, String> prune_dates = new HashMap<>();
+		Map<Protein, List<GeneAnnotation>> negate_list = new HashMap<>();
 		List<GeneAnnotation> clade_checklist = new ArrayList<>();
 
 		IDmap mapper = IDmap.inst();
@@ -94,7 +95,7 @@ public class GafPropagator {
 			/*
 			 * Next step is to find the corresponding gene node
 			 */
-			List<Bioentity> seqs;
+			List<Protein> seqs;
 			seqs = mapper.getGeneByDbId(gaf_node.getId());
 			if (seqs == null) {
 				seqs = mapper.getGenesBySeqId(gaf_node.getSeqDb(), gaf_node.getSeqId());
@@ -116,7 +117,7 @@ public class GafPropagator {
 			} else {
 				int seq_count = 0;
 				GeneAnnotation original = gaf_annotation;
-				for (Bioentity seq_node : seqs) {
+				for (Protein seq_node : seqs) {
 					if (seq_count > 0) {
 						// clone the gaf annotation
 						gaf_annotation = new GeneAnnotation(original);
@@ -128,8 +129,8 @@ public class GafPropagator {
 				}
 			} // end for loop going through gaf file contents
 		}
-		Set<Bioentity> pruned = prune_dates.keySet();
-		for (Bioentity node : pruned) {
+		Set<Protein> pruned = prune_dates.keySet();
+		for (Protein node : pruned) {
 			node.setPrune(true);
 			PaintAction.inst().pruneBranch(node, prune_dates.get(node), true);
 		}
@@ -143,10 +144,10 @@ public class GafPropagator {
 	}
 
 	private static void parseAnnotations(Family family,
-			Bioentity node,
+			Protein node,
 			GeneAnnotation gaf_annotation,
-			Map<Bioentity, String> prune_dates,
-			Map<Bioentity, List<GeneAnnotation>> negate_list,
+			Map<Protein, String> prune_dates,
+			Map<Protein, List<GeneAnnotation>> negate_list,
 			List<GeneAnnotation> clade_checklist) {
 
 		if (gaf_annotation.isCut()) {
@@ -209,7 +210,7 @@ public class GafPropagator {
 		return ok;
 	}
 
-	private static void applyNots(Family family, Map<Bioentity, List<GeneAnnotation>> negate_list) {
+	private static void applyNots(Family family, Map<Protein, List<GeneAnnotation>> negate_list) {
 		/*
         Leaf annotation were also added to the list and these will be redundant if the
         direct NOT is to ancestral node.
@@ -219,15 +220,15 @@ public class GafPropagator {
 		/*
         For each protein node that had one or more NOT qualifiers in the GAF files
 		 */
-		List<Bioentity> skip_list = new ArrayList<>();
-		for (Bioentity node : negate_list.keySet()) {
+		List<Protein> skip_list = new ArrayList<>();
+		for (Protein node : negate_list.keySet()) {
 			if (AnnotationUtil.isAncestralNode(node)) {
 				/*
                 Remove any annotations to descendants
 				 */
-				List<Bioentity> leaves = family.getTree().getLeafDescendants(node);
+				List<Protein> leaves = family.getTree().getLeafDescendants(node);
 				List<GeneAnnotation> ancestral_negations = negate_list.get(node);
-				for (Bioentity leaf : leaves) {
+				for (Protein leaf : leaves) {
 					for (GeneAnnotation ancestral_negation : ancestral_negations) {
 						/*
                     If this descendant is negated check to see if it is the same GO term
@@ -359,7 +360,7 @@ public class GafPropagator {
 			 * Next step is to find the corresponding annotation that was previously loaded 
 			 * (not just this malloc, but the active one in use)
 			 */
-			List<Bioentity> seqs;
+			List<Protein> seqs;
 			Bioentity gaf_node = positive_annot.getBioentityObject();
 			seqs = mapper.getGeneByDbId(gaf_node.getId());
 			if (seqs == null) {

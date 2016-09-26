@@ -35,10 +35,10 @@ import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.gaf.GafPropagator;
+import org.bbop.phylo.io.panther.PantherAdapter;
+import org.bbop.phylo.io.panther.PantherFileAdapter;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
-import org.bbop.phylo.panther.PantherAdapter;
-import org.bbop.phylo.panther.PantherFileAdapter;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
@@ -194,8 +194,12 @@ public class Touchup {
 							Logger.importUserLog(family_name, family_dir);
 
 							GafPropagator.importAnnotations(family, family_dir);
-							
-							family.save(family_dir, "Updated by: " + ResourceLoader.inst().loadVersion());
+							String comment = "Updated by " + ResourceLoader.inst().loadVersion() + 
+									" on " + LogUtil.dateNow() + 
+									" using " + Constant.PANTHER_VERSION + "11.0";							
+							family.save(family_dir, comment);
+							family.export(family_dir);
+
 							int alert_count = LogAlert.getAlertCount();
 							if (alert_count > 0)  {
 								run_summary.put(family_name, LogAlert.report());                            	

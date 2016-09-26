@@ -17,7 +17,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-package org.bbop.phylo.panther;
+package org.bbop.phylo.io.panther;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +27,7 @@ import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
+import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
@@ -81,7 +82,7 @@ public abstract class PantherAdapter {
         }
     }
 
-    protected Bioentity parsePantherTree(List<String> treeContents) {
+    protected Protein parsePantherTree(List<String> treeContents) {
         if (null == treeContents) {
             return null;
         }
@@ -93,7 +94,7 @@ public abstract class PantherAdapter {
             treeContents = ParsingHack.tokenize(treeContents.get(0), Constant.SEMI_COLON);
         }
 
-        Bioentity root = null;
+        Protein root = null;
 
         for (String row : treeContents) {
             if (root == null) {
@@ -101,7 +102,7 @@ public abstract class PantherAdapter {
             } else {
                 int index = row.indexOf(Constant.COLON);
                 String anId = row.substring(0, index);
-                Bioentity node = IDmap.inst().getGeneByANId(anId);
+                Protein node = IDmap.inst().getGeneByANId(anId);
                 if (null == node) {
                     log.info("Found data for non-existent annotation node " + anId);
                     continue;
@@ -115,13 +116,13 @@ public abstract class PantherAdapter {
 
     }
 
-    protected Bioentity createNode() {
-    	return new Bioentity();
+    protected Protein createNode() {
+    	return new Protein();
     }
 
-    private Bioentity parseTreeString(String s) {
-        Bioentity node = null;
-        Bioentity root = null;
+    private Protein parseTreeString(String s) {
+        Protein node = null;
+        Protein root = null;
         StringTokenizer st = new StringTokenizer(s, Constant.DELIM, true);
         while (st.hasMoreTokens()) {
             String token = st.nextToken();
@@ -134,9 +135,9 @@ public abstract class PantherAdapter {
                     root = node;
                 }
                 else {
-                    Bioentity newChild = createNode();
+                    Protein newChild = createNode();
                     List<Bioentity> children = node.getChildren();
-                    if (null == children) {
+                    if (node.getChildren() == null) {
                         children = new ArrayList<Bioentity>();
                     }
                     children.add(newChild);
@@ -180,9 +181,9 @@ public abstract class PantherAdapter {
 						/*
 						 * Move back up
 						 */
-                        node = node.getParent();
+                        node = (Protein) node.getParent();
                     } else if (index > 0) {
-                        Bioentity newChild = createNode();
+                        Protein newChild = createNode();
                         if (-1 == squareIndexStart) {
                             newChild.setDistanceFromParent(Float.valueOf(token.substring(index+1)).floatValue());
                             setTypeAndId(token.substring(0, index), newChild); // this use to be included in setType itself
@@ -212,7 +213,7 @@ public abstract class PantherAdapter {
         return root;
     }
 
-    private void setTypeAndId(String nodeType, Bioentity node) {
+    private void setTypeAndId(String nodeType, Protein node) {
         if (null == nodeType) {
             return;
         }
@@ -292,7 +293,7 @@ public abstract class PantherAdapter {
     private void parseAttributeRow(List<String> row, List<String> header) {
         String id = row.get(0);
         String ptn = row.get(row.size() - 1);
-        Bioentity node = ParsingHack.findThatNode(id);
+        Protein node = ParsingHack.findThatNode(id);
         if (node == null) {
         	/*
         	 * This should never happen!

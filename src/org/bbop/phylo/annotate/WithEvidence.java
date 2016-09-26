@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.OWLutil;
 
@@ -87,7 +88,7 @@ public class WithEvidence {
 		/*
 		 * First gather all of the gene nodes leaves that may have provided this term
 		 */
-		List<Bioentity> leaf_list = tree.getLeafDescendants(node);
+		List<Protein> leaf_list = tree.getLeafDescendants(node);
 		exp_withs = new ArrayList<>();
 		notted_withs = new ArrayList<> ();
 		regulator_of = new ArrayList<> ();

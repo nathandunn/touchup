@@ -30,6 +30,7 @@ public class Constant {
 	public static final String EXP_SUFFIX = ".exp";
 	public static final String QUESTIONED_SUFFIX = "-questioned.gaf";
 	public static final String CHALLENGED_SUFFIX = "-disputed.gaf";
+	public static final String PHYLOXML_SUFFIX = ".phyloxml";
 
 
 	private final static String NOT_KEY_RESIDUES = "NOT due to change in key residue(s)";
@@ -141,6 +142,6 @@ public class Constant {
 	public static final String DEV_GOLR = "http://golr.berkeleybop.org";
 //	public static final String DEV_GOLR = "http://toaster.lbl.gov:9000/solr";
 	public static final String PUB_GOLR = "http://golr.geneontology.org/solr";
-	public static final String PANTHER_VERSION = "PANTHER 10.0 built on the 2014 GCRP release";
+	public static final String PANTHER_VERSION = "PANTHER version ";
 	
 }

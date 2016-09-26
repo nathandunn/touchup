@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
 
 import owltools.gaf.Bioentity;
@@ -57,7 +58,7 @@ public class TaxonChecker {
 
 	private static String error_message;
 
-	public static boolean checkTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
+	public static boolean checkTaxons(Tree tree, Protein node, String go_id, boolean ancestral) {
 		int attempts = 0;
 		boolean valid_taxon = false;
 		io_error = true;
@@ -70,7 +71,7 @@ public class TaxonChecker {
 		return valid_taxon;
 	}
 
-	private static boolean queryTaxons(Tree tree, Bioentity node, String go_id, boolean ancestral) {
+	private static boolean queryTaxons(Tree tree, Protein node, String go_id, boolean ancestral) {
 		List<String> taxa_to_check = getTaxIDs(tree, node, ancestral);
 		boolean descendents_okay = true;
 		error_message = "";
@@ -194,7 +195,7 @@ public class TaxonChecker {
 		return !io_error;
 	}
 
-	private static List<String> getTaxIDs(Tree tree, Bioentity node, boolean ancestral) {
+	private static List<String> getTaxIDs(Tree tree, Protein node, boolean ancestral) {
 		List<String> taxon_to_check = new ArrayList<>();
 		String taxon_id = parseTaxonID(node);
 		if (ancestral || node.getChildren() == null || (node.getChildren().size() == 0)) {
@@ -203,8 +204,8 @@ public class TaxonChecker {
 			}
 		} else {
 			// too vague, look for children
-			List<Bioentity> leaves = tree.getLeafDescendants(node);
-			for (Bioentity leaf : leaves) {
+			List<Protein> leaves = tree.getLeafDescendants(node);
+			for (Protein leaf : leaves) {
 				String leaf_taxon = parseTaxonID(leaf);
 				if (leaf_taxon != null && !leaf_taxon.equals("1") && !taxon_to_check.contains(leaf_taxon)) {
 					taxon_to_check.add(leaf_taxon);

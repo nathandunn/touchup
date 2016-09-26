@@ -20,17 +20,20 @@
 package org.bbop.phylo.model;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 
 import org.bbop.phylo.gaf.GafRecorder;
-import org.bbop.phylo.panther.IDmap;
-import org.bbop.phylo.panther.PantherAdapter;
+import org.bbop.phylo.io.panther.IDmap;
+import org.bbop.phylo.io.panther.PantherAdapter;
+import org.bbop.phylo.io.writer.PhylogenyWriter;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
 import org.bbop.phylo.util.Constant;
+import org.bbop.phylo.util.FileUtil;
 import org.bbop.phylo.util.OWLutil;
 
 public class Family implements Serializable {
@@ -46,13 +49,15 @@ public class Family implements Serializable {
 	 */
 	private String family_name;
 	private String description;
+	private String identifier;
+	private String confidence;
 	private PantherAdapter adapter;
 	private Tree tree;
-    private List<String> tree_content;
-    private List<String> attr_content;
-    private List<String> msa_content;
-    private List<String> wts_content;
-    private List<String> gaf_comments;
+	private List<String> tree_content;
+	private List<String> attr_content;
+	private List<String> msa_content;
+	private List<String> wts_content;
+	private List<String> gaf_comments;
 
 	public Family(String family_name) {
 		setFamily_name(family_name);
@@ -117,6 +122,25 @@ public class Family implements Serializable {
 		return saved;
 	}
 
+	public boolean export(File family_dir) {
+		if (!family_dir.getName().equals(family_name)) {
+			family_dir = new File(family_dir, family_name);
+			family_dir.mkdir();
+		}
+		boolean ok = FileUtil.validPath(family_dir);
+
+		if (ok) {
+			File phyloxml_file = new File(family_dir, family_name + Constant.PHYLOXML_SUFFIX);
+			PhylogenyWriter w = new PhylogenyWriter();
+			try {
+				w.toPhyloXML( phyloxml_file, this, getTree(), 0 );
+			} catch (IOException e) {
+				ok = false;
+			}
+		}
+		return ok;
+	}
+
 	public Tree getTree() {
 		return tree;
 	}
@@ -125,8 +149,11 @@ public class Family implements Serializable {
 		return family_name;
 	}
 
-	private void setFamily_name(String family_name) {
+	public void setFamily_name(String family_name) {
 		this.family_name = family_name;
+		if (identifier == null) {
+			setIdentifier(family_name);
+		}
 	}
 
 	public String getReference() {
@@ -136,7 +163,7 @@ public class Family implements Serializable {
 	public void setGafComments(List<String> comments) {
 		gaf_comments = comments;
 	}
-	
+
 	public List<String> getGafComments() {
 		return gaf_comments;
 	}
@@ -144,11 +171,11 @@ public class Family implements Serializable {
 	public void setDescription(String name) {
 		this.description = name;
 	}
-	
+
 	public String getDescription() {
 		return description;
 	}
-	
+
 	private void clear() {
 		IDmap.inst().clearGeneIDs();
 		LogAction.inst().clearLog();
@@ -156,6 +183,22 @@ public class Family implements Serializable {
 		OWLutil.inst().clearTerms();
 		GafRecorder.inst().clearChallenges();
 		System.gc();
+	}
+
+	public String getIdentifier() {
+		return identifier;
+	}
+
+	public void setIdentifier(String identifier) {
+		this.identifier = identifier;
+	}
+
+	public String getConfidence() {
+		return confidence;
+	}
+
+	public void setConfidence(String confidence) {
+		this.confidence = confidence;
 	}
 }
 

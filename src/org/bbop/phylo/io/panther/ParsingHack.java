@@ -1,4 +1,4 @@
-package org.bbop.phylo.panther;
+package org.bbop.phylo.io.panther;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.util.Constant;
 
 import owltools.gaf.Bioentity;
@@ -90,9 +91,9 @@ public class ParsingHack {
 		return rows;
 	}
 
-	public static Bioentity findThatNode(String row) {
+	public static Protein findThatNode(String row) {
 		IDmap mapper = IDmap.inst();
-		Bioentity gene = null;
+		Protein gene = null;
 		String paint_id = parseANid(row);
 
 		if (paint_id != null)
@@ -106,10 +107,10 @@ public class ParsingHack {
 			String db_name = dbNameHack(db_source[0]);			
 			String db_id = dbIdHack(db_name, db_source[1]);
 			String full_id = db_name + ':' + db_id;
-			List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
+			List<Protein> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
 			if (genes != null) {
 				for (int i = 0; i < genes.size() && gene == null; i++) {
-					Bioentity check = genes.get(i);
+					Protein check = genes.get(i);
 					if (check.getId().equals(full_id)) {
 						gene = check;
 					}
@@ -128,7 +129,7 @@ public class ParsingHack {
 		return gene;
 	}
 
-	static void parseIDstr(Bioentity node, String idstr) {
+	static void parseIDstr(Protein node, String idstr) {
 		String paint_id = parseANid(idstr);
 		if (paint_id != null)
 			node.setPaintId(paint_id);
@@ -179,6 +180,10 @@ public class ParsingHack {
 	 * appropriate identifier from the submissions perspective
 	 */
 	public static boolean useUniProtID(String db_name) {
+		if (db_name == null) {
+			log.debug("Who did this?");
+			return false;
+		}
 		boolean use_uniprot = (db_name.equals("GeneID") || 
 				db_name.equals("Gene") ||
 				db_name.equals("Xenbase") ||
