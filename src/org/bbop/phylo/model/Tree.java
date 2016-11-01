@@ -28,9 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.BioentityDocument;
+import org.bbop.phylo.gaf.parser.BioentityDocument;
 
 public class Tree extends BioentityDocument implements Serializable {
 	/**
@@ -40,16 +38,16 @@ public class Tree extends BioentityDocument implements Serializable {
 
 	private static Logger log = Logger.getLogger("Tree.class");
 
-	protected Protein root = null;
+	protected Bioentity root = null;
 	private List<Bioentity> currentNodes = null; // only the nodes that are visible, as some may be collapsed or pruned away
-	private List<Protein> terminusNodes = null; // only the terminal nodes (i.e. leaves, collapsed or pruned stubs)
+	private List<Bioentity> terminusNodes = null; // only the terminal nodes (i.e. leaves, collapsed or pruned stubs)
 
 	/*
 	 * For ordering operations on the tree
 	 */
-	protected Map<Protein, Integer> descendent_count;
+	protected Map<Bioentity, Integer> descendent_count;
 	protected int species_count;
-	protected Map<Protein, Integer> species_index;
+	protected Map<Bioentity, Integer> species_index;
     private boolean rooted;
     private boolean rerootable;
     private String distance_unit;
@@ -72,20 +70,20 @@ public class Tree extends BioentityDocument implements Serializable {
 		super("unnamed tree");
 	}
 	
-	public void growTree(Protein node) {
+	public void growTree(Bioentity node) {
 		if (null == node){
 			return;
 		}
 		root = node;
 
-		descendent_count = new HashMap<Protein, Integer>();
-		species_index = new HashMap<Protein, Integer>();
+		descendent_count = new HashMap<Bioentity, Integer>();
+		species_index = new HashMap<Bioentity, Integer>();
 		species_count = 0;
 		initSortGuides(root);
 
 		addChildNodesInOrder(root, bioentities);
-		currentNodes = new ArrayList<Bioentity>();
-		terminusNodes = new ArrayList<Protein>();
+		currentNodes = new ArrayList<>();
+		terminusNodes = new ArrayList<>();
 		initCurrentNodes();
 	}
 
@@ -106,7 +104,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	protected void addChildNodesInOrder(Protein node, List<Bioentity> node_list) {
+	protected void addChildNodesInOrder(Bioentity node, List<Bioentity> node_list) {
 		if (node != null) {
 			if (node.isPruned())
 				log.info("Pruned node");
@@ -116,16 +114,16 @@ public class Tree extends BioentityDocument implements Serializable {
 				/* 
 				 * Don't add the parent until the children above it have been added first
 				 */
-				List<Protein> topChildren = getTopChildren(node);
-				for (Protein top_child : topChildren) {
+				List<Bioentity> topChildren = getTopChildren(node);
+				for (Bioentity top_child : topChildren) {
 					addChildNodesInOrder(top_child, node_list);
 				}
 
 				// Add the parent
 				node_list.add(node);
 
-				List<Protein> bottomChildren = getBottomChildren(node);
-				for (Protein bottom_child : bottomChildren) {
+				List<Bioentity> bottomChildren = getBottomChildren(node);
+				for (Bioentity bottom_child : bottomChildren) {
 					addChildNodesInOrder(bottom_child, node_list);
 				}
 			}
@@ -135,7 +133,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	/*
 	 * This is only called during initialization of a new family
 	 */
-	private int initSortGuides(Protein node) {
+	private int initSortGuides(Bioentity node) {
 		int count = 0;
 		species_index.put(node, new Integer(species_count++));
 		if (node != null) {
@@ -147,10 +145,10 @@ public class Tree extends BioentityDocument implements Serializable {
 				List<Bioentity> children = node.getChildren();
 				for (int i = 0; i < children.size(); i++) {
 					Bioentity child = children.get(i);
-					count += initSortGuides((Protein)child);
+					count += initSortGuides((Bioentity)child);
 				}
 			}
-			descendent_count.put((Protein)node, new Integer(count));
+			descendent_count.put((Bioentity)node, new Integer(count));
 		}
 		return count;
 	}
@@ -167,7 +165,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	public List<Protein> getTopChildren(Protein dsn){
+	public List<Bioentity> getTopChildren(Bioentity dsn){
 		return getChildren(true, dsn);
 	}
 
@@ -183,7 +181,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	public List<Protein> getBottomChildren(Protein dsn){
+	public List<Bioentity> getBottomChildren(Bioentity dsn){
 		return getChildren(false, dsn);
 	}
 
@@ -198,7 +196,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	private List<Protein> getChildren(boolean top, Protein dsn){
+	private List<Bioentity> getChildren(boolean top, Bioentity dsn){
 		List<Bioentity>  children = dsn.getChildren();
 		if (null == children){
 			return null;
@@ -206,20 +204,20 @@ public class Tree extends BioentityDocument implements Serializable {
 
 		// Add remainder to handle case where there are an odd number of children
 		int     half = children.size() / 2 + children.size() % 2;
-		List<Protein>  returnList = new ArrayList<Protein>();
+		List<Bioentity>  returnList = new ArrayList<Bioentity>();
 
 		if (top) {
 			for (int i = 0; i < half; i++) {
 				Bioentity node = children.get(i);
 				if (!returnList.contains(node))
-					returnList.add((Protein)node);
+					returnList.add((Bioentity)node);
 			}
 		}
 		else {
 			for (int i = half; i < children.size(); i++) {
 				Bioentity node = children.get(i);
 				if (!returnList.contains(node))
-					returnList.add((Protein)node);
+					returnList.add((Bioentity)node);
 			}
 		}
 		return returnList;
@@ -229,28 +227,28 @@ public class Tree extends BioentityDocument implements Serializable {
 	 * Gets the node which is currently displayed at the top of
 	 * the list (i.e. the first row) for a given clade/ancestral node
 	 * @param node, where to start from
-	 * @returns Protein
+	 * @returns Bioentity
 	 */
-	public Protein getTopLeafNode(Bioentity node) {
-		Protein top_leaf = null;
+	public Bioentity getTopLeafNode(Bioentity node) {
+		Bioentity top_leaf = null;
 		if (node != null) {
 			if (!terminusNodes.contains(node) && node.getChildren() != null) {
 				top_leaf = getTopLeafNode(node.getChildren().get(0));
 			} else {
-				top_leaf = (Protein) node;
+				top_leaf = (Bioentity) node;
 			}
 		}
 		return top_leaf;
 	}
 
-	public Protein getBottomLeafNode(Bioentity node) {
-		Protein bottom_leaf = null;
+	public Bioentity getBottomLeafNode(Bioentity node) {
+		Bioentity bottom_leaf = null;
 		if (node != null) {
 			if (!terminusNodes.contains(node) && node.getChildren() != null) {
 				List<Bioentity> children = node.getChildren();
 				bottom_leaf = getBottomLeafNode(children.get(children.size() - 1));
 			} else {
-				bottom_leaf = (Protein) node;
+				bottom_leaf = (Bioentity) node;
 			}
 		}
 		return bottom_leaf;
@@ -276,7 +274,7 @@ public class Tree extends BioentityDocument implements Serializable {
 	private void setTerminusNodes() {
 		for (Bioentity node : currentNodes) {
 			if (node.isTerminus()) {
-				terminusNodes.add((Protein) node);
+				terminusNodes.add((Bioentity) node);
 			}
 		}
 	}
@@ -290,8 +288,8 @@ public class Tree extends BioentityDocument implements Serializable {
 	 * @return Node - the node that is an ancestor to both of these two leaves
 	 */
 
-	public Protein getMRCA(Protein gene1, Protein gene2) {
-		Protein ancestor = null;
+	public Bioentity getMRCA(Bioentity gene1, Bioentity gene2) {
+		Bioentity ancestor = null;
 		if (gene1.isLeaf() && gene2.isLeaf()) {
 			if (gene1 == gene2) {
 				ancestor = gene1;
@@ -299,9 +297,9 @@ public class Tree extends BioentityDocument implements Serializable {
 				while (ancestor == null && gene1 != null) {
 					Bioentity ancestor1 =  gene1.getParent();
 					if (isDescendentOf(ancestor1, gene2)) {
-						ancestor = (Protein) ancestor1;
+						ancestor = (Bioentity) ancestor1;
 					} else {
-						gene1 = (Protein) ancestor1;
+						gene1 = (Bioentity) ancestor1;
 					}
 				}
 			}
@@ -325,19 +323,19 @@ public class Tree extends BioentityDocument implements Serializable {
 		return is_descendent;
 	}
 
-	public Protein getRoot() {
+	public Bioentity getRoot() {
 		return root;
 	}
 
-	public void setRoot(Protein node) {
+	public void setRoot(Bioentity node) {
 		this.root = node;
 	}
 	
-//	public List<Protein> getAllNodes() {
-//		return getBioentities();
-//	}
-//
-	public List<Protein> getTerminusNodes() {
+	public List<Bioentity> getBioentities() {
+		return bioentities;
+	}
+
+	public List<Bioentity> getTerminusNodes() {
 		return terminusNodes;
 	}
 
@@ -345,7 +343,7 @@ public class Tree extends BioentityDocument implements Serializable {
 		return currentNodes;
 	}
 
-	public Protein getCurrentRoot(){
+	public Bioentity getCurrentRoot(){
 		return root;
 	}
 
@@ -358,25 +356,25 @@ public class Tree extends BioentityDocument implements Serializable {
 	 *
 	 * @see
 	 */
-	 public void getDescendentList(Bioentity node, List<Protein> v){
+	 public void getDescendentList(Bioentity node, List<Bioentity> v){
 		if (!node.isTerminus()) {
 			List<Bioentity>  children = node.getChildren();
 			for (int i = 0; i < children.size(); i++){
 				Bioentity  child = children.get(i);
-				v.add((Protein) child);
+				v.add((Bioentity) child);
 				getDescendentList(child, v);
 			}
 		}
 	 }
 
-	 public List<Protein> getLeaves() {
-		 List<Protein> leaf_nodes = new ArrayList<Protein>();
+	 public List<org.bbop.phylo.model.Bioentity> getLeaves() {
+		 List<Bioentity> leaf_nodes = new ArrayList<Bioentity>();
 		 getLeafDescendants(root, leaf_nodes);
 		 return leaf_nodes;
 	 }
 
-	 public List<Protein> getLeafDescendants(Bioentity node) {
-		 List<Protein> leaf_nodes = new ArrayList<Protein>();
+	 public List<Bioentity> getLeafDescendants(Bioentity node) {
+		 List<Bioentity> leaf_nodes = new ArrayList<Bioentity>();
 		 getLeafDescendants(node, leaf_nodes);
 		 return leaf_nodes;
 	 }
@@ -390,12 +388,12 @@ public class Tree extends BioentityDocument implements Serializable {
 	  *
 	  * @see
 	  */
-	 public void getLeafDescendants(Bioentity node, List<Protein> leafList){
+	 public void getLeafDescendants(Bioentity node, List<Bioentity> leafList){
 		 List<Bioentity>  children = node.getChildren();
 		 if (children != null) {
 			 for (Bioentity child : children) {
 				 if (child.isLeaf() || child.isPruned()) {
-					 leafList.add((Protein) child);
+					 leafList.add(child);
 				 }
 				 if (!child.isPruned())
 					 getLeafDescendants(child, leafList);

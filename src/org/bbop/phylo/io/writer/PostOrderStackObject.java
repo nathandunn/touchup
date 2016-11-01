@@ -25,7 +25,7 @@
 
 package org.bbop.phylo.io.writer;
 
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
 
 /*
  * @author Christian M. Zmasek
@@ -34,15 +34,15 @@ import org.bbop.phylo.model.Protein;
  */
 public final class PostOrderStackObject {
 
-    final private Protein _node;
+    final private Bioentity _node;
     final private int           _phase;
 
-    public PostOrderStackObject( final Protein n, final int i ) {
+    public PostOrderStackObject( final Bioentity n, final int i ) {
         _node = n;
         _phase = i;
     }
 
-    final public Protein getNode() {
+    final public Bioentity getNode() {
         return _node;
     }
 

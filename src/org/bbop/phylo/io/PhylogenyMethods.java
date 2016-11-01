@@ -33,11 +33,10 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Confidence;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
-
-import owltools.gaf.Bioentity;
 
 public class PhylogenyMethods {
 

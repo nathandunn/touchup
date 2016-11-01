@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.util.Constant;
 
 public class IDmap {
@@ -35,10 +35,10 @@ public class IDmap {
      */
     private static IDmap INSTANCE = null;
 
-    private HashMap<String, Protein> ANidToGene;
-    private HashMap<String, List<Protein>> seqIdtoGene;
-    private HashMap<String, List<Protein>> DbIdtoGene;
-    private HashMap<String, Protein> ptnIdtoGene;
+    private HashMap<String, Bioentity> ANidToGene;
+    private HashMap<String, List<Bioentity>> seqIdtoGene;
+    private HashMap<String, List<Bioentity>> DbIdtoGene;
+    private HashMap<String, Bioentity> ptnIdtoGene;
     private Set<String> duplicates;
 
     private static final Logger log = Logger.getLogger(IDmap.class);
@@ -56,22 +56,22 @@ public class IDmap {
 
     public void clearGeneIDs() {
         if (ANidToGene == null) {
-            ANidToGene = new HashMap<String, Protein>();
+            ANidToGene = new HashMap<String, Bioentity>();
         } else {
             ANidToGene.clear();
         }
         if (seqIdtoGene == null) {
-            seqIdtoGene = new HashMap<String, List<Protein>>();
+            seqIdtoGene = new HashMap<String, List<Bioentity>>();
         } else {
             seqIdtoGene.clear();
         }
         if (DbIdtoGene == null) {
-            DbIdtoGene = new HashMap<String, List<Protein>>();
+            DbIdtoGene = new HashMap<String, List<Bioentity>>();
         } else {
             DbIdtoGene.clear();
         }
         if (ptnIdtoGene == null) {
-            ptnIdtoGene = new HashMap<String, Protein>();
+            ptnIdtoGene = new HashMap<String, Bioentity>();
         } else {
             ptnIdtoGene.clear();
         }
@@ -80,7 +80,7 @@ public class IDmap {
         }
     }
 
-    public void indexByANid(Protein node) {
+    public void indexByANid(Bioentity node) {
         String an_number = node.getPaintId();
         if (an_number == null || an_number.length() == 0) {
             log.error("PANTHER AN ID for node is missing!");
@@ -91,21 +91,21 @@ public class IDmap {
         }
     }
 
-    public void indexBySeqID(Protein node) {
+    public void indexBySeqID(Bioentity node) {
         indexBySeqID(node, node.getSeqDb(), node.getSeqId());
     }
 
-    private void indexBySeqID(Protein node, String db, String db_id) {
+    private void indexBySeqID(Bioentity node, String db, String db_id) {
         if (db_id != null && db_id.length() > 0) {
             String key = db + ':' + db_id.toUpperCase();
-            List<Protein> genes = seqIdtoGene.get(key);
+            List<Bioentity> genes = seqIdtoGene.get(key);
             if (genes == null) {
-                genes = new ArrayList<Protein>();
+                genes = new ArrayList<Bioentity>();
                 seqIdtoGene.put(key, genes);
             } else {
             	String msg = ("Identical Seq ID (" +  node.getSeqDb() + ":" + node.getSeqId() + ") for " + 
             			(genes.size() + 1) + " different genes: ");
-            	for (Protein g : genes) {
+            	for (Bioentity g : genes) {
             		msg = msg + g.getId() + " ";
             	}
             	msg = msg + node.getId();
@@ -119,8 +119,8 @@ public class IDmap {
         }
     }
     
-    public void replace(Protein node, String old_id) {
-    	List<Protein> priors = DbIdtoGene.get(old_id);
+    public void replace(Bioentity node, String old_id) {
+    	List<Bioentity> priors = DbIdtoGene.get(old_id);
     	if (priors != null && priors.size() >= 1) {
     		priors.remove(node);
     	} else {
@@ -129,21 +129,21 @@ public class IDmap {
     	indexByDBID(node);
     }
 
-    public void indexByDBID(Protein node) {
+    public void indexByDBID(Bioentity node) {
         String key = node.getId();
         indexByDBID(key, node);
     }
 
-    private void indexByDBID(String key, Protein node) {
+    private void indexByDBID(String key, Bioentity node) {
         if (key.length() > 0) {
-        	List<Protein> priors = DbIdtoGene.get(key);
+        	List<Bioentity> priors = DbIdtoGene.get(key);
             if (priors == null) {
-            	priors = new ArrayList<Protein>();
+            	priors = new ArrayList<Bioentity>();
             	DbIdtoGene.put(key, priors);
             } else {
             	String msg = ("Identical Gene ID (" + node.getId() + ") for " +
             			(priors.size() + 1) + " different sequence IDs: ");
-            	for (Protein g : priors) {
+            	for (Bioentity g : priors) {
             		msg = msg + " " + g.getSeqDb() + ':' + g.getSeqId();
             	}
             	msg = msg + " " + node.getSeqDb() + ':' + node.getSeqId();
@@ -155,7 +155,7 @@ public class IDmap {
         }
     }
 
-    public void indexNodeByPTN(Protein node) {
+    public void indexNodeByPTN(Bioentity node) {
         String ptn_id = node.getPersistantNodeID();
         if (ptnIdtoGene.get(ptn_id) == null)
             ptnIdtoGene.put(ptn_id, node);
@@ -168,17 +168,17 @@ public class IDmap {
         }
     }
 
-    public Protein getGeneByPTNId(String id) {
-        Protein node = null;
+    public Bioentity getGeneByPTNId(String id) {
+        Bioentity node = null;
         if (id != null && ptnIdtoGene != null)
             node = ptnIdtoGene.get(id);
         return node;
     }
 
-    public Protein getGeneByANId(String id) {
+    public Bioentity getGeneByANId(String id) {
         if (id.length() == 0)
             return null;
-        Protein node = ANidToGene.get(id);
+        Bioentity node = ANidToGene.get(id);
         if (node == null && id.startsWith("PTHR")) {
             id = id.substring(id.indexOf('_') + 1);
             node = ANidToGene.get(id);
@@ -186,13 +186,13 @@ public class IDmap {
         return node;
     }
 
-    public List<Protein> getGenesBySeqId(String db, String id) {
+    public List<Bioentity> getGenesBySeqId(String db, String id) {
         String key = db + ':' + id.toUpperCase();
         return getGenesBySeqId(key);
     }
 
-    private List<Protein> getGenesBySeqId(String key) {
-        List<Protein> nodes = seqIdtoGene.get(key);
+    private List<Bioentity> getGenesBySeqId(String key) {
+        List<Bioentity> nodes = seqIdtoGene.get(key);
         if (nodes == null && key.contains("PTHR")) {
             key = key.substring(key.indexOf('_') + 1);
             nodes = seqIdtoGene.get(key.toUpperCase());
@@ -200,8 +200,8 @@ public class IDmap {
         return nodes;
     }
 
-    public List<Protein> getGeneByDbId(String key) {
-        List<Protein> genes = DbIdtoGene.get(key);
+    public List<Bioentity> getGeneByDbId(String key) {
+        List<Bioentity> genes = DbIdtoGene.get(key);
         return genes;
     }
 

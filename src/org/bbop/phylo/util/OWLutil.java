@@ -33,6 +33,10 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
+import org.bbop.phylo.gaf.parser.DefaultAspectProvider;
+import org.bbop.phylo.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
+import org.bbop.phylo.model.Bioentity;
+import org.bbop.phylo.model.GeneAnnotation;
 import org.geneontology.reasoner.ExpressionMaterializingReasoner;
 import org.obolibrary.oboformat.parser.OBOFormatParserException;
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
@@ -46,15 +50,11 @@ import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.util.OWLClassExpressionVisitorAdapter;
 
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
-import owltools.gaf.parser.DefaultAspectProvider;
-import owltools.gaf.parser.GpadGpiObjectsBuilder.AspectProvider;
-import owltools.graph.OWLGraphWrapper;
-import owltools.io.ParserWrapper;
-
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+
+import owltools.graph.OWLGraphWrapper;
+import owltools.io.ParserWrapper;
 
 public class OWLutil {
 
@@ -144,6 +144,8 @@ public class OWLutil {
 
 	private OWLutil () {
 		try {
+			TimerUtil timer = new TimerUtil();
+			log.info("Begin loading GO");
 			ParserWrapper pw = new ParserWrapper();
 			String iriString = "http://purl.obolibrary.org/obo/go.owl";
 			go_graph = new OWLGraphWrapper(pw.parse(iriString));
@@ -168,6 +170,8 @@ public class OWLutil {
 			mappings.put("GO:0005575", "C");
 
 			aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings, ancestor_tool.getReasoner());
+			
+			log.info("GO loaded " + timer.reportElapsedTime());
 
 		} catch (OWLOntologyCreationException e) {
 			throw new RuntimeException(e);

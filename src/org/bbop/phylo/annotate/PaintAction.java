@@ -29,8 +29,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.bbop.phylo.gaf.GafRecorder;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.GeneAnnotation;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogEntry;
@@ -38,10 +39,6 @@ import org.bbop.phylo.tracking.LogEntry.LOG_ENTRY_TYPE;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.OWLutil;
 import org.bbop.phylo.util.TaxonChecker;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
-
 
 public class PaintAction {
 
@@ -71,7 +68,7 @@ public class PaintAction {
 		return INSTANCE;
 	}
 
-	public LOG_ENTRY_TYPE isValidTerm(String go_id, Protein node, Tree tree) {
+	public LOG_ENTRY_TYPE isValidTerm(String go_id, Bioentity node, Tree tree) {
 		/*
 		 * Can't drop onto a pruned node
 		 */
@@ -156,11 +153,11 @@ public class PaintAction {
 	public void filterOutLosses(Family family, Bioentity node, GeneAnnotation assoc) {
 		String go_id = assoc.getCls();
 		// Check that this GO term is valid for all descendants (false param indicates: not a check on ancestral IBD node)
-		boolean valid_for_all_descendents = TaxonChecker.checkTaxons(family.getTree(), (Protein) node, go_id, false);
+		boolean valid_for_all_descendents = TaxonChecker.checkTaxons(family.getTree(), node, go_id, false);
 
 		if (!valid_for_all_descendents) {
 			// The GO term is not valid for all the leaves, perhaps it's all of them
-			boolean not_found_in_taxon = !TaxonChecker.checkTaxons(family.getTree(), (Protein) node, go_id, true);
+			boolean not_found_in_taxon = !TaxonChecker.checkTaxons(family.getTree(), node, go_id, true);
 			if (not_found_in_taxon) {
 				log.debug("Negating annot to " + go_id + " in " + node.getSpeciesLabel());
 				setNot(family, node, assoc, Constant.LOSS_OF_FUNCTION, true, null);
@@ -650,8 +647,8 @@ public class PaintAction {
 			/*
 			Keep both the existing evidence, but now also add the negative evidence
 			 */
-			List<Protein> leafList = family.getTree().getLeafDescendants(node);
-			for (Protein leaf : leafList) {
+			List<Bioentity> leafList = family.getTree().getLeafDescendants(node);
+			for (Bioentity leaf : leafList) {
 				List<GeneAnnotation> leafAssocs = AnnotationUtil.getAspectExpAssociations(leaf, assoc.getAspect());
 				for (GeneAnnotation leafAssoc : leafAssocs) {
 					if (leafAssoc.getCls().equals(assoc.getCls()) && leafAssoc.isNegated()) {

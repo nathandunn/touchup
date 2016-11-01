@@ -45,11 +45,9 @@ import org.bbop.phylo.io.PhylogenyMethods;
 import org.bbop.phylo.io.PhylogenyParser;
 import org.bbop.phylo.io.PhylogenyParserException;
 import org.bbop.phylo.io.phyloxml.PhyloXmlDataFormatException;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
-
-import owltools.gaf.Bioentity;
 
 public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParser {
 
@@ -74,7 +72,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
     private boolean              _allow_errors_in_distance_to_parent;
     private int                  _clade_level;
     private StringBuilder        _current_anotation;
-    private Protein              _current_node;
+    private Bioentity            _current_node;
     private Tree                 _current_phylogeny;
     private boolean              _guess_rootedness;
     private int                  _i;
@@ -304,7 +302,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
 
     private final Tree finishSingleNodePhylogeny() throws PhylogenyParserException, NHXFormatException,
     PhyloXmlDataFormatException {
-        final Protein new_node = new Protein();
+        final Bioentity new_node = new Bioentity();
         parseNHX( _current_anotation.toString(),
                   new_node,
                   getTaxonomyExtraction(),
@@ -486,7 +484,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
         }
         --_clade_level;
         if ( !_saw_closing_paren ) {
-            final Protein new_node = new Protein();
+            final Bioentity new_node = new Bioentity();
             parseNHX( _current_anotation.toString(),
                       new_node,
                       getTaxonomyExtraction(),
@@ -508,14 +506,14 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
             _current_anotation = new StringBuilder();
         }
         if ( !_current_node.isRoot() ) {
-            _current_node = (Protein) _current_node.getParent();
+            _current_node = (Bioentity) _current_node.getParent();
         }
         _saw_closing_paren = true;
     }
 
     private final void processComma() throws PhylogenyParserException, NHXFormatException, PhyloXmlDataFormatException {
         if ( !_saw_closing_paren ) {
-            final Protein new_node = new Protein();
+            final Bioentity new_node = new Bioentity();
             parseNHX( _current_anotation.toString(),
                       new_node,
                       getTaxonomyExtraction(),
@@ -544,7 +542,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
     private final Tree processOpenParen() throws PhylogenyParserException, NHXFormatException,
     PhyloXmlDataFormatException {
         Tree phy = null;
-        final Protein new_node = new Protein();
+        final Bioentity new_node = new Bioentity();
         if ( _clade_level == 0 ) {
             if ( _current_phylogeny != null ) {
                 phy = finishPhylogeny();
@@ -574,7 +572,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
     }
 
     public final static void parseNHX( String s,
-                                       final Protein node_to_annotate,
+                                       final Bioentity node_to_annotate,
                                        final TAXONOMY_EXTRACTION taxonomy_extraction,
                                        final boolean replace_underscores,
                                        final boolean allow_errors_in_distance_to_parent,
@@ -661,11 +659,11 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
                     else if ( s.startsWith( NHXtags.IS_DUPLICATION ) ) {
                         if ( ( s.charAt( 2 ) == 'Y' ) || ( s.charAt( 2 ) == 'T' ) ) {
 //                            node_to_annotate.getNodeData().setEvent( Event.createSingleDuplicationEvent() );
-                        	node_to_annotate.setType(Protein.NODE_TYPE_DUPLICATION);
+                        	node_to_annotate.setType(Bioentity.NODE_TYPE_DUPLICATION);
                         }
                         else if ( ( s.charAt( 2 ) == 'N' ) || ( s.charAt( 2 ) == 'F' ) ) {
 //                            node_to_annotate.getNodeData().setEvent( Event.createSingleSpeciationEvent() );
-                        	node_to_annotate.setType(Protein.NODE_TYPE_SPECIATION);
+                        	node_to_annotate.setType(Bioentity.NODE_TYPE_SPECIATION);
                         }
                         else if ( s.charAt( 2 ) == '?' ) {
 //                            node_to_annotate.getNodeData().setEvent( Event.createSingleSpeciationOrDuplicationEvent() );
@@ -716,7 +714,7 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
     }
 
     private final static boolean isBranchLengthsLikeBootstrapValues( final Tree p ) {
-        final List<Protein> leaves = p.getTerminusNodes();
+        final List<Bioentity> leaves = p.getTerminusNodes();
         final double d0 = leaves.get(0).getDistanceFromParent();
         if ( ( d0 < 10 ) || leaves.size() == 1 ) {
             return false;
@@ -731,8 +729,8 @@ public final class NHXParser implements PhylogenyParser, IteratingPhylogenyParse
     }
 
     private final static void moveBranchLengthsToConfidenceValues( final Tree p ) {
-        final List<Protein> leaves = p.getTerminusNodes();
-        for (Protein node : leaves) { 
+        final List<Bioentity> leaves = p.getTerminusNodes();
+        for (Bioentity node : leaves) { 
             PhylogenyMethods.setBootstrapConfidence( node, node.getDistanceFromParent() );
             node.setDistanceFromParent( PhylogenyDataUtil.BRANCH_LENGTH_DEFAULT );
         }

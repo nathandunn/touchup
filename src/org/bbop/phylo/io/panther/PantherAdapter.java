@@ -26,14 +26,12 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.species.TaxonFinder;
 
 /**
  * Created by suzi on 12/15/14.
@@ -82,7 +80,7 @@ public abstract class PantherAdapter {
         }
     }
 
-    protected Protein parsePantherTree(List<String> treeContents) {
+    protected Bioentity parsePantherTree(List<String> treeContents) {
         if (null == treeContents) {
             return null;
         }
@@ -94,7 +92,7 @@ public abstract class PantherAdapter {
             treeContents = ParsingHack.tokenize(treeContents.get(0), Constant.SEMI_COLON);
         }
 
-        Protein root = null;
+        Bioentity root = null;
 
         for (String row : treeContents) {
             if (root == null) {
@@ -102,7 +100,7 @@ public abstract class PantherAdapter {
             } else {
                 int index = row.indexOf(Constant.COLON);
                 String anId = row.substring(0, index);
-                Protein node = IDmap.inst().getGeneByANId(anId);
+                Bioentity node = IDmap.inst().getGeneByANId(anId);
                 if (null == node) {
                     log.info("Found data for non-existent annotation node " + anId);
                     continue;
@@ -116,13 +114,13 @@ public abstract class PantherAdapter {
 
     }
 
-    protected Protein createNode() {
-    	return new Protein();
+    public Bioentity createNode() {
+    	return new Bioentity();
     }
 
-    private Protein parseTreeString(String s) {
-        Protein node = null;
-        Protein root = null;
+    private Bioentity parseTreeString(String s) {
+        Bioentity node = null;
+        Bioentity root = null;
         StringTokenizer st = new StringTokenizer(s, Constant.DELIM, true);
         while (st.hasMoreTokens()) {
             String token = st.nextToken();
@@ -135,7 +133,7 @@ public abstract class PantherAdapter {
                     root = node;
                 }
                 else {
-                    Protein newChild = createNode();
+                    Bioentity newChild = createNode();
                     List<Bioentity> children = node.getChildren();
                     if (node.getChildren() == null) {
                         children = new ArrayList<Bioentity>();
@@ -181,9 +179,9 @@ public abstract class PantherAdapter {
 						/*
 						 * Move back up
 						 */
-                        node = (Protein) node.getParent();
+                        node = (Bioentity) node.getParent();
                     } else if (index > 0) {
-                        Protein newChild = createNode();
+                        Bioentity newChild = createNode();
                         if (-1 == squareIndexStart) {
                             newChild.setDistanceFromParent(Float.valueOf(token.substring(index+1)).floatValue());
                             setTypeAndId(token.substring(0, index), newChild); // this use to be included in setType itself
@@ -213,7 +211,7 @@ public abstract class PantherAdapter {
         return root;
     }
 
-    private void setTypeAndId(String nodeType, Protein node) {
+    private void setTypeAndId(String nodeType, Bioentity node) {
         if (null == nodeType) {
             return;
         }
@@ -293,7 +291,7 @@ public abstract class PantherAdapter {
     private void parseAttributeRow(List<String> row, List<String> header) {
         String id = row.get(0);
         String ptn = row.get(row.size() - 1);
-        Protein node = ParsingHack.findThatNode(id);
+        Bioentity node = ParsingHack.findThatNode(id);
         if (node == null) {
         	/*
         	 * This should never happen!

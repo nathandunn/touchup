@@ -6,11 +6,9 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.Constant;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.species.TaxonFinder;
 
 public class ParsingHack {
 
@@ -91,9 +89,9 @@ public class ParsingHack {
 		return rows;
 	}
 
-	public static Protein findThatNode(String row) {
+	public static Bioentity findThatNode(String row) {
 		IDmap mapper = IDmap.inst();
-		Protein gene = null;
+		Bioentity gene = null;
 		String paint_id = parseANid(row);
 
 		if (paint_id != null)
@@ -107,10 +105,10 @@ public class ParsingHack {
 			String db_name = dbNameHack(db_source[0]);			
 			String db_id = dbIdHack(db_name, db_source[1]);
 			String full_id = db_name + ':' + db_id;
-			List<Protein> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
+			List<Bioentity> genes = mapper.getGenesBySeqId(seq_source[0], seq_source[1]);
 			if (genes != null) {
 				for (int i = 0; i < genes.size() && gene == null; i++) {
-					Protein check = genes.get(i);
+					Bioentity check = genes.get(i);
 					if (check.getId().equals(full_id)) {
 						gene = check;
 					}
@@ -129,7 +127,7 @@ public class ParsingHack {
 		return gene;
 	}
 
-	static void parseIDstr(Protein node, String idstr) {
+	static void parseIDstr(Bioentity node, String idstr) {
 		String paint_id = parseANid(idstr);
 		if (paint_id != null)
 			node.setPaintId(paint_id);

@@ -9,21 +9,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.bbop.golr.java.RetrieveGolrAnnotations;
-import org.bbop.golr.java.RetrieveGolrAnnotations.GolrAnnotationDocument;
 import org.bbop.phylo.config.TouchupConfig;
+import org.bbop.phylo.gaf.parser.GafDocument;
+import org.bbop.phylo.io.golr.RetrieveGolrAnnotations;
+import org.bbop.phylo.io.golr.RetrieveGolrAnnotations.GolrAnnotationDocument;
 import org.bbop.phylo.io.panther.IDmap;
 import org.bbop.phylo.io.panther.ParsingHack;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.GeneAnnotation;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAlert;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.OWLutil;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.GafDocument;
-import owltools.gaf.GeneAnnotation;
 
 public class AnnotationUtil {
 
@@ -129,7 +127,7 @@ public class AnnotationUtil {
 
 	public static void collectExpAnnotationsBatched(Family family) throws Exception {
 		Tree tree = family.getTree();
-		List<Protein> leaves = tree.getLeaves();
+		List<Bioentity> leaves = tree.getLeaves();
 		if (TouchupConfig.inst().GOlrURL.isEmpty()) {
 			TouchupConfig.inst().GOlrURL = Constant.DEV_GOLR;
 		}
@@ -154,14 +152,14 @@ public class AnnotationUtil {
 		};
 
 		List<String> gene_names = new ArrayList<>();
-		Map<String, Protein> id2gene = new HashMap<>();
+		Map<String, Bioentity> id2gene = new HashMap<>();
 		int increment = 100;
 		for (int i = 0; i < leaves.size(); i += increment) {
 			gene_names.clear();
 			id2gene.clear();
 			int limit = Math.min(leaves.size(), i + increment);
 			for (int position = i; position < limit; position++) {
-				Protein leaf = leaves.get(position);
+				Bioentity leaf = leaves.get(position);
 				/*
 				 * Another nasty hack to use UniprotKB rather than ENSG
 				 * Or, for that matter, 
@@ -186,7 +184,7 @@ public class AnnotationUtil {
 			 * in GoLR could not be found
 			 */
 			for (String gene_name : id2gene.keySet()) {
-				Protein leaf = id2gene.get(gene_name);
+				Bioentity leaf = id2gene.get(gene_name);
 				List<GolrAnnotationDocument> golrDocuments;
 				golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
 
@@ -216,14 +214,14 @@ public class AnnotationUtil {
 		}
 	}
 
-	private static void askGolr(RetrieveGolrAnnotations retriever, List<String> gene_names, Map<String, Protein> id2gene) {
+	private static void askGolr(RetrieveGolrAnnotations retriever, List<String> gene_names, Map<String, Bioentity> id2gene) {
 		try {
 			List<GolrAnnotationDocument> golrDocuments = retriever.getGolrAnnotationsForGenes(gene_names, true);
 			if (golrDocuments.size() > 0) {
 				GafDocument annots = retriever.convert(golrDocuments);
 				Collection<Bioentity> bioentities = annots.getBioentities();
 				for (Bioentity golr_gene : bioentities) {
-					Protein leaf = id2gene.get(golr_gene.getId());
+					Bioentity leaf = id2gene.get(golr_gene.getId());
 					if (leaf != null) {
 						/* HACK ALERT!!
 						 * Have to use synonym search to get the multiple copies of this from GoLR
@@ -251,7 +249,7 @@ public class AnnotationUtil {
 		}
 	}
 
-	private static void processGolrAnnotations(Protein leaf, Bioentity golr_gene, List<GeneAnnotation> golr_annotations) {
+	private static void processGolrAnnotations(Bioentity leaf, Bioentity golr_gene, List<GeneAnnotation> golr_annotations) {
 		List<GeneAnnotation> exp_annotations = getExperimentalAnnotations(golr_annotations);
 		for (GeneAnnotation golr_annot : exp_annotations) {
 			golr_annot.setBioentityObject(leaf);

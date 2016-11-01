@@ -31,18 +31,17 @@ import java.io.Writer;
 import org.apache.log4j.Logger;
 import org.bbop.phylo.io.PhylogenyDataUtil;
 import org.bbop.phylo.io.phyloxml.PhyloXmlMapping;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.PhyloUtil;
-
-import owltools.gaf.species.TaxonFinder;
 
 public class PhyloXmlNodeWriter {
 	
 	private static Logger log = Logger.getLogger(PhyloXmlNodeWriter.class);
 
 
-	public static void toPhyloXml( final Writer w, final Protein node, final int level, final String indentation )
+	public static void toPhyloXml( final Writer w, final Bioentity node, final int level, final String indentation )
 			throws IOException {
 		String ind = "";
 		if ( ( indentation != null ) && ( indentation.length() > 0 ) ) {
@@ -66,10 +65,9 @@ public class PhyloXmlNodeWriter {
 			PhylogenyDataUtil.appendOpen( w, PhyloXmlMapping.SEQUENCE, 
 					PhyloXmlMapping.SEQUENCE_TYPE, "protein",
 					PhyloXmlMapping.ACCESSION_SOURCE_ATTR, node.getSeqDb());
-			if ( !PhyloUtil.isEmpty( node.getSymbol()) && !node.getSymbol().equals(node.getLocalId()) ) {
-				PhylogenyDataUtil.appendElement( w, PhyloXmlMapping.SEQUENCE_SYMBOL, node.getSymbol(), element_indent );
-			}
 			PhylogenyDataUtil.appendElement( w, PhyloXmlMapping.ACCESSION, node.getSeqId(), element_indent );
+			if ( !PhyloUtil.isEmpty( node.getSymbol()) && !node.getSymbol().equals(node.getLocalId()) ) {
+				PhylogenyDataUtil.appendElement( w, PhyloXmlMapping.SEQUENCE_SYMBOL, node.getSymbol(), element_indent );			}
 			w.write( PhyloUtil.LINE_SEPARATOR );
 			w.write( element_indent );
 			PhylogenyDataUtil.appendClose( w, PhyloXmlMapping.SEQUENCE );
@@ -123,7 +121,7 @@ public class PhyloXmlNodeWriter {
 			PhylogenyDataUtil.appendElement( w, PhyloXmlMapping.IDENTIFIER, taxon, 
 					PhyloXmlMapping.IDENTIFIER_PROVIDER_ATTR, "ncbi",
 					element_indent );
-			String name = TaxonFinder.getSpecies(ncbi_code);
+			String name = TaxonFinder.getLabel(ncbi_code);
 			if ( !PhyloUtil.isEmpty( name ) ) {
 				PhylogenyDataUtil.appendElement( w,
 						PhyloXmlMapping.TAXONOMY_SCIENTIFIC_NAME,
@@ -133,6 +131,8 @@ public class PhyloXmlNodeWriter {
 	        w.write( PhyloUtil.LINE_SEPARATOR );
 	        w.write( element_indent );
 	        PhylogenyDataUtil.appendClose( w, PhyloXmlMapping.TAXONOMY );
+		} else if (ncbi_code == null || ncbi_code.length() == 0 || !ncbi_code.startsWith(TaxonFinder.TAXON_PREFIX)) {
+			log.info("Missing ncbi taxon identifier for " + node.getId());
 		}
 
 		if ( !PhyloUtil.isEmpty(node.getType() )) {

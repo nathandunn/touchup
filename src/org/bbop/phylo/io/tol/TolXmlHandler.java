@@ -30,17 +30,14 @@ import java.util.List;
 
 import org.bbop.phylo.io.PhyloConstant;
 import org.bbop.phylo.io.PhylogenyParserException;
-import org.bbop.phylo.io.Taxonomy;
 import org.bbop.phylo.io.phyloxml.FailedConditionCheckException;
 import org.bbop.phylo.io.phyloxml.XmlElement;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import owltools.gaf.Bioentity;
 
 public final class TolXmlHandler extends DefaultHandler {
 
@@ -48,7 +45,7 @@ public final class TolXmlHandler extends DefaultHandler {
     private Tree                _current_phylogeny;
     private List<Tree>          _phylogenies;
     private XmlElement          _current_xml_element;
-    private Protein             _current_node;
+    private Bioentity             _current_node;
     private final static StringBuffer _buffer = new StringBuffer();
 
     TolXmlHandler() {
@@ -56,7 +53,7 @@ public final class TolXmlHandler extends DefaultHandler {
     }
 
     private void addNode() {
-        final Protein new_node = new Protein();
+        final Bioentity new_node = new Bioentity();
         getCurrentNode().addChild( new_node );
         setCurrentNode( new_node );
     }
@@ -78,7 +75,7 @@ public final class TolXmlHandler extends DefaultHandler {
                 try {
                     TolXmlHandler.mapElementToPhylogenyNode( getCurrentXmlElement(), getCurrentNode() );
                     if ( !getCurrentNode().isRoot() ) {
-                        setCurrentNode( (Protein) getCurrentNode().getParent() );
+                        setCurrentNode( getCurrentNode().getParent() );
                     }
                     setCurrentXmlElement( getCurrentXmlElement().getParent() );
                 }
@@ -113,7 +110,7 @@ public final class TolXmlHandler extends DefaultHandler {
         return _current_element_name;
     }
 
-    private Protein getCurrentNode() {
+    private Bioentity getCurrentNode() {
         return _current_node;
     }
 
@@ -141,7 +138,7 @@ public final class TolXmlHandler extends DefaultHandler {
         if ( getCurrentPhylogeny() == null ) {
             throw new FailedConditionCheckException( "attempt to create new current node for non-existing phylogeny" );
         }
-        final Protein node = new Protein();
+        final Bioentity node = new Bioentity();
         getCurrentPhylogeny().setRoot( node );
         setCurrentNode( getCurrentPhylogeny().getRoot() );
     }
@@ -170,7 +167,7 @@ public final class TolXmlHandler extends DefaultHandler {
         _current_element_name = element_name;
     }
 
-    private void setCurrentNode( final Protein current_node ) {
+    private void setCurrentNode( final Bioentity current_node ) {
         _current_node = current_node;
     }
 
@@ -236,7 +233,7 @@ public final class TolXmlHandler extends DefaultHandler {
         // Not needed for now.
     }
 
-    private static void mapElementToPhylogenyNode( final XmlElement xml_element, final Protein node )
+    private static void mapElementToPhylogenyNode( final XmlElement xml_element, final Bioentity node )
             throws PhylogenyParserException {
         if ( xml_element.isHasAttribute( TolXmlMapping.NODE_ID_ATTR ) ) {
             final String id = xml_element.getAttribute( TolXmlMapping.NODE_ID_ATTR );

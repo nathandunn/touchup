@@ -33,15 +33,13 @@ import java.util.Map;
 import org.bbop.phylo.io.PhyloConstant;
 import org.bbop.phylo.io.PhylogenyDataUtil;
 import org.bbop.phylo.io.PhylogenyParserException;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import owltools.gaf.Bioentity;
 
 public final class PhyloXmlHandler extends DefaultHandler {
 
@@ -50,7 +48,7 @@ public final class PhyloXmlHandler extends DefaultHandler {
 	private Tree                                        _current_phylogeny;
 	private List<Tree>                                  _phylogenies;
 	private XmlElement                                  _current_xml_element;
-	private Protein                                     _current_node;
+	private Bioentity                                     _current_node;
 	private static Map<Tree, HashMap<String, String>> phylogenySequencesById = new HashMap<Tree, HashMap<String, String>>();
 
 	PhyloXmlHandler() {
@@ -58,7 +56,7 @@ public final class PhyloXmlHandler extends DefaultHandler {
 	}
 
 	private void addNode() {
-		Protein new_node = new Protein();
+		Bioentity new_node = new Bioentity();
 		getCurrentNode().addChild( new_node );
 		setCurrentNode( new_node );
 	}
@@ -85,7 +83,7 @@ public final class PhyloXmlHandler extends DefaultHandler {
 				try {
 					mapElementToBioentity( getCurrentXmlElement(), getCurrentNode() );
 					if ( !getCurrentNode().isRoot() ) {
-						setCurrentNode( (Protein) getCurrentNode().getParent() );
+						setCurrentNode( getCurrentNode().getParent() );
 					}
 					getCurrentXmlElement().setValue( null );
 					setCurrentXmlElement( getCurrentXmlElement().getParent() );
@@ -188,7 +186,7 @@ public final class PhyloXmlHandler extends DefaultHandler {
 		return _current_element_name;
 	}
 
-	private Protein getCurrentNode() {
+	private Bioentity getCurrentNode() {
 		return _current_node;
 	}
 
@@ -216,12 +214,12 @@ public final class PhyloXmlHandler extends DefaultHandler {
 		if ( getCurrentTree() == null ) {
 			throw new FailedConditionCheckException( "attempt to create new current node for non-existing phylogeny" );
 		}
-		final Protein node = new Protein();
+		final Bioentity node = new Bioentity();
 		getCurrentTree().setRoot( node );
 		setCurrentNode( getCurrentTree().getRoot() );
 	}
 
-	private void mapElementToBioentity( final XmlElement xml_element, final Protein node )
+	private void mapElementToBioentity( final XmlElement xml_element, final Bioentity node )
 			throws PhylogenyParserException, PhyloXmlDataFormatException {
 		if ( xml_element.isHasAttribute( PhyloXmlMapping.BRANCH_LENGTH ) ) {
 			float d = 0;
@@ -335,7 +333,7 @@ public final class PhyloXmlHandler extends DefaultHandler {
 		_current_element_name = element_name;
 	}
 
-	private void setCurrentNode( final Protein current_node ) {
+	private void setCurrentNode( final Bioentity current_node ) {
 		_current_node = current_node;
 	}
 

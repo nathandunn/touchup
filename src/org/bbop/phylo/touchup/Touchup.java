@@ -36,7 +36,9 @@ import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.gaf.GafPropagator;
 import org.bbop.phylo.io.panther.PantherAdapter;
+import org.bbop.phylo.io.panther.PantherDbInfo;
 import org.bbop.phylo.io.panther.PantherFileAdapter;
+import org.bbop.phylo.io.panther.PantherServerAdapter;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAlert;
@@ -44,9 +46,9 @@ import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.tracking.Logger;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
+import org.bbop.phylo.util.LoginUtil;
+import org.bbop.phylo.util.ResourceLoader;
 import org.bbop.phylo.util.TaxonChecker;
-
-import owltools.gaf.io.ResourceLoader;
 
 public class Touchup {
 	/**
@@ -86,7 +88,7 @@ public class Touchup {
 		// this thread runs in the AWT event queue
 		public void run() {
 			int family_count;
-			if (args.length == 0 || (args.length % 2) == 1) {
+			if (args.length == 0) {
 				provideHelp();
 				System.exit(0);
 			}
@@ -99,22 +101,31 @@ public class Touchup {
 			String family_file = null;
 			String family_dir = TouchupConfig.inst().gafdir;
 			String family_list = null;
-			for (int i = 0; i < args.length; i += 2) {
+			boolean use_server = false;
+			for (int i = 0; i < args.length; i++) {
 				if (args[i].contains("t")) {
-					TouchupConfig.inst().treedir = args[i + 1];
+					TouchupConfig.inst().treedir = args[++i];
 					log.info(TouchupConfig.inst().treedir);
 				} else if (args[i].contains("s")) {
-					start_with_family = args[i + 1];
+					start_with_family = args[++i];
 				} else if (args[i].contains("f")) {
-					family_file = args[i + 1];
+					family_file = args[++i];
 				} else if (args[i].contains("d")) {
-					File f = new File(args[i + 1]);
+					String dir = args[++i];
+					File f = new File(dir);
 					if (f.isDirectory()) {
-						TouchupConfig.inst().gafdir = args[i + 1];
-						family_dir = args[i + 1];
+						TouchupConfig.inst().gafdir = dir;
+						family_dir = dir;
 					}
 				} else if (args[i].contains("l")) {
-					family_list = args[i + 1];
+					family_list = args[++i];
+				} else if (args[i].contains("p")) {
+					use_server = true;
+					LoginUtil.login();
+					if (!LoginUtil.getLoggedIn()) {
+						log.info("Unable to log into PANTHER server");
+						System.exit(0);
+					}
 				} else {
 					provideHelp();
 					System.exit(0);
@@ -151,7 +162,7 @@ public class Touchup {
 				}
 			}
 			try {
-				family_count = touchup(families);
+				family_count = touchup(families, use_server);
 				log.info("Touched up " + family_count + " PAINT families");
 				System.exit(0);
 			}
@@ -162,7 +173,7 @@ public class Touchup {
 		}
 	};
 
-	private int touchup(List<String> families) {
+	private int touchup(List<String> families, boolean use_server) {
 		log.info(families.size() + " families to touch up");
 		Map<String, List<String>> run_summary = new HashMap<>();
 		int family_count = 0;
@@ -178,7 +189,7 @@ public class Touchup {
 				gaf_count++;
 				Family family = new Family(family_name);
 				Tree tree = new Tree(family_name);
-				PantherAdapter adapter = new PantherFileAdapter();
+				PantherAdapter adapter = use_server ? new PantherServerAdapter() : new PantherFileAdapter();
 				available &= family.fetch(tree, adapter);
 				if (available) {
 					boolean proceed = TaxonChecker.isLive();
@@ -196,7 +207,7 @@ public class Touchup {
 							GafPropagator.importAnnotations(family, family_dir);
 							String comment = "Updated by " + ResourceLoader.inst().loadVersion() + 
 									" on " + LogUtil.dateNow() + 
-									" using " + Constant.PANTHER_VERSION + "11.0";							
+									" using " + Constant.PANTHER_VERSION + PantherDbInfo.getVersionKey();							
 							family.save(family_dir, comment);
 							family.export(family_dir);
 
@@ -278,10 +289,11 @@ public class Touchup {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("USAGE:\n");
 		buffer.append("\t -f <familyname> // touches up a single PAINT family\n");
-		buffer.append("\t -l <filename> // obtains family names from contents of the file\n");
+		buffer.append("\t -l <filename> // obtains list of family names from this file\n");
 		buffer.append("\t -d <directoryname> // touches up families listed in this directory\n");
 		buffer.append("\t -d <directoryname> -s <starting family name> // as above, but solely the alphabetically latter part of directory\n");
 		buffer.append("\n\t // optionally a -t argument may be added to any of the above to indicate the correct PANTHER tree directory\n");
+		buffer.append("\t -p // obtain PANTHER data from their server, rather than a local directory\n");
 		log.error(buffer);
 	}
 }

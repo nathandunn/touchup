@@ -5,11 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bbop.phylo.model.Bioentity;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.species.TaxonFinder;
 
 public class Logger {
 
@@ -207,7 +206,7 @@ public class Logger {
 	}
 
 	protected static String makeLabel(Bioentity node) {
-		String species = TaxonFinder.getSpecies(node.getNcbiTaxonId());
+		String species = TaxonFinder.getLabel(node.getNcbiTaxonId());
 		if (species == null) {
 			species = node.getSpeciesLabel();
 		}

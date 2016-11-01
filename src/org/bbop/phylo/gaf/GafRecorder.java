@@ -12,21 +12,19 @@ import org.apache.log4j.Logger;
 import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.annotate.WithEvidence;
 import org.bbop.phylo.config.TouchupConfig;
+import org.bbop.phylo.gaf.parser.GafDocument;
+import org.bbop.phylo.gaf.parser.GafWriter;
 import org.bbop.phylo.io.panther.IDmap;
 import org.bbop.phylo.io.panther.ParsingHack;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.GeneAnnotation;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogEntry;
 import org.bbop.phylo.tracking.LogUtil;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.GafDocument;
-import owltools.gaf.GeneAnnotation;
-import owltools.gaf.io.GafWriter;
 
 public class GafRecorder {
 
@@ -125,7 +123,7 @@ public class GafRecorder {
 		}		
 	}
 
-	private void addAnnotations(Family family, Tree tree, Protein node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
+	private void addAnnotations(Family family, Tree tree, Bioentity node, GafDocument gaf_doc, Map<Bioentity, String> originalIDs) {
 		if (node.isPruned()) {
 			/* Write out one row to record the pruned branch */
 			GeneAnnotation stump = createStump(family, node);
@@ -176,14 +174,14 @@ public class GafRecorder {
 				List<Bioentity> children = node.getChildren();
 				if (children != null) {
 					for (Bioentity child : children) {
-						addAnnotations(family, tree, (Protein) child, gaf_doc, originalIDs);
+						addAnnotations(family, tree, child, gaf_doc, originalIDs);
 					}
 				}
 			}
 		}
 	}
 
-	private void addExpWith(Tree tree, Protein node, GeneAnnotation annotation) {
+	private void addExpWith(Tree tree, Bioentity node, GeneAnnotation annotation) {
 		List<String> withs = new ArrayList<>();
 		String ancestor_id = annotation.getWithInfos().iterator().next();
 		withs.add(ancestor_id);
@@ -197,12 +195,12 @@ public class GafRecorder {
 		 * Then add the ancestor's withs to feed back to PANTREE
 		 */
 		List<String> exp_withs;
-		List<Protein> ancestor = IDmap.inst().getGeneByDbId(ancestor_id);
+		List<Bioentity> ancestor = IDmap.inst().getGeneByDbId(ancestor_id);
 		if (ancestor != null) {
 			if (ancestor.size() > 1) {
 				log.debug("More than one ancestor? " + ancestor_id);
 			}
-			for (Protein a : ancestor) {
+			for (Bioentity a : ancestor) {
 				WithEvidence evidence = new WithEvidence(tree, a, annotation.getCls());
 				exp_withs = evidence.getExpWiths();
 				withs.addAll(exp_withs);
@@ -236,8 +234,8 @@ public class GafRecorder {
 		gaf_doc.addComment(comment);
 	}
 
-	private void addExpAnnotations(Family family, List<Protein> nodes, GafDocument gaf_doc) {
-		for (Protein node : nodes) {
+	private void addExpAnnotations(Family family, List<Bioentity> nodes, GafDocument gaf_doc) {
+		for (Bioentity node : nodes) {
 			List<GeneAnnotation> annotations = AnnotationUtil.getExperimentalAssociations(node);
 			if (annotations != null && !annotations.isEmpty()) {
 				for (GeneAnnotation annotation : annotations) {

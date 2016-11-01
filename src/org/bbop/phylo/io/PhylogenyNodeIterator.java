@@ -28,7 +28,7 @@ package org.bbop.phylo.io;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import owltools.gaf.Bioentity;
+import org.bbop.phylo.model.Bioentity;
 
 /*
  * @author Christian Zmasek

@@ -43,7 +43,7 @@ import org.bbop.phylo.io.PhylogenyParserException;
 import org.bbop.phylo.io.nhx.NHXFormatException;
 import org.bbop.phylo.io.nhx.NHXParser;
 import org.bbop.phylo.io.nhx.NHXParser.TAXONOMY_EXTRACTION;
-import org.bbop.phylo.model.Protein;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
 
@@ -204,9 +204,9 @@ public final class NexusPhylogeniesParser implements IteratingPhylogenyParser, P
 			p.setRooted( is_rooted );
 		}
 		if ( ( _taxlabels.size() > 0 ) || ( _translate_map.size() > 0 ) ) {
-			Protein root = p.getCurrentRoot();
-			List<Protein> leaves = p.getLeafDescendants(root);
-			for (Protein node : leaves) {
+			Bioentity root = p.getCurrentRoot();
+			List<Bioentity> leaves = p.getLeafDescendants(root);
+			for (Bioentity node : leaves) {
 				if ( ( _translate_map.size() > 0 ) && _translate_map.containsKey( node.getId() ) ) {
 					node.setId( _translate_map.get( node.getId() ).replaceAll( "['\"]+", "" ) );
 				}

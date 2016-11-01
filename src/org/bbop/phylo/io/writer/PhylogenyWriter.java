@@ -40,11 +40,14 @@ import org.bbop.phylo.io.PhyloConstant;
 import org.bbop.phylo.io.PhyloConstant.NH_CONVERSION_SUPPORT_VALUE_STYLE;
 import org.bbop.phylo.io.PhylogenyDataUtil;
 import org.bbop.phylo.io.nexus.NexusConstants;
+import org.bbop.phylo.io.nhx.NHXtags;
 import org.bbop.phylo.io.phyloxml.PhyloXmlMapping;
 import org.bbop.phylo.io.phyloxml.PhyloXmlUtil;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
+import org.bbop.phylo.species.Species;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.PhyloUtil;
 
 public final class PhylogenyWriter {
@@ -68,7 +71,7 @@ public final class PhylogenyWriter {
 	private boolean                     _saw_comma;
 	private StringBuffer                _buffer;
 	private Writer                      _writer;
-	private Protein               _root;
+	private Bioentity               _root;
 	private boolean                     _has_next;
 	private Stack<PostOrderStackObject> _stack;
 	private boolean                     _nh_write_distance_to_parent;
@@ -154,7 +157,7 @@ public final class PhylogenyWriter {
 		return _phyloxml_level;
 	}
 
-	private Protein getRoot() {
+	private Bioentity getRoot() {
 		return _root;
 	}
 
@@ -189,7 +192,7 @@ public final class PhylogenyWriter {
 	private void next() throws IOException {
 		while ( true ) {
 			final PostOrderStackObject si = getStack().pop();
-			final Protein node = si.getNode();
+			final Bioentity node = si.getNode();
 			final int phase = si.getPhase();
 			final int kidcount = node.getChildren() == null ? 0 : node.getChildren().size();
 			if ( phase > kidcount ) {
@@ -218,7 +221,7 @@ public final class PhylogenyWriter {
 			else {
 				getStack().push( new PostOrderStackObject( node, ( phase + 1 ) ) );
 				if ( !node.isLeaf() ) {
-					getStack().push( new PostOrderStackObject( (Protein) node.getChildren().get( phase - 1 ), 1 ) );
+					getStack().push( new PostOrderStackObject( node.getChildren().get( phase - 1 ), 1 ) );
 					writeOpenClade( node );
 					if ( getOutputFormt() == FORMAT.PHYLO_XML ) {
 						if ( phase == 1 ) {
@@ -276,7 +279,7 @@ public final class PhylogenyWriter {
 		_phyloxml_level = phyloxml_level;
 	}
 
-	private void setRoot( final Protein root ) {
+	private void setRoot( final Bioentity root ) {
 		_root = root;
 	}
 
@@ -469,7 +472,7 @@ public final class PhylogenyWriter {
 		}
 	}
 
-	private void writeNode( final Protein node, final StringBuffer indentation ) throws IOException {
+	private void writeNode( final Bioentity node, final StringBuffer indentation ) throws IOException {
 		if ( getOutputFormt() == FORMAT.PHYLO_XML ) {
 			if ( node.isLeaf() ) {
 				getWriter().write( PhyloUtil.LINE_SEPARATOR );
@@ -511,7 +514,7 @@ public final class PhylogenyWriter {
 		_nh_conversion_support_style = nh_conversion_support_style;
 	}
 
-	private void writeOpenClade( final Protein node ) throws IOException {
+	private void writeOpenClade( final Bioentity node ) throws IOException {
 		if ( !isSawComma() ) {
 			if ( !node.isRoot() && node.isFirstChildNode() ) {
 				increaseNodeLevel();
@@ -598,8 +601,8 @@ public final class PhylogenyWriter {
 		writer.write( PhyloUtil.LINE_SEPARATOR );
 		writer.write( " " );
 		writer.write( NexusConstants.TAXLABELS );
-		List<Protein> leaves = tree.getLeaves();
-		for( Protein node : leaves ) {
+		List<Bioentity> leaves = tree.getLeaves();
+		for( Bioentity node : leaves ) {
 			writer.write( " " );
 			String data = "";
 			if ( !PhyloUtil.isEmpty( node.getName() ) ) {
@@ -689,7 +692,7 @@ public final class PhylogenyWriter {
 	 * Converts this PhylogenyNode to a New Hampshire X (NHX) String
 	 * representation.
 	 */
-	final public static String toNewHampshireX(Protein node) {
+	final public static String toNewHampshireX(Bioentity node) {
 		final StringBuilder sb = new StringBuilder();
 		final StringBuffer s_nhx = new StringBuffer();
 		if ( !PhyloUtil.isEmpty( node.getName() ) ) {
@@ -699,9 +702,42 @@ public final class PhylogenyWriter {
 			sb.append( ":" );
 			sb.append( node.getDistanceToParent() );
 		}
-		//        if ( getNodeDataDirectly() != null ) {
-		//            s_nhx.append( getNodeDataDirectly().toNHX() );
-		//        }
+		String taxon_code = node.getNcbiTaxonId();
+		if ( !PhyloUtil.isEmpty(taxon_code) ) {
+			StringBuffer taxon_string = new StringBuffer();
+			taxon_string.append( PhyloUtil.replaceIllegalNhxCharacters( taxon_code ) );
+			Species species = TaxonFinder. getSpecies(taxon_code);
+			String sci_name = species.getSpecies();
+			if (species != null) {
+				if ( !PhyloUtil.isEmpty( sci_name ) ) {
+					PhyloUtil.appendSeparatorIfNotEmpty( taxon_string, '|' );
+					taxon_string.append( PhyloUtil.replaceIllegalNhxCharacters( sci_name ) );
+				}
+			}
+			if ( taxon_string.length() > 0 ) {
+				taxon_string.append( ':' + NHXtags.SPECIES_NAME );
+				taxon_string.append( species );
+			}
+			sb.append(taxon_string);
+		}
+		//				if ( isHasSequence() ) {
+		//					sb.append( getSequence().toNHX() );
+		//				}
+		final StringBuffer event_string = new StringBuffer();
+		event_string.append( ":" );
+		event_string.append( NHXtags.IS_DUPLICATION );
+		if ( node.isDuplication() ) {
+			event_string.append( "Y" );
+		}
+		else if ( node.isSpeciation() ) {
+			event_string.append( "N" );
+		} 
+		else if ( node.isHorizontalTransfer()) {
+			event_string.append("?");
+		}
+		sb.append(event_string);
+
+
 		//        if ( getBranchDataDirectly() != null ) {
 		//            s_nhx.append( getBranchDataDirectly().toNHX() );
 		//        }
@@ -716,7 +752,7 @@ public final class PhylogenyWriter {
 	// ---------------------------------------------------------
 	// Writing of Nodes to Strings
 	// ---------------------------------------------------------
-	final public String toNewHampshire( Protein node,
+	final public String toNewHampshire( Bioentity node,
 			final boolean write_distance_to_parent,
 			final NH_CONVERSION_SUPPORT_VALUE_STYLE svs ) {
 		String data = "";

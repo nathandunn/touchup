@@ -23,13 +23,12 @@ import java.io.File;
 import java.util.List;
 
 import org.bbop.phylo.config.TouchupConfig;
+import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
-import org.bbop.phylo.model.Protein;
 import org.bbop.phylo.model.Tree;
+import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
-
-import owltools.gaf.species.TaxonFinder;
 
 public class PantherFileAdapter extends PantherAdapter {
 	/**
@@ -73,7 +72,7 @@ public class PantherFileAdapter extends PantherAdapter {
 
 		if (ok) {
 			family.setTreeContent(FileUtil.readFile(treeFileName));
-			Protein root = parsePantherTree(family.getTreeContent());
+			Bioentity root = parsePantherTree(family.getTreeContent());
 			if (root != null) {
 				tree.growTree(root);
 

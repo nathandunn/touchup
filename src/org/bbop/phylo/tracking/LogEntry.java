@@ -23,9 +23,8 @@ package org.bbop.phylo.tracking;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-
-import owltools.gaf.Bioentity;
-import owltools.gaf.GeneAnnotation;
+import org.bbop.phylo.model.Bioentity;
+import org.bbop.phylo.model.GeneAnnotation;
 
 public class LogEntry {
 	/**

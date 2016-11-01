@@ -41,13 +41,10 @@ import java.util.regex.Pattern;
 import org.bbop.phylo.io.nexus.NexusPhylogeniesParser;
 import org.bbop.phylo.io.nhx.NHXParser;
 import org.bbop.phylo.io.nhx.NHXParser.TAXONOMY_EXTRACTION;
-import org.bbop.phylo.io.phyloxml.PhyloXmlDataFormatException;
 import org.bbop.phylo.io.phyloxml.PhyloXmlParser;
 import org.bbop.phylo.io.tol.TolParser;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.PhyloUtil;
-
-import owltools.gaf.Bioentity;
 
 public final class ParserUtils {
 
