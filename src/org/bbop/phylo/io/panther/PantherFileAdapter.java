@@ -20,14 +20,10 @@
 package org.bbop.phylo.io.panther;
 
 import java.io.File;
-import java.util.List;
 
-import org.bbop.phylo.config.TouchupConfig;
-import org.bbop.phylo.model.Bioentity;
+import org.apache.log4j.Logger;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
-import org.bbop.phylo.species.TaxonFinder;
-import org.bbop.phylo.util.Constant;
 import org.bbop.phylo.util.FileUtil;
 
 public class PantherFileAdapter extends PantherAdapter {
@@ -35,7 +31,14 @@ public class PantherFileAdapter extends PantherAdapter {
 	 *
 	 */
 
-//	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
+	File family_dir;
+	File treeFile;
+	File attrFile;
+	File msaFile;
+	File wtsFile;
+
+	private static Logger log = Logger.getLogger(PantherFileAdapter.class);
+
 	/**
 	 * Constructor declaration
 	 *
@@ -58,56 +61,54 @@ public class PantherFileAdapter extends PantherAdapter {
 	 * 
 	 * @see
 	 */
-	public boolean fetchTree(Family family, Tree tree) {
+	public boolean fetchFamily(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
-		File family_dir = new File(TouchupConfig.inst().treedir, tree.getId());
 
 		ok = FileUtil.validPath(family_dir);
-		File treeFileName = new File(family_dir, "tree" + Constant.TREE_SUFFIX);
-		File attrFileName = new File(family_dir, "attr" + Constant.TAB_SUFFIX);
 
-		ok &= FileUtil.validFile(treeFileName);
-		ok &= FileUtil.validFile(attrFileName);
+		ok &= FileUtil.validFile(treeFile);
+		ok &= FileUtil.validFile(attrFile);
 
 		if (ok) {
-			family.setTreeContent(FileUtil.readFile(treeFileName));
-			Bioentity root = parsePantherTree(family.getTreeContent());
-			if (root != null) {
-				tree.growTree(root);
-
-				// Read the attribute file
-				family.setAttrContent(FileUtil.readFile(attrFileName));
-				// Load the attr file to obtain the PTN #s
-				List<List<String>> rows = ParsingHack.parsePantherAttr(family.getAttrContent());
-				decorateNodes(rows, tree);
-
-				fetchMSA(family);
+			family.setTreeContent(FileUtil.readFile(treeFile));
+			// Read the attribute file
+			family.setAttrContent(FileUtil.readFile(attrFile));
+			if (FileUtil.validFile(msaFile)) {
+				family.setMsaContent(FileUtil.readFile(msaFile));
 			}
-
-			if (tree.getRoot().getNcbiTaxonId() == null) {
-				String taxon = TaxonFinder.getTaxonID("LUCA");
-				tree.getRoot().setNcbiTaxonId(taxon);
+			// Check for wts file
+			if (FileUtil.validFile(wtsFile)) {
+				family.setWtsContent(FileUtil.readFile(wtsFile));
 			}
 		}
 		return ok;
 	}
 
-
-	private void fetchMSA(Family family) {
-		File family_dir = new File(TouchupConfig.inst().treedir, family.getFamily_name());
-		FileUtil.validPath(family_dir);
-		File msaFileName = new File(family_dir, "tree" + Constant.MIA_SUFFIX);
-		if (FileUtil.validFile(msaFileName)) {
-			family.setMsaContent(FileUtil.readFile(msaFileName));
-		}
-
-		// Check for wts file
-		File wtsFileName = new File(family_dir, "cluster" + Constant.WTS_SUFFIX);
-		if (FileUtil.validFile(wtsFileName)) {
-			family.setWtsContent(FileUtil.readFile(wtsFileName));
-		}
+	public void setFamilyDir(String tree_dir, String family_name) {
+		family_dir = new File(tree_dir, family_name);	
 	}
+
+	public void setFamilyDir(String tree_dir) {
+		family_dir = new File(tree_dir);	
+	}
+
+	public void setTreeFileName(String file_name) {
+		treeFile = new File(family_dir, file_name);
+	}
+
+	public void setAttrFileName(String file_name) {
+		attrFile = new File(family_dir, file_name);
+	}
+
+	public void setMSAFileName(String file_name) {
+		msaFile = new File(family_dir, file_name);
+	}
+
+	public void setWtsFileName(String file_name) {
+		wtsFile = new File(family_dir, file_name);
+	}
+
 }
 
 

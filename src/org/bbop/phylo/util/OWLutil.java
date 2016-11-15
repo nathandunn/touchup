@@ -147,8 +147,11 @@ public class OWLutil {
 			TimerUtil timer = new TimerUtil();
 			log.info("Begin loading GO");
 			ParserWrapper pw = new ParserWrapper();
-			String iriString = "http://purl.obolibrary.org/obo/go.owl";
+			String iriString = "http://purl.obolibrary.org/obo/go.obo";
 			go_graph = new OWLGraphWrapper(pw.parse(iriString));
+			
+			log.info("GO retrieved " + timer.reportElapsedTime());
+
 			OWLclasses = new HashMap<>();
 			term_labels = new HashMap<>();
 			OWLObjectProperty part_of = go_graph.getOWLObjectPropertyByIdentifier("BFO:0000050"); // part_of
@@ -171,7 +174,7 @@ public class OWLutil {
 
 			aspect_provider = DefaultAspectProvider.createAspectProvider(go_graph, mappings, ancestor_tool.getReasoner());
 			
-			log.info("GO loaded " + timer.reportElapsedTime());
+			log.info("GO relations loaded " + timer.reportElapsedTime());
 
 		} catch (OWLOntologyCreationException e) {
 			throw new RuntimeException(e);

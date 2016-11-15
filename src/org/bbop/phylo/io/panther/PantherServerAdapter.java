@@ -29,16 +29,13 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
-import org.bbop.phylo.model.Bioentity;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
-import org.bbop.phylo.species.TaxonFinder;
 import org.bbop.phylo.util.LoginUtil;
 import org.bbop.phylo.util.TimerUtil;
 
@@ -98,8 +95,8 @@ public class PantherServerAdapter extends PantherAdapter {
 		}
 		return INSTANCE;
 	}
-
-	public boolean fetchTree(Family family, Tree tree) {
+	
+	public boolean fetchFamily(Family family, Tree tree) {
 		boolean ok = false;
 		if (family != null) {
 			TimerUtil timer = new TimerUtil();
@@ -121,22 +118,7 @@ public class PantherServerAdapter extends PantherAdapter {
 				if (info != null && info.size() > 1) {
 					family.setWtsContent(new ArrayList<String>(Arrays.asList(info.elementAt(1))));
 				}
-
-				Bioentity root = parsePantherTree(family.getTreeContent());
-
-				if (root != null) {
-					tree.growTree(root);
-
-					// Load the attr file to obtain the PTN #s
-					List<List<String>> rows = ParsingHack.parsePantherAttr(family.getAttrContent());
-					decorateNodes(rows, tree);
-
-					if (tree.getRoot().getNcbiTaxonId() == null) {
-						String taxon = TaxonFinder.getTaxonID("LUCA");
-						tree.getRoot().setNcbiTaxonId(taxon);
-					}
-					ok = true;
-				}
+				ok = true;
 			}
 		}
 		return ok;

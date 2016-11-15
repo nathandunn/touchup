@@ -26,7 +26,9 @@ import java.util.List;
 
 import org.bbop.phylo.gaf.GafRecorder;
 import org.bbop.phylo.io.panther.IDmap;
-import org.bbop.phylo.io.panther.PantherAdapter;
+import org.bbop.phylo.io.panther.PantherAdapterI;
+import org.bbop.phylo.io.panther.PantherParser;
+import org.bbop.phylo.io.panther.PantherParserI;
 import org.bbop.phylo.io.writer.PhylogenyWriter;
 import org.bbop.phylo.tracking.LogAction;
 import org.bbop.phylo.tracking.LogAlert;
@@ -51,27 +53,28 @@ public class Family implements Serializable {
 	private String description;
 	private String identifier;
 	private String confidence;
-	private PantherAdapter adapter;
 	private Tree tree;
 	private List<String> tree_content;
 	private List<String> attr_content;
 	private List<String> msa_content;
 	private List<String> wts_content;
 	private List<String> gaf_comments;
+	
+	private PantherAdapterI adapter;
 
 	public Family(String family_name) {
 		setFamily_name(family_name);
 		clear();
 	}
 
-	public boolean fetch(Tree seed, PantherAdapter adapter) {
+	public boolean fetch(Tree seed, PantherAdapterI adapter) {
 		/*
 		 * Assumption for touchup is that all of the PANTHER families are present in files locally
 		 * The update of the families is handled asynchronously and should hopefully ensure
 		 * that the more up-to-date versions are available
 		 */
 		this.adapter = adapter;
-		boolean got_tree = adapter.fetchTree(this, seed);
+		boolean got_tree = adapter.fetchFamily(this, seed);
 		if (got_tree) {
 			this.tree = seed;
 		} else {

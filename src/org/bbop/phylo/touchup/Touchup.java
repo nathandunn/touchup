@@ -35,10 +35,9 @@ import org.bbop.phylo.annotate.AnnotationUtil;
 import org.bbop.phylo.config.TouchupConfig;
 import org.bbop.phylo.config.TouchupYaml;
 import org.bbop.phylo.gaf.GafPropagator;
-import org.bbop.phylo.io.panther.PantherAdapter;
+import org.bbop.phylo.io.panther.PantherAdapterI;
 import org.bbop.phylo.io.panther.PantherDbInfo;
-import org.bbop.phylo.io.panther.PantherFileAdapter;
-import org.bbop.phylo.io.panther.PantherServerAdapter;
+import org.bbop.phylo.io.panther.TouchupPantherAdapter;
 import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.tracking.LogAlert;
@@ -189,7 +188,8 @@ public class Touchup {
 				gaf_count++;
 				Family family = new Family(family_name);
 				Tree tree = new Tree(family_name);
-				PantherAdapter adapter = use_server ? new PantherServerAdapter() : new PantherFileAdapter();
+				PantherAdapterI adapter = new TouchupPantherAdapter(family_name, use_server);
+				
 				available &= family.fetch(tree, adapter);
 				if (available) {
 					boolean proceed = TaxonChecker.isLive();
