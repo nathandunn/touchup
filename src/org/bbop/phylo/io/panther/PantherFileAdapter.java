@@ -26,7 +26,7 @@ import org.bbop.phylo.model.Family;
 import org.bbop.phylo.model.Tree;
 import org.bbop.phylo.util.FileUtil;
 
-public class PantherFileAdapter extends PantherAdapter {
+public class PantherFileAdapter implements PantherLoadAdapterI {
 	/**
 	 *
 	 */
@@ -61,7 +61,7 @@ public class PantherFileAdapter extends PantherAdapter {
 	 * 
 	 * @see
 	 */
-	public boolean fetchFamily(Family family, Tree tree) {
+	public boolean loadFamily(Family family, Tree tree) {
 		boolean ok;
 		System.gc();
 

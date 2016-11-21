@@ -74,7 +74,7 @@ public class Family implements Serializable {
 		 * that the more up-to-date versions are available
 		 */
 		this.adapter = adapter;
-		boolean got_tree = adapter.fetchFamily(this, seed);
+		boolean got_tree = adapter.loadFamily(this, seed);
 		if (got_tree) {
 			this.tree = seed;
 		} else {

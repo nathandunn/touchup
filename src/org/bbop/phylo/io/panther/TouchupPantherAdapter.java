@@ -32,7 +32,7 @@ public class TouchupPantherAdapter extends PantherAdapter {
 
 	private static Logger log = Logger.getLogger(TouchupPantherAdapter.class);
 
-	private static PantherAdapterI active_adapter;
+	private static PantherLoadAdapterI active_adapter;
 
 	public TouchupPantherAdapter (String family_name, boolean use_server) {
 		if (active_adapter == null) {
@@ -49,10 +49,10 @@ public class TouchupPantherAdapter extends PantherAdapter {
 		}
 	}
 
-	public boolean fetchFamily(Family family, Tree tree) {
+	public boolean loadFamily(Family family, Tree tree) {
 		TimerUtil timer = new TimerUtil();
 		log.info("Fetching " + family.getFamily_name() + " raw tree ");
-		boolean ok = active_adapter.fetchFamily(family, tree);
+		boolean ok = active_adapter.loadFamily(family, tree);
 		log.info("\tFetched " + family.getFamily_name() + " raw tree ");
 		if (ok) {		    
 			PantherParserI parser = new TouchupPantherParser();

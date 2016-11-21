@@ -19,16 +19,15 @@
  */
 package org.bbop.phylo.io.panther;
 
-import java.io.File;
-
 import org.bbop.phylo.model.Family;
+import org.bbop.phylo.model.Tree;
 
 /**
  * Created by suzi on 12/15/14.
  */
-public interface PantherAdapterI extends PantherLoadAdapterI {
-    
-	public abstract boolean saveFamily(Family family, File family_dir);
-    
+public interface PantherLoadAdapterI {
+
+    public abstract boolean loadFamily(Family family, Tree tree);
+        
  }
 

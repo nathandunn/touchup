@@ -43,7 +43,7 @@ import com.sri.panther.paintCommon.FixedInfo;
 import com.sri.panther.paintCommon.RawComponentContainer;
 import com.sri.panther.paintCommon.TransferInfo;
 
-public class PantherServerAdapter extends PantherAdapter {
+public class PantherServerAdapter implements PantherLoadAdapterI {
 	
 	public static final String PANTHER_URL = " http://paintcuration.usc.edu";
 	
@@ -96,7 +96,7 @@ public class PantherServerAdapter extends PantherAdapter {
 		return INSTANCE;
 	}
 	
-	public boolean fetchFamily(Family family, Tree tree) {
+	public boolean loadFamily(Family family, Tree tree) {
 		boolean ok = false;
 		if (family != null) {
 			TimerUtil timer = new TimerUtil();
@@ -300,13 +300,13 @@ public class PantherServerAdapter extends PantherAdapter {
 			String sessionIdName, String sessionIdValue, TimerUtil timer) {
 		    Object       outputFromServlet = null;
 		error_message = null;
-		try{
+		try {
 			// connect to the servlet
 			URL                     servlet =
 					new URL(PANTHER_URL + "/servlet/com.sri.panther.paintServer.servlet.Client2Servlet?action="
 							+ actionRequest);
 
-			LOG.info("\t opening connection " + timer.reportElapsedTime());
+			LOG.info("\t opening connection " + servlet + " " + timer.reportElapsedTime());
 
 			java.net.URLConnection  servletConnection = servlet.openConnection();
 
@@ -324,7 +324,7 @@ public class PantherServerAdapter extends PantherAdapter {
 			servletConnection.setDoInput(true);
 			servletConnection.setDoOutput(true);
 
-			LOG.info("\t sending request " + timer.reportElapsedTime());
+			LOG.info("\t sending request to " + servlet + " " + timer.reportElapsedTime());
 
 			ObjectOutputStream  objectOutputStream = new ObjectOutputStream(servletConnection.getOutputStream());
 
