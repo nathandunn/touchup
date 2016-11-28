@@ -125,7 +125,7 @@ public class TaxonChecker {
 			for (Bioentity okay_node : nodes_to_validate) {
 				List<Bioentity> child_nodes_to_validate = new ArrayList<>();
 				child_nodes_to_validate.addAll(okay_node.getChildren());
-				getInvalidTaxa(nodes_to_validate, go_id, invalid_taxa);				
+				getInvalidTaxa(child_nodes_to_validate, go_id, invalid_taxa);				
 			}
 		}
 	}
