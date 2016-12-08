@@ -366,17 +366,27 @@ public class AnnotationUtil {
 	}
 
 	public static List<GeneAnnotation> getAspectPaintAssociations(Bioentity node, String aspect) {
+		List<GeneAnnotation> paint_assocs = getPaintAssociations(node);
+		List<GeneAnnotation> paint_aspect_assocs = new ArrayList<>();
+		for (GeneAnnotation annotation : paint_assocs) {
+			if (aspect == null || annotation.getAspect().equals(aspect)) {
+				paint_aspect_assocs.add(annotation);
+			}
+		}
+		return paint_aspect_assocs;
+	}
+
+	public static List<GeneAnnotation> getPaintAssociations(Bioentity node) {
 		List<GeneAnnotation> paint_assoc = new ArrayList<>();
 		List<GeneAnnotation> associations = node.getAnnotations();
 		for (GeneAnnotation annotation : associations) {
-			if (isPAINTAnnotation(annotation) && (aspect == null || annotation.getAspect().equals(aspect))) {
+			if (isPAINTAnnotation(annotation)) {
 				paint_assoc.add(annotation);
 			}
 		}
 		return paint_assoc;
 	}
-
-
+	
 	public static boolean isPAINTAnnotation(GeneAnnotation assoc) {
 		String source = assoc.getAssignedBy();
 		boolean is_gocentral = (source.equals(Constant.PAINT_AS_SOURCE)
@@ -467,6 +477,4 @@ public class AnnotationUtil {
 		}
 		return go_ids;
 	}
-
-
 }

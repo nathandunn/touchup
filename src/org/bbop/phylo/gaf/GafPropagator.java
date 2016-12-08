@@ -168,6 +168,8 @@ public class GafPropagator {
 							not_annots = new ArrayList<>();
 							negate_list.put(node, not_annots);
 						}
+						// update the go-id in case the GAF contains an obsolete ID
+						gaf_annotation.setCls(go_id);
 						not_annots.add(gaf_annotation);
 					} else {
 						if (AnnotationUtil.isAnnotatedToTerm(node.getAnnotations(), go_id, gaf_annotation.getAspect()) == null) {
@@ -256,6 +258,7 @@ public class GafPropagator {
 			negate_list.remove(skip);
 		}
 
+		OWLutil owl = OWLutil.inst();
 		for (Bioentity node : negate_list.keySet()) {
 			for (GeneAnnotation notted_gaf_annot : negate_list.get(node)) {
 				/*
@@ -269,7 +272,7 @@ public class GafPropagator {
 						if (match) {
 							match = assoc.getCls().equals(notted_gaf_annot.getCls());
 							if (!match) {
-								match = OWLutil.inst().moreSpecific(notted_gaf_annot.getCls(), assoc.getCls());
+								match &= owl.moreSpecific(notted_gaf_annot.getCls(), assoc.getCls());
 								if (match) {
 									log.info("negating subclass for " + notted_gaf_annot);
 								}
