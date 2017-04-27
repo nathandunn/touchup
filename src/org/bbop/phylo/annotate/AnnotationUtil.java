@@ -114,8 +114,7 @@ public class AnnotationUtil {
 	private static boolean loadExperimental(Family family, String GOlrURL, boolean ignore) {
 		boolean proceed = false;
 		try {
-			AnnotationUtil.collectExpAnnotationsBatched(family);
-			proceed = true;
+			proceed = (AnnotationUtil.collectExpAnnotationsBatched(family) >= 0);
 		} catch (Exception e) {
 			if (!ignore) {
 				log.error("No response from GOlr server at " + TouchupConfig.inst().GOlrURL);
@@ -125,9 +124,10 @@ public class AnnotationUtil {
 		return proceed;
 	}
 
-	public static void collectExpAnnotationsBatched(Family family) throws Exception {
+	public static int collectExpAnnotationsBatched(Family family) throws Exception {
 		Tree tree = family.getTree();
 		List<Bioentity> leaves = tree.getLeaves();
+		int count = 0;
 		if (TouchupConfig.inst().GOlrURL.isEmpty()) {
 			TouchupConfig.inst().GOlrURL = Constant.DEV_GOLR;
 		}
@@ -177,45 +177,51 @@ public class AnnotationUtil {
 				 */
 				leaf.addSynonym(leaf.getSeqDb() + ':' + leaf.getSeqId());
 			}
-			askGolr(retriever, gene_names, id2gene);
+			count = askGolr(retriever, gene_names, id2gene);
+			if (count >= 0) {
+				/*
+				 * Continue searching for those genes for which a corresponding gene 
+				 * in GoLR could not be found
+				 */
+				for (String gene_name : id2gene.keySet()) {
+					Bioentity leaf = id2gene.get(gene_name);
+					List<GolrAnnotationDocument> golrDocuments;
+					golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
 
-			/*
-			 * Continue searching for those genes for which a corresponding gene 
-			 * in GoLR could not be found
-			 */
-			for (String gene_name : id2gene.keySet()) {
-				Bioentity leaf = id2gene.get(gene_name);
-				List<GolrAnnotationDocument> golrDocuments;
-				golrDocuments = retriever.getGolrAnnotationsForSynonym(leaf.getDb(), leaf.getDBID());
-
-				if (golrDocuments.size() == 0) {
-					String key = leaf.getSeqDb() + ':' + leaf.getSeqId();
-					golrDocuments = retriever.getGolrAnnotationsForGene(key);
-				}
-
-				if (golrDocuments.size() > 0) {
-					GafDocument annots = retriever.convert(golrDocuments);
-					Collection<Bioentity> bioentities = annots.getBioentities();
-					Bioentity golr_gene = null;
-					if (bioentities.size() != 1) {
-						for (Iterator<Bioentity> iter = bioentities.iterator(); iter.hasNext() && golr_gene == null;) {
-							Bioentity gene = iter.next();
-							if (gene.getDb().equals("AspGD") && gene.getLocalId().startsWith("ASP")) {
-								golr_gene = gene;
-							}
-						}
-						log.info(bioentities.size() + " annotations returned for " + leaf.getId());
-					} else {
-						golr_gene = bioentities.iterator().next();
+					if (golrDocuments.size() == 0) {
+						String key = leaf.getSeqDb() + ':' + leaf.getSeqId();
+						golrDocuments = retriever.getGolrAnnotationsForGene(key);
 					}
-					processGolrAnnotations(leaf, golr_gene, annots.getGeneAnnotations());
+
+					if (golrDocuments.size() > 0) {
+						GafDocument annots = retriever.convert(golrDocuments);
+						Collection<Bioentity> bioentities = annots.getBioentities();
+						Bioentity golr_gene = null;
+						if (bioentities.size() != 1) {
+							for (Iterator<Bioentity> iter = bioentities.iterator(); iter.hasNext() && golr_gene == null;) {
+								Bioentity gene = iter.next();
+								if (gene.getDb().equals("AspGD") && gene.getLocalId().startsWith("ASP")) {
+									golr_gene = gene;
+								}
+							}
+						} else {
+							golr_gene = bioentities.iterator().next();
+						}
+						processGolrAnnotations(leaf, golr_gene, annots.getGeneAnnotations());
+						count+= golrDocuments.size();
+					}
 				}
+			} else {
+				count = -1;
 			}
 		}
+		return count;
 	}
 
-	private static void askGolr(RetrieveGolrAnnotations retriever, List<String> gene_names, Map<String, Bioentity> id2gene) {
+	private static int askGolr(RetrieveGolrAnnotations retriever, List<String> gene_names, Map<String, Bioentity> id2gene) {
+		int count;
 		try {
+			count = 0;
 			List<GolrAnnotationDocument> golrDocuments = retriever.getGolrAnnotationsForGenes(gene_names, true);
 			if (golrDocuments.size() > 0) {
 				GafDocument annots = retriever.convert(golrDocuments);
@@ -234,6 +240,7 @@ public class AnnotationUtil {
 							id2gene.remove(golr_gene.getId());
 							List<GeneAnnotation> golr_annotations = (List<GeneAnnotation>) annots.getGeneAnnotations(golr_gene.getId());
 							processGolrAnnotations(leaf, golr_gene, golr_annotations);
+							count++;
 						} else {
 							log.debug("Bad Protein " + leaf.getId() + '?');
 						}
@@ -245,8 +252,9 @@ public class AnnotationUtil {
 		} catch (Exception e) {
 			String message = "Problem collecting experimental annotations because, \"" + e.getMessage() + "\"";
 			log.info(message);
-			System.exit(-1);
+			count = -1;
 		}
+		return count;
 	}
 
 	private static void processGolrAnnotations(Bioentity leaf, Bioentity golr_gene, List<GeneAnnotation> golr_annotations) {
@@ -340,7 +348,7 @@ public class AnnotationUtil {
 						annotation.setCls(go_id);
 						log.info("Annotation of " + annotation.getBioentityObject().getSymbol() + " is to obsolete term " + check);
 						log.info("\treplacing with " + go_id);
-						
+
 					} else {
 						keep = false;
 					}
@@ -386,7 +394,7 @@ public class AnnotationUtil {
 		}
 		return paint_assoc;
 	}
-	
+
 	public static boolean isPAINTAnnotation(GeneAnnotation assoc) {
 		String source = assoc.getAssignedBy();
 		boolean is_gocentral = (source.equals(Constant.PAINT_AS_SOURCE)

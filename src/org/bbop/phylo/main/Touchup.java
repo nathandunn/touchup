@@ -18,7 +18,7 @@
  * 
  */
 
-package org.bbop.phylo.touchup;
+package org.bbop.phylo.main;
 
 import java.io.File;
 import java.io.IOException;
@@ -181,21 +181,16 @@ public class Touchup {
 		int tree_count = 0;
 		for (String family_name : families) {
 			log.info("Touching up " + family_name + " (" + (families.indexOf(family_name) + 1) + " of " + families.size() + ")");
-			boolean available = gafFileExists(family_name);
-			if (!available) {
-				log.info("Missing GAF file for " + family_name);
-			} else {
+			if (gafFileExists(family_name)) {
 				gaf_count++;
 				Family family = new Family(family_name);
 				Tree tree = new Tree(family_name);
 				PantherAdapterI adapter = new TouchupPantherAdapter(family_name, use_server);
 				
-				available &= family.fetch(tree, adapter);
-				if (available) {
-					boolean proceed = TaxonChecker.isLive();
-					if (proceed) {
-						proceed &= AnnotationUtil.loadExperimental(family);
-						if (proceed) {
+				if (family.fetch(tree, adapter)) {
+					tree_count++;
+					if (TaxonChecker.isLive()) {
+						if (AnnotationUtil.loadExperimental(family)) {
 							/*
 							 * The file may be null, in which case the following two methods
 							 * simply return
@@ -207,7 +202,7 @@ public class Touchup {
 							GafPropagator.importAnnotations(family, family_dir);
 							String comment = "Updated by " + ResourceLoader.inst().loadVersion() + 
 									" on " + LogUtil.dateNow() + 
-									" using " + Constant.PANTHER_VERSION + PantherDbInfo.getVersionKey();							
+									" using " + Constant.PANTHER_VERSION + PantherDbInfo.getCurrentVersionName();							
 							family.save(family_dir, comment);
 							family.export(family_dir);
 
@@ -219,19 +214,24 @@ public class Touchup {
 								run_summary.put(family_name, null);
 							}
 						} else {
-							log.error("Unable to load annotations for " + family_name);
+							log.error("Unable to load experimental annotations from GOlr for " + family_name);
+							logSummary(run_summary, families.size(), family_count, tree_count, gaf_count, review_count);
+							return run_summary.size();
 						}
 					} else {
 						log.error("TaxonChecker is down");
-					}
-					if (!proceed) {
 						logSummary(run_summary, families.size(), family_count, tree_count, gaf_count, review_count);
 						return run_summary.size();
 					}
-					tree_count++;
 				} else {
 					log.error("Unable to load tree for " + family_name);
+					logSummary(run_summary, families.size(), family_count, tree_count, gaf_count, review_count);
+					return run_summary.size();
 				}
+			} else {
+				log.info("Missing GAF file for " + family_name);
+				logSummary(run_summary, families.size(), family_count, tree_count, gaf_count, review_count);
+				return run_summary.size();
 			}
 			family_count++;
 		}
@@ -260,7 +260,7 @@ public class Touchup {
 			}
 			try {
 				contents.set(1, "Touched up " + summaries.size() + " of " + total_fams + " PAINT families " + 
-						(total_fams - family_count) + " no longer have trees, " +
+						(total_fams - tree_count) + " no longer have trees, " +
 						(family_count - gaf_count) + " are missing GAF files, and " + 
 						review_count + " need reviewing.");
 				FileUtil.writeFile(logFileName, contents);

@@ -70,12 +70,14 @@ public class LogAlert {
 		obsoletes.add(entry);
 	}
 
-	public static void report(List<String> contents) {
+	public static int report(List<String> contents) {
+		int count = 0;
 		if ((invalids != null && !invalids.isEmpty()) 
 				|| (missing != null && !missing.isEmpty()) 
 				|| (obsoletes != null && !obsoletes.isEmpty())) {
 			if (!invalids.isEmpty()) {
-				contents.add("## Annotations that have been removed.");
+				count += invalids.size();
+				contents.add("## " + invalids.size() + " annotations are invalid and have been removed.");
 				for (LogEntry entry : invalids) {
 					GeneAnnotation annotation = entry.getLoggedAssociation();
 					contents.add(annotation.getLastUpdateDate() + ": " +
@@ -85,7 +87,8 @@ public class LogAlert {
 				}
 			}
 			if (!missing.isEmpty()) {
-				contents.add("## The ancestral node is no longer a member of this family");
+				count += missing.size();
+				contents.add("## " + missing.size() + " annotations are missing because the ancestral node is no longer found in this family");
 				for (LogEntry entry : missing) {
 					GeneAnnotation annotation = entry.getLoggedAssociation();
 					if (annotation.isCut())
@@ -101,6 +104,7 @@ public class LogAlert {
 				}
 			}
 			if (!obsoletes.isEmpty()) {
+				count += obsoletes.size();
 				contents.add("## The terms that were annotated to have been made obsolete");
 				for (LogEntry entry : obsoletes) {
 					GeneAnnotation annotation = entry.getLoggedAssociation();
@@ -113,6 +117,7 @@ public class LogAlert {
 			}
 		}
 		contents.add("");
+		return count;
 	}
 	
 	public static List<String> report() {

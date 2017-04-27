@@ -32,11 +32,17 @@ public class Logger {
 		if (FileUtil.validPath(family_dir)) {
 			File logFileName = new File(family_dir, family_name + Constant.LOG_SUFFIX);
 			List<String> contents = new ArrayList<>();
+			List<String> warnings = new ArrayList<>();
 			contents.add(HISTORY_SECTION);
 			logHistory(contents, comment, date);
 			LogAction.inst().report(contents);
-			contents.add(Logger.WARNING_SECTION);
-			LogAlert.report(contents);
+			int warning_count = LogAlert.report(warnings);
+			if (warning_count == 0) {
+				contents.add("NO WARNINGS");
+			} else {
+				contents.add(Logger.WARNING_SECTION + " (" + warning_count + ")");
+				contents.addAll(warnings);
+			}
 			contents.add(NOTES_SECTION);
 			logNotes(contents);
 			logBoilerplate(contents);
